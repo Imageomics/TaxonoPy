@@ -2,7 +2,7 @@
 
 This tool is under development and is unstable.
 
-`TaxonoPy` is a command-line tool for resolving taxonomic hierarchies using the [Global Names Resolver (GNR) API](http://resolver.globalnames.org/). It provides an interface to input species names and retrieve taxonomic classifications conforming to a strict 7-rank Linnehierarchy, helping researchers gather controlled taxonomic data about species.
+`TaxonoPy` (/tækˈsɒnəpaɪ/) is a command-line tool for resolving taxonomic hierarchies using the [Global Names Resolver (GNR) API](http://resolver.globalnames.org/). It provides an interface to input species names and retrieve taxonomic classifications conforming to a strict 7-rank Linnehierarchy, helping researchers gather controlled taxonomic data about species.
 
 Specifically, the ranks required include `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, and `species`. Only results exactly matching these ranks are returned.
 
