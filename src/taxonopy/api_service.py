@@ -11,7 +11,7 @@ class APIService:
             "with_context": "false",
             "with_canonical_ranks": "true"
         }
-        endpoint = self.config.get_endpoint()  # Call get_endpoint on the Config class directly
+        endpoint = self.config.get_endpoint()
         response = requests.get(endpoint, params=params)
         response.raise_for_status()
 

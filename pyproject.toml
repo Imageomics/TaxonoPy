@@ -20,7 +20,7 @@ dependencies = [
 dev = [
     "ruff",
     "pytest",
-    "uncoil @ git+https://github.com/thompsonmj/uncoil.git@v1.0.1"
+    "uncoil @ git+ssh://git@github.com/thompsonmj/uncoil.git@v1.0.1"
 ]
 
 [project.scripts]
