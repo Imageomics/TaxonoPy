@@ -12,6 +12,8 @@ class TaxonomyResolver:
             response = self.api_service.query_gnr(names)
             return self.process_data(response)
         except Exception as e:
+            # TODO: More robust, detailed error handling
+            # All submissions should be accounted for in error logs or output
             log_error(f'Error processing batch: {str(e)}')
             return []
 
@@ -53,14 +55,16 @@ class TaxonomyResolver:
             return self.aggregate_tied_scores(best_matches)
         else:
             return best_matches[0]
-
+    
     def has_exact_required_ranks(self, result, required_ranks):
+        # Filter results to only include complete hierarchies containing exact required ranks
+        # Additional ranks beyond those required do not cause exclusion
         ranks = set(result.get('classification_path_ranks', '').lower().split('|'))
-        return ranks == required_ranks
+        return required_ranks <= ranks  
 
     def resolve_names(self, names):
         # TODO: optimize batching
-        batches = [names[i:i + 300] for i in range(0, len(names), 300)]
+        batches = [names[i:i + 3] for i in range(0, len(names), 3)]
         all_results = []
         for batch in tqdm(batches, desc='Processing batches'):
             batch_results = self.process_batch(batch)
