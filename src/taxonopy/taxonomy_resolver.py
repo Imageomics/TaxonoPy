@@ -51,10 +51,28 @@ class TaxonomyResolver:
         best_matches = [result for result in filtered_results if result['score'] == max_score]
 
         if len(best_matches) > 1:
-            # Include all results when multiple sources have the same score
+            best_matches = [self.trim_ranks(match, required_ranks) for match in best_matches]
             return self.aggregate_tied_scores(best_matches)
         else:
-            return best_matches[0]
+            return self.trim_ranks(best_matches[0], required_ranks)
+        
+    def trim_ranks(self, result, required_ranks):
+        # Split classification path and its corresponding ranks
+        path_segments = result['classification_path'].split('|')
+        rank_segments = result['classification_path_ranks'].lower().split('|')
+        
+        # Filter out the segments corresponding with required ranks
+        trimmed_path = []
+        trimmed_ranks = []
+        for path, rank in zip(path_segments, rank_segments):
+            if rank in required_ranks:
+                trimmed_path.append(path)
+                trimmed_ranks.append(rank)
+        
+        # Update the result with the trimmed path and ranks
+        result['classification_path'] = '|'.join(trimmed_path)
+        result['classification_path_ranks'] = '|'.join(trimmed_ranks)
+        return result
     
     def has_exact_required_ranks(self, result, required_ranks):
         # Filter results to only include complete hierarchies containing exact required ranks
@@ -64,7 +82,8 @@ class TaxonomyResolver:
 
     def resolve_names(self, names):
         # TODO: optimize batching
-        batches = [names[i:i + 3] for i in range(0, len(names), 3)]
+        batch_size = 1
+        batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
         all_results = []
         for batch in tqdm(batches, desc='Processing batches'):
             batch_results = self.process_batch(batch)
@@ -82,6 +101,7 @@ class TaxonomyResolver:
             'canonical_form': [result.get('canonical_form') for result in results],
             'classification_path': [result.get('classification_path') for result in results], # TODO: address cases of discrepant paths among sources
             'classification_path_ids': [result.get('classification_path_ids') for result in results],
+            'classification_path_ranks': [result.get('classification_path_ranks') for result in results],
             'taxon_id': [result.get('taxon_id') for result in results],
             'local_id': [result.get('local_id') for result in results],
             'match_type': [result['match_type'] for result in results],
