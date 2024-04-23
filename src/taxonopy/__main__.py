@@ -31,7 +31,7 @@ def main():
 
     result = resolver.resolve_names(names)
 
-    print(result)
+    # print(result)
 
 if __name__ == '__main__':
     main()

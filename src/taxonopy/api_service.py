@@ -9,7 +9,8 @@ class APIService:
         params = {
             "names": "|".join(names),
             "with_context": "false",
-            "with_canonical_ranks": "true"
+            "with_canonical_ranks": "true",
+            "with_vernaculars": "true"
         }
         endpoint = self.config.get_endpoint()
         response = requests.get(endpoint, params=params)

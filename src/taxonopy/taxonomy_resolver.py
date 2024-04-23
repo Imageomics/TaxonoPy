@@ -82,13 +82,14 @@ class TaxonomyResolver:
 
     def resolve_names(self, names):
         # TODO: optimize batching
-        batch_size = 1
+        batch_size = 200
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
         all_results = []
         for batch in tqdm(batches, desc='Processing batches'):
             batch_results = self.process_batch(batch)
             all_results.extend(batch_results)
             self.save_results(batch_results)
+            print(batch_results)
         return all_results
     
     def aggregate_tied_scores(self, results):
@@ -102,6 +103,7 @@ class TaxonomyResolver:
             'classification_path': [result.get('classification_path') for result in results], # TODO: address cases of discrepant paths among sources
             'classification_path_ids': [result.get('classification_path_ids') for result in results],
             'classification_path_ranks': [result.get('classification_path_ranks') for result in results],
+            'vernaculars': [result.get('vernaculars') for result in results],
             'taxon_id': [result.get('taxon_id') for result in results],
             'local_id': [result.get('local_id') for result in results],
             'match_type': [result['match_type'] for result in results],
