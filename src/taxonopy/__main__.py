@@ -1,16 +1,20 @@
-"""
+"""TaxonoPy.
 
 Usage:
-  taxonopy <name>
-  taxonopy (-f FILE)
+  taxonopy <name> [--vernaculars <bool>]
+  taxonopy (-f FILE) [--vernaculars <bool>]
+  taxonopy (-h | --help)
 
 Options:
   -h --help     Show this screen.
   -f FILE       Specify a file containing species names, one per line.
+  -v --vernaculars <bool>  Include vernacular names in the output [default: False].
 
 Examples:
-  taxonopy "Tardus migratorius"
+  taxonopy "Tardus migratorius;Panthera leo"
   taxonopy -f species.txt
+  taxonopy "Tardus migratorius" -v true
+  taxonopy -f species.txt --vernaculars true
 
 """
 
@@ -22,6 +26,8 @@ def main():
 
     resolver = TaxonomyResolver()
 
+    vernaculars = args['--vernaculars'].lower() == 'true'
+
     names = []
     if args['<name>']:
         names = args['<name>'].split(';')
@@ -29,7 +35,7 @@ def main():
         with open(args['-f'], 'r') as f:
             names = f.read().splitlines()
 
-    result = resolver.resolve_names(names)
+    result = resolver.resolve_names(names, vernaculars=vernaculars)
 
     # print(result)
 
