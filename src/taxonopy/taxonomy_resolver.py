@@ -9,14 +9,28 @@ class TaxonomyResolver:
         self.required_ranks = ('kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species')
 
     def process_batch(self, names, vernaculars=False):
+        batch_results = []
+
         try:
             response = self.api_service.query_gnr(names, vernaculars=vernaculars)
-            return self.process_data(response, vernaculars)
+            batch_result, _ = self.process_data(response, vernaculars)
+            batch_results.extend(batch_result)
         except Exception as e:
-            # TODO: More robust, detailed error handling
-            # All submissions should be accounted for in error logs or output
-            log_error(f'Error processing batch: {str(e)}')
-            return [], False
+            # If an error occurs, the whole batch failed.
+            # Unbatch and process each name individually.
+            # TODO: More robust, detailed error handling and logging
+
+            print(f"Error processing batch: {str(e)}")
+            print("Processing batched names individually.")
+            for name in tqdm(names, desc='Processing unbatched names'):
+                try:
+                    response = self.api_service.query_gnr([name], vernaculars=vernaculars)
+                    result, _ = self.process_data(response, vernaculars)
+                    batch_results.extend(result)
+                except Exception as inner_e:
+                    print(f"Error processing '{name}': {str(inner_e)}")
+
+        return batch_results
 
     def process_data(self, data, vernaculars=False):
         results = []
@@ -93,17 +107,17 @@ class TaxonomyResolver:
         return False
 
     def resolve_names(self, names, vernaculars=False):
-        # TODO: optimize batching
-        batch_size = 1
+        # TODO: optimize batch size
+        batch_size = 300
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
         all_results = []
 
         for batch in tqdm(batches, desc='Processing batches'):
-            batch_results, _ = self.process_batch(batch, vernaculars=vernaculars)
+            batch_results = self.process_batch(batch, vernaculars=vernaculars)
             all_results.extend(batch_results)
             self.save_results(batch_results)
         return all_results, vernaculars
-    
+
     def aggregate_tied_scores(self, results, vernaculars):
         aggregated_info = {
             'supplied_name_string': results[0].get('supplied_name_string'),
