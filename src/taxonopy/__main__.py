@@ -1,20 +1,21 @@
 """TaxonoPy.
 
 Usage:
-  taxonopy <name> [--vernaculars <bool>]
-  taxonopy (-f FILE) [--vernaculars <bool>]
+  taxonopy <name> [--vernaculars <bool>] [--synonyms <bool>]
+  taxonopy (-f FILE) [--vernaculars <bool>] [--synonyms <bool>]
   taxonopy (-h | --help)
 
 Options:
-  -h --help     Show this screen.
-  -f FILE       Specify a file containing species names, one per line.
-  -v --vernaculars <bool>  Include vernacular names in the output [default: False].
+  -h --help                 Show this screen.
+  -f FILE                   Specify a file containing species names, one per line.
+  -v --vernaculars <bool>   Include vernacular names in the output [default: False].
+  -s --synonyms <bool>      Use synonyms when resolving names [default: False].
 
 Examples:
   taxonopy "Tardus migratorius;Panthera leo"
   taxonopy -f species.txt
   taxonopy "Tardus migratorius" -v true
-  taxonopy -f species.txt --vernaculars true
+  taxonopy -f species.txt --vernaculars true --synonyms true
 
 """
 
@@ -27,6 +28,7 @@ def main():
     resolver = TaxonomyResolver()
 
     vernaculars = args['--vernaculars'].lower() == 'true'
+    synonyms = args['--synonyms'].lower() == 'true'
 
     names = []
     if args['<name>']:
@@ -35,7 +37,7 @@ def main():
         with open(args['-f'], 'r') as f:
             names = f.read().splitlines()
 
-    result = resolver.resolve_names(names, vernaculars=vernaculars)
+    result = resolver.resolve_names(names, vernaculars=vernaculars, synonyms=synonyms)
 
     # print(result)
 
