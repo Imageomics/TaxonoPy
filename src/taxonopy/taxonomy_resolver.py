@@ -28,7 +28,16 @@ class TaxonomyResolver:
                     result, _ = self.process_data(response, vernaculars)
                     batch_results.extend(result)
                 except Exception as inner_e:
+                    # If another error occurs, sometimes it can work with `with_canonical_ranks=false`
                     print(f"Error processing '{name}': {str(inner_e)}")
+                    print(f"Trying with `with_canonical_ranks=false`.")
+
+                    try:
+                        response = self.api_service.query_gnr([name], with_canonical_ranks=False, vernaculars=vernaculars)
+                        result, _ = self.process_data(response, vernaculars)
+                        batch_results.extend(result)
+                    except Exception as inner_inner_e:
+                        print(f"Error processing '{name}': {str(inner_inner_e)}")
 
         return batch_results
 

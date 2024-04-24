@@ -5,11 +5,11 @@ class APIService:
     def __init__(self):
         self.config = Config()
 
-    def query_gnr(self, names, vernaculars=False):
+    def query_gnr(self, names, with_canonical_ranks=True, vernaculars=False):
         params = {
             "names": "|".join(names),
             "with_context": "false",
-            "with_canonical_ranks": "true",
+            "with_canonical_ranks": str(with_canonical_ranks).lower(),
             "with_vernaculars": str(vernaculars).lower()
         }
         endpoint = self.config.get_endpoint()
