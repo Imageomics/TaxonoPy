@@ -6,6 +6,7 @@ from taxonopy.api_service import APIService
 class TaxonomyResolver:
     def __init__(self):
         self.api_service = APIService()
+        self.required_ranks = ('kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species')
 
     def process_batch(self, names, vernaculars=False):
         try:
@@ -38,10 +39,9 @@ class TaxonomyResolver:
 
     def determine_best_match(self, results, vernaculars=False):
         # Filter results to only include complete hierarchies with exact required ranks
-        required_ranks = {'kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'}
         filtered_results = [
             result for result in results
-            if self.has_exact_required_ranks(result, required_ranks)
+            if self.has_exact_required_ranks(result, self.required_ranks)
         ]
 
         if not filtered_results:
@@ -50,7 +50,7 @@ class TaxonomyResolver:
         # Find the highest score among the filtered results
         max_score = max(result['score'] for result in filtered_results)
         best_matches = [result for result in filtered_results if result['score'] == max_score]
-        best_matches = [self.trim_ranks(match, required_ranks) for match in best_matches]
+        best_matches = [self.trim_ranks(match, self.required_ranks) for match in best_matches]
         return self.aggregate_tied_scores(best_matches, vernaculars)
         
     def trim_ranks(self, result, required_ranks):
@@ -72,14 +72,29 @@ class TaxonomyResolver:
         return result
     
     def has_exact_required_ranks(self, result, required_ranks):
-        # Filter results to only include complete hierarchies containing exact required ranks
-        # Additional ranks beyond those required do not cause exclusion
-        ranks = set(result.get('classification_path_ranks', '').lower().split('|'))
-        return required_ranks <= ranks  
+        path = result.get('classification_path', '')
+        path_ranks = result.get('classification_path_ranks', '')
+
+        if path and path_ranks:
+            path = path.split('|')
+            path_ranks = path_ranks.split('|')
+            canonical_form = result.get('canonical_form', '')
+
+            if canonical_form in path:
+                index = path.index(canonical_form)
+                input_rank = path_ranks[index].strip().lower()
+
+                if input_rank in required_ranks:
+                    observed_ranks = {rank.strip().lower() for rank in path_ranks[:index + 1]}
+                    required_up_to_input = [rank for rank in required_ranks if required_ranks.index(rank) <= required_ranks.index(input_rank)]
+
+                    return set(required_up_to_input) <= observed_ranks
+
+        return False
 
     def resolve_names(self, names, vernaculars=False):
         # TODO: optimize batching
-        batch_size = 10
+        batch_size = 1
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
         all_results = []
 
@@ -90,7 +105,6 @@ class TaxonomyResolver:
         return all_results, vernaculars
     
     def aggregate_tied_scores(self, results, vernaculars):
-        # print(results)
         aggregated_info = {
             'supplied_name_string': results[0].get('supplied_name_string'),
             'is_known_name': results[0].get('is_known_name'),
@@ -116,7 +130,6 @@ class TaxonomyResolver:
             aggregated_info['vernaculars'] = [result.get('vernaculars') for result in results if 'vernaculars' in result]
 
         return aggregated_info
-
 
     # TODO: decide on a better way to save results
     def save_results(self, data):
