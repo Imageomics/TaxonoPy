@@ -63,6 +63,7 @@ class TaxonomyResolver:
 
     def determine_best_match(self, results, vernaculars=False, synonyms=False):
         # First try to find a direct match without using synonyms
+        # TODO: This doesn't appear to be working correctly
         direct_matches = [
             result for result in results
             if self.has_exact_required_ranks(result, self.required_ranks, synonyms=synonyms)
@@ -194,6 +195,10 @@ class TaxonomyResolver:
         return all_results, vernaculars
 
     def aggregate_tied_scores(self, results, vernaculars):
+        # Assert that the score for all results is the same
+        assert all(result['score'] == results[0]['score'] for result in results), \
+            'All results should have the same score, but found multiple scores: {}'.format([result['score'] for result in results])
+        
         aggregated_info = {
             'supplied_name_string': results[0].get('supplied_name_string'),
             'is_known_name': results[0].get('is_known_name'),
@@ -224,6 +229,106 @@ class TaxonomyResolver:
         return aggregated_info
 
     # TODO: decide on a better way to save results
+    def save_results(self, data):
+        with open('resolved_taxonomies.jsonl', 'a', encoding='utf-8') as f:
+            for entry in data:
+                json.dump(entry, f, ensure_ascii=False)
+                f.write('\n')
+
+class FullResolver:
+    def __init__(self):
+        self.api_service = APIService()
+
+    def process_batch(self, names, vernaculars=False):
+        batch_results = []
+
+        try:
+            response = self.api_service.query_gnr(names, vernaculars=vernaculars)
+            batch_result, _ = self.process_data(response, vernaculars=vernaculars)
+            batch_results.extend(batch_result)
+        except Exception as e:
+            log_error(f"Error processing batch: {str(e)}")
+            for name in tqdm(names, desc='Processing unbatched names'):
+                try:
+                    response = self.api_service.query_gnr([name], vernaculars=vernaculars)
+                    result, _ = self.process_data(response, vernaculars)
+                    batch_results.extend(result)
+                except Exception as inner_e:
+                    log_error(f"Error processing '{name}': {str(inner_e)}")
+        return batch_results
+
+    def process_data(self, data, vernaculars=False):
+        results = []
+        status = data.get('status')
+        status_message = data.get('message')
+
+        for entry in data.get('data', []):
+            if 'results' in entry:
+                best_match = self.determine_best_matches(entry['results'], vernaculars=vernaculars)
+                if best_match:
+                    best_match.update({
+                        'supplied_name_string': entry.get('supplied_name_string'),
+                        'is_known_name': entry.get('is_known_name'),
+                        'status': status,
+                        'status_message': status_message
+                    })
+                    results.append(best_match)
+        return results, vernaculars
+
+    def determine_best_matches(self, results, vernaculars=False):
+        if not results:
+            return []
+
+        max_score = max(result['score'] for result in results)
+        best_matches = [result for result in results if result['score'] == max_score]
+        return self.aggregate_tied_scores(best_matches, vernaculars)
+
+    def resolve_names(self, names, vernaculars=False):
+        batch_size = 10
+        batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+        all_results = []
+
+        for batch in tqdm(batches, desc='Processing batches'):
+            batch_results = self.process_batch(batch, vernaculars=vernaculars)
+            all_results.extend(batch_results)
+
+            self.save_results(batch_results)
+        return all_results, vernaculars
+
+    def aggregate_tied_scores(self, results, vernaculars):
+        # Assert that the score for all results is the same
+        assert all(result['score'] == results[0]['score'] for result in results), \
+            'All results should have the same score, but found multiple scores: {}'.format([result['score'] for result in results])
+        
+        aggregated_info = {
+            'supplied_name_string': results[0].get('supplied_name_string'),
+            'is_known_name': results[0].get('is_known_name'),
+            'data_source_id': [result['data_source_id'] for result in results],
+            'gni_uuid': [result.get('gni_uuid') for result in results],
+            'name_string': [result.get('name_string') for result in results],
+            'canonical_form': [result.get('canonical_form') for result in results],
+            'classification_path': [result.get('classification_path') for result in results], # TODO: address cases of discrepant paths among sources
+            'classification_path_ids': [result.get('classification_path_ids') for result in results],
+            'classification_path_ranks': [result.get('classification_path_ranks') for result in results],
+            'taxon_id': [result.get('taxon_id') for result in results],
+            'local_id': [result.get('local_id') for result in results],
+            'match_type': [result['match_type'] for result in results],
+            'match_value': [result['match_value'] for result in results],
+            'prescore': [result.get('prescore') for result in results],
+            'imported_at': [result.get('imported_at') for result in results],
+            'current_taxon_id': [result.get('current_taxon_id') for result in results],
+            'score': results[0]['score'],
+            'status': results[0].get('status'),
+            'status_message': results[0].get('status_message'),
+            'sources': [result['data_source_title'] for result in results],
+            'data_source_ids': [result['data_source_id'] for result in results],
+        }
+
+        if vernaculars:
+            aggregated_info['vernaculars'] = [result.get('vernaculars') for result in results if 'vernaculars' in result]
+
+        return aggregated_info
+
     def save_results(self, data):
         with open('resolved_taxonomies.jsonl', 'a', encoding='utf-8') as f:
             for entry in data:
