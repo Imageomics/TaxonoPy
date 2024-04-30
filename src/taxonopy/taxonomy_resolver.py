@@ -210,7 +210,10 @@ class TaxonomyResolver:
             'classification_path_ids': [result.get('classification_path_ids') for result in results],
             'classification_path_ranks': [result.get('classification_path_ranks') for result in results],
             'taxon_id': [result.get('taxon_id') for result in results],
-            'local_id': [result.get('local_id') for result in results],
+            'local_id': [result.get('local_id') if 'local_id' in result else None for result in results],
+            'global_id': [result.get('global_id') if 'global_id' in result else None for result in results],
+            'url': [result.get('url') if 'url' in result else None for result in results],
+            'edit_distance': [result.get('edit_distance') for result in results],
             'match_type': [result['match_type'] for result in results],
             'match_value': [result['match_value'] for result in results],
             'prescore': [result.get('prescore') for result in results],
@@ -225,6 +228,10 @@ class TaxonomyResolver:
 
         if vernaculars:
             aggregated_info['vernaculars'] = [result.get('vernaculars') for result in results if 'vernaculars' in result]
+
+        # Ensure all lists have the same length so indexing works properly
+        list_lengths = {len(value) for key, value in aggregated_info.items() if isinstance(value, list)}
+        assert len(list_lengths) == 1, "Not all lists in aggregated_info have the same length."
 
         return aggregated_info
 
@@ -311,7 +318,10 @@ class FullResolver:
             'classification_path_ids': [result.get('classification_path_ids') for result in results],
             'classification_path_ranks': [result.get('classification_path_ranks') for result in results],
             'taxon_id': [result.get('taxon_id') for result in results],
-            'local_id': [result.get('local_id') for result in results],
+            'local_id': [result.get('local_id') if 'local_id' in result else None for result in results],
+            'global_id': [result.get('global_id') if 'global_id' in result else None for result in results],
+            'url': [result.get('url') if 'url' in result else None for result in results],
+            'edit_distance': [result.get('edit_distance') for result in results],
             'match_type': [result['match_type'] for result in results],
             'match_value': [result['match_value'] for result in results],
             'prescore': [result.get('prescore') for result in results],
@@ -326,6 +336,10 @@ class FullResolver:
 
         if vernaculars:
             aggregated_info['vernaculars'] = [result.get('vernaculars') for result in results if 'vernaculars' in result]
+
+        # Ensure all lists have the same length so indexing works properly
+        list_lengths = {len(value) for key, value in aggregated_info.items() if isinstance(value, list)}
+        assert len(list_lengths) == 1, "Not all lists in aggregated_info have the same length."
 
         return aggregated_info
 
