@@ -22,14 +22,14 @@ conda activate myenv
 
 To install the latest version of `TaxonoPy` directly from GitHub, run:
 ```bash
-pip install git+ssh://git@github.com/thompsonmj/TaxonoPy.git
+pip install git+ssh://git@github.com/Imageomics/TaxonoPy.git
 ```
 
 ### Development Installation with `pip`
 
 Clone the repository and install the package in development mode:
 ```bash
-git clone git@github.com:thompsonmj/Taxonopy.git
+git clone git@github.com:Imageomics/Taxonopy.git
 cd TaxonoPy
 pip install -e .[dev]
 ```
