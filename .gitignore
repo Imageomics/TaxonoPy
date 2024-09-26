@@ -162,3 +162,4 @@ cython_debug/
 # More
 .DS_Store
 .ruff_cache/
+.jsonl
