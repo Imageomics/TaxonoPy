@@ -9,27 +9,28 @@ class ContainerHandler:
         self.prioritized_data_source_id = prioritized_data_source_id
         self.required_ranks = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
 
-    def run_container(self, input_file, output_file):
-        """
-        Run the GNVerifier container using Docker.
-        """
+    def run_container_with_query(self, query_string):
+        """Run GNVerifier container with a query string as input."""
         try:
-            with open(input_file, "rb") as f:
-                result = subprocess.run(
-                    [
-                        "docker", "run", "--rm", "-i",
-                        self.image,
-                        "--format", "compact", 
-                        "--sources", self.prioritized_data_source_id
-                    ],
-                    stdin=f,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
+            result = subprocess.run(
+                [
+                    "docker", "run", "--rm", "-i",
+                    self.image,
+                    "--format", "compact",
+                    "--sources", self.prioritized_data_source_id,
+                    "--all_matches",
+                ],
+                input=query_string.encode('utf-8'),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
 
-            # Save results to output file
-            with open(output_file, "wb") as out_file:
-                out_file.write(result.stdout)
+            # Parse JSONL results returned by gnverifier
+            results = []
+            for line in result.stdout.decode('utf-8').splitlines():
+                results.append(json.loads(line))
+            return results
+
         except subprocess.CalledProcessError as e:
             print(f"Error running Docker container: {e.stderr.decode('utf-8')}")
             raise
@@ -41,3 +42,44 @@ class ContainerHandler:
             return True
         except subprocess.CalledProcessError:
             return False
+
+    def run_container_with_batch_query(self, scientific_names, print_raw_output=False):
+        """
+        Run GNVerifier container with a batch of scientific names.
+        """
+        try:
+            # Join all scientific names into one string separated by newlines
+            query_input = "\n".join(scientific_names)
+
+            # Run the Docker container with the batch of names piped at once
+            result = subprocess.run(
+                [
+                    "docker", "run", "--rm", "-i",
+                    self.image,
+                    "--format", "compact",
+                    "--sources", "11,179",  # Including both GBIF and OTOL
+                    "--all_matches"
+                ],
+                input=query_input.encode('utf-8'),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            # Combine stderr and stdout
+            combined_output = result.stderr.decode('utf-8') + result.stdout.decode('utf-8')
+
+            # Print raw output if requested
+            if print_raw_output:
+                print("Raw output from gnverifier:")
+                print(combined_output)
+
+            # Parse the JSONL results returned by GNVerifier
+            results = []
+            for line in result.stdout.decode('utf-8').splitlines():
+                results.append(json.loads(line))
+
+            return results
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error running Docker container: {e.stderr.decode('utf-8')}")
+            raise
