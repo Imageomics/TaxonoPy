@@ -96,5 +96,23 @@ options:
                         Set logging level (default: INFO)
 ```
 
+## Development
+
+This section assumes that you have installed the package in development mode.
+
+### OpenAPI Specification Managment and Type Generation
+
+`TaxonoPY` uses GNVerifier to generate and integrates with its API from its OpenAPI specification.
+
+The script that handles this is `scripts/generate_gnverifier_types.py`, which saves `api_specs/gnverifier_openapi.json` and from this produces `src/taxonopy/types/gnverifier.py`.
+
+To check for changes in the OpenAPI specification, run:
+```console
+python scripts/generate_gnverifier_types.py
+```
+
+If the OpenAPI specification has changed, you will need to decide whether to update the generated types. 
+
+The script will save `api_specs/gnverifier_openapi.json.new` and `src/taxonopy/types/gnverifier.py.new` for you to compare with the existing files and decide whether to overwrite them and make any necessary changes to the rest of the codebase.
 
 [^1]: Second priority and lower data sources have not been firmly established or implemented yet.

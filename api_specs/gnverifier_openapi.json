@@ -1,0 +1,1011 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Global Names Verifier API",
+    "description": "This RESTful API matches (reconciles and resolves) putative name-strings to known scientific names.\nIt is a multistage match, a failure transfers algorithm to the next stage.\nIt tries exact, fuzzy match, partial exact and partial fuzzy matches.\n\nTo be able to match spelling variants, it uses `stemmed canonical forms` of names (no authors, ranks, species epithet suffixes, etc.).\nFor example a `stemmed canonical` of `Monochamus galloprovincialis (Oliver, 1795)` is `Monochamus galloprouincial`.\nStemmed version removed suffix `is` and substituted `v` to `u`. Received matches are then sorted using several quality criteria to reveal \"the best\" match.\n\nFor viruses, it matches known virus names from their beginning.\nFor example `Influenza B virus` would match database names `Influenza B virus` as well as `Influenza B virus (B/Acre/117700/2012)`.\nThe term `Virus` here is not precise.\nIt points not only to real viruses, but also to prions, phages, plasmids and other non-cellular entities.\n\nAPI also supports advanced search of species names. Advanced search is described at `https://github.com/gnames/gnverifier#advanced-search-query-language`.\n\nAPI uses data from more than 100 sources of scientific names (~30 million name-strings).\n\n\nFeature requests and bug reports -`https://github.com/gnames/gnames/issues`\n\n\nFor end-users there is a client to this API - `GNverifier`, a web-based and command line application.\n\n- Web `https://verifier.globalnames.org`\n- Command Line `https://github.com/gnames/gnverifier/releases/latest`\n\n`GNverifier` does not have its own API, it uses remotely this one.\n\nAn asterisk '*' indicates a required field.\n",
+    "contact": {
+      "name": "Dmitry Mozzherin",
+      "url": "https://github.com/dimus",
+      "email": "dmozzherin@gmail.com"
+    },
+    "license": {
+      "name": "License MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "1.1.2"
+  },
+  "servers": [
+    {
+      "url": "https://verifier.globalnames.org/api/v1",
+      "description": "Scientific names verification service API"
+    }
+  ],
+  "paths": {
+    "/ping": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Use this endpoint to see if the service is running.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "pong"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The version of the `gnames` app.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data_sources": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "An array with information about biodiversity data-sources.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSources"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data_sources/{id}": {
+      "get": {
+        "description": "Provides metadata about a specific data-source.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of a data-source.",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metadata about requested data-source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verifications": {
+      "post": {
+        "description": "Verifies an array of strings against known scientific names.",
+        "requestBody": {
+          "description": "- An array of strings to verify.\n- An array of selected data-sources to verify against.\n- A flag to return all matches instead of default behavior of returning only the `bestResult`.\n- A flag to capitalize first letter.\n",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "An array of verification results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verifications/{names}": {
+      "get": {
+        "description": "Verifies an array of strings separated by '|' character.",
+        "parameters": [
+          {
+            "name": "names",
+            "in": "path",
+            "description": "Strings to verify (separated by '|' character).",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string",
+              "example": "Pomatomus soltator|Bubo bubo|Isoetes longissimum"
+            }
+          },
+          {
+            "name": "data_sources",
+            "in": "query",
+            "description": "Array of selected data-sources IDs separated by '|'.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "string",
+              "example": "1|12"
+            }
+          },
+          {
+            "name": "all_matches",
+            "in": "query",
+            "description": "Return all found matches, not only the best one.\nMultiple results are returned in `results`.\nThese results are sorted by matching quality, the first result is the same as `bestResult`.\n",
+            "required": false,
+            "explode": true,
+            "schema": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          {
+            "name": "capitalize",
+            "in": "query",
+            "description": "Capitalizes the first letter of a name-string.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          {
+            "name": "species_group",
+            "in": "query",
+            "description": "Expands the search to species group where applicable.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          {
+            "name": "fuzzy_uninomial",
+            "in": "query",
+            "description": "Allows fuzzy matching for uninomial names.",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          {
+            "name": "stats",
+            "in": "query",
+            "description": "Finds out a kingdom and a taxon (`main taxon`) that contain most names. \nIt only takes in account the names matched to the `Catalogue of Life` entries.\nThis option is ignored, if the `Catalogue of Life` is not included in data-sources.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          {
+            "name": "main_taxon_threshold",
+            "in": "query",
+            "description": "Takes values from 0.5 to 1, sets the minimal percentage for the `main taxon` discovery.",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "number",
+              "example": 0.5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of verification results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "post": {
+        "description": "Takes SearchInput object and runs faceted search.",
+        "requestBody": {
+          "description": "Spelled out input for faceted search.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Faceted search result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/{query}": {
+      "get": {
+        "description": "Search allows finding names by a specific epithet, genus, author, year.\n\nFor the query language description see the `SearchQuery` docs below.\n",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "path",
+            "required": true,
+            "style": "simple",
+            "schema": {
+              "$ref": "#/components/schemas/SearchQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Faceted search result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Version": {
+        "required": [
+          "build",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "The version number.",
+            "example": "v1.0.0"
+          },
+          "build": {
+            "type": "string",
+            "description": "The compilation timestamp.",
+            "example": "2022-09-05_13:55:47UTC"
+          }
+        },
+        "description": "The version number and build time of the `gnames` app."
+      },
+      "DataSources": {
+        "type": "array",
+        "description": "A list of biodiversity data-sources aggregated in `GNames`.",
+        "items": {
+          "$ref": "#/components/schemas/DataSource"
+        }
+      },
+      "DataSource": {
+        "required": [
+          "curation",
+          "id",
+          "recordCount",
+          "title",
+          "titleShort",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "An identifier associated with the data-source in `gnames` database.\n\nThis ID is intended to be stable through the lifespan of the `GlobalNames` project.\n",
+            "example": 1
+          },
+          "uuid": {
+            "type": "string",
+            "description": "UUID v4 that is associated with the data-source.\n\nThis UUID is a global identifier of the data-source in the context of `GlobalNames`.\n",
+            "example": "d4df2968-4257-4ad9-ab81-bedbbfb25e2a"
+          },
+          "title": {
+            "type": "string",
+            "description": "The name of the data-source.",
+            "example": "The Catalogue of Life"
+          },
+          "titleShort": {
+            "type": "string",
+            "description": "A simplified/abbreviated name of the data-source.\n\nIt can be used in outputs without worrying about excessively long names of data-sources.\n",
+            "example": "Catalogue of Life"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version of a data-source according to data-provider.",
+            "example": "August 2020 Edition"
+          },
+          "revisionDate": {
+            "type": "string",
+            "description": "An information when the data-source was updated according to the data-provider. \n\nThe value would follow one of the following\nformats\n\n- year-month-day\n- year-month\n- year\n",
+            "example": "2020-08"
+          },
+          "doi": {
+            "type": "string",
+            "description": "Digital Object Identifier",
+            "example": "10.15468/rffz4x"
+          },
+          "citation": {
+            "type": "string",
+            "description": "A citation representing the data-source.",
+            "example": "Species 2000 & ITIS Catalogue of Life: 2019, Catalogue of Life"
+          },
+          "authors": {
+            "type": "string",
+            "description": "Authors of the data-source.",
+            "example": "F. Bisby et al"
+          },
+          "description": {
+            "type": "string",
+            "description": "A summary describing the resource.",
+            "example": "This release of the Catalogue of Life contains contributions from 172 databases with information on 1,867,817 species"
+          },
+          "homeURL": {
+            "type": "string",
+            "description": "A website of the data-source.",
+            "example": "http://www.catalogueoflife.org/"
+          },
+          "isOutlinkReady": {
+            "type": "boolean",
+            "description": "The flag is true if the data-source has enough data and metadata to be recommended for out-linking. \n\nIf the flag is false, it does not mean that the original data-source is not good, it means that its representation at `GNames` is not complete/recent enough.\n",
+            "example": true
+          },
+          "curation": {
+            "type": "string",
+            "description": "This field indicates an approximate amount of effort spent on verification of the data aggregated in the data-source. There are 3 levels\n\n- `NotCurated`\n- `AutoCurated`\n- `Curated`\n\nIf this flag has a `NotCurated` value, it does not mean that\noriginal data-source is not curated, rather it means the curation\nlevel is not known to `GNames`.\n",
+            "example": "Curated"
+          },
+          "recordCount": {
+            "type": "integer",
+            "description": "The number of records harvested from the data-source.",
+            "example": 3927925
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "A timestamp of the last data-source harvest by `GNames`.",
+            "example": "2020-06-15T00:58:02.000+0000"
+          }
+        },
+        "description": "Metadata about a biodiversity data-aggregator."
+      },
+      "VerificationInput": {
+        "description": "Parameters for verification of name-strings.",
+        "required": [
+          "nameStrings"
+        ],
+        "type": "object",
+        "properties": {
+          "nameStrings": {
+            "type": "array",
+            "example": [
+              "Pomatomus soltator",
+              "Bubo bubo (Linnaeus, 1758)",
+              "Isoetes longissimum"
+            ],
+            "items": {
+              "type": "string",
+              "description": "A name-string to be verified."
+            }
+          },
+          "dataSources": {
+            "type": "array",
+            "example": [
+              1,
+              12,
+              170
+            ],
+            "items": {
+              "type": "integer",
+              "description": "The identifiers of the data-sources that are important for the user. \nIf data-sources are given, the verification is limited to them. \nIf data-source's Id does not exist at `https://verifier.globalnames.org/data_sources` the result will always be empty.\nAll resuts are sorted by `sortScore`.\n",
+              "example": 1
+            }
+          },
+          "withAllMatches": {
+            "type": "boolean",
+            "description": "If \"true\", returns all found matches sorted by `sortScore`.",
+            "example": false
+          },
+          "withCapitalization": {
+            "type": "boolean",
+            "description": "If this flag is \"true\", name-strings that start with low-case letter will be capitalized.\n",
+            "example": false
+          },
+          "withSpeciesGroup": {
+            "type": "boolean",
+            "description": "If this flag is \"true\", species names also get matched by their species group.\nIt means that the request will take in account botanical autonyms and zoological coordinated names.\nFor example, a search for `Aus bus` will also search for `Aus bus bus` and vice versa.\n",
+            "example": false
+          },
+          "withUninomialFuzzyMatch": {
+            "type": "boolean",
+            "description": "Allows fuzzy matching for uninomial names.",
+            "example": false
+          },
+          "withStats": {
+            "type": "boolean",
+            "description": "If true, calculates the most prevalent kingdom and finds the lowest taxon that contains the majority of names.\nUses the Catalogue of life management classification.\n",
+            "example": true
+          },
+          "mainTaxonThreshold": {
+            "type": "number",
+            "description": "Sets the minimal percentage of names to calculate the `mainTaxon`, the lowest taxon containing the majority of names.\nCan be set in the range of 0.5-1.0.\nIf not set, or is lower than 0.5, the value defaults to 0.5.\n",
+            "example": 0.6
+          }
+        }
+      },
+      "VerificationOutput": {
+        "required": [
+          "metadata"
+        ],
+        "type": "object",
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/VerificationMetadata"
+          },
+          "names": {
+            "type": "array",
+            "description": "An array of verification results.",
+            "items": {
+              "$ref": "#/components/schemas/Name"
+            }
+          }
+        }
+      },
+      "VerificationMetadata": {
+        "required": [
+          "namesNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "namesNumber": {
+            "type": "integer",
+            "description": "The number of names in the input.",
+            "example": 2
+          },
+          "withAllSources": {
+            "type": "boolean",
+            "description": "When `true`, all the data from all sources are used for matching.",
+            "example": false
+          },
+          "withAllMatches": {
+            "type": "boolean",
+            "description": "If a data-source matched several times, returns all matched results.",
+            "example": false
+          },
+          "withStats": {
+            "type": "boolean",
+            "description": "Uses the Catalogue of Life's classification to calculate the most prominent kingdom.\nAlso calculates the lowest taxon that contains the majority of input names.\n",
+            "example": true
+          },
+          "withCapitalization": {
+            "type": "boolean",
+            "description": "Capitalizes the first letter of the input.",
+            "example": false
+          },
+          "withSpeciesGroup": {
+            "type": "boolean",
+            "description": "Expand search to species group.",
+            "example": false
+          },
+          "withUninomialFuzzyMatch": {
+            "type": "boolean",
+            "description": "Allows fuzzy matching for uninomial names.",
+            "example": false
+          },
+          "dataSources": {
+            "type": "array",
+            "description": "The list of selected data-sources. \n\nThis setting is ignored if `withAllSources` is true.\n",
+            "example": [
+              1,
+              12,
+              170
+            ],
+            "items": {
+              "type": "integer"
+            }
+          },
+          "mainTaxonThreshold": {
+            "type": "number",
+            "description": "Indicates the lowest percentage of all names that would make a taxon show as a `mainTaxon` of entered names.\nThe accepted range is 0.5-1.0, the default is 0.5.\n",
+            "example": 0.6
+          },
+          "StatsNamesNum": {
+            "type": "integer",
+            "description": "The number of names used for calculation of the context.\nOnly names that can match to names in the `Catalogue of Life` are used.\n",
+            "example": 2
+          },
+          "mainTaxon": {
+            "type": "string",
+            "description": "The name of the lowest taxon that still contains the majority of the input names.\nIt is calculated by matching input with the `Catalogue of Life` data and uses its managerial classification.\nNames that did not match the `Catalogue of Life` are not used for the calculation.\n",
+            "example": "Chordata"
+          },
+          "mainTaxonPercentage": {
+            "type": "number",
+            "description": "The percentage of names in the `mainTaxon`.",
+            "example": 1
+          },
+          "kingdom": {
+            "type": "string",
+            "description": "The kingdom that contains the majority of names according to the `Catalogue of Life`.",
+            "example": "Animalia"
+          },
+          "kingdomPercentage": {
+            "type": "number",
+            "description": "The percentage of names in the main kingdom.",
+            "example": 1
+          },
+          "Kingdoms": {
+            "type": "array",
+            "description": "Distribution of names over matched kingdoms.",
+            "items": {
+              "$ref": "#/components/schemas/Kingdom"
+            }
+          }
+        }
+      },
+      "Kingdom": {
+        "type": "object",
+        "required": [
+          "name",
+          "namesNum",
+          "percentage"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Kingdom's name.",
+            "example": "Animalia"
+          },
+          "namesNum": {
+            "type": "integer",
+            "description": "The number of names, that matched the `Catalogue of Life` for the kingdom.",
+            "example": 2
+          },
+          "percentage": {
+            "type": "number",
+            "description": "The percentage of names matched the kingdom.",
+            "example": 1
+          }
+        }
+      },
+      "SearchInput": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "$ref": "#/components/schemas/SearchQuery"
+          },
+          "withAllResults": {
+            "type": "boolean",
+            "description": "Provide all found results, not only `bestResult`",
+            "example": false
+          },
+          "warnings": {
+            "type": "array",
+            "description": "Warnings about discrepancies in the input.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataSourceIds": {
+            "type": "array",
+            "description": "Limits search data to results from the given data-sources.",
+            "example": [
+              1,
+              12
+            ],
+            "items": {
+              "type": "integer",
+              "description": "A data-source Id from `https://verifier.globalnames.org/data_sources`."
+            }
+          },
+          "parentTaxon": {
+            "type": "string",
+            "description": "Limits search data to records containing the given clade in the classification field.\n",
+            "example": "Chordata"
+          },
+          "nameString": {
+            "type": "string",
+            "description": "A convenience field that allows to enter several fields as a one string.\nInstead of providing genus, species in separate fields, they can be given in a `nameString`.\nData from `nameString` will overwrite corresponding data fields.\nFor example `B. bubo` name string will overwrite `genus` and `species` fields.\n",
+            "example": "B. bubo"
+          },
+          "genus": {
+            "type": "string",
+            "description": "Genus data, can be abbreviated.",
+            "example": "Bubo"
+          },
+          "species": {
+            "type": "string",
+            "description": "Specific epithet, can be abbreviated.",
+            "example": "bubo"
+          },
+          "speciesInfra": {
+            "type": "string",
+            "description": "An infraspecific epithet, can be abbreviated.",
+            "example": ""
+          },
+          "speciesAny": {
+            "type": "string",
+            "description": "Either specific, or infraspecific epithet.",
+            "example": ""
+          },
+          "author": {
+            "type": "string",
+            "description": "Author's name, can be abbreviated.",
+            "example": "Linn."
+          },
+          "year": {
+            "type": "integer",
+            "description": "Name's year. Ignored if there is a `yearRange`.",
+            "example": 0
+          },
+          "yearRange": {
+            "type": "object",
+            "description": "Limits search to names within the range.\nIf range does not have one of the values, range is open on that side.\nAt least one value has to be present. If range is given, `year` field is ignored.\n",
+            "properties": {
+              "yearStart": {
+                "type": "integer",
+                "description": "The lower border of the range.",
+                "example": 1750
+              },
+              "yearEnd": {
+                "type": "integer",
+                "description": "The higher border of the range.",
+                "example": 1850
+              }
+            }
+          }
+        }
+      },
+      "SearchOutput": {
+        "type": "object",
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "$ref": "#/components/schemas/SearchMetadata"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Name"
+            }
+          }
+        }
+      },
+      "SearchMetadata": {
+        "type": "object",
+        "required": [
+          "input",
+          "namesNumber"
+        ],
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/SearchInput"
+          },
+          "namesNumber": {
+            "type": "integer",
+            "description": "The number of found names.",
+            "example": 2
+          },
+          "error": {
+            "type": "string",
+            "description": "Provides an error of a search, if it happens."
+          }
+        }
+      },
+      "SearchQuery": {
+        "type": "string",
+        "description": "Query for advanced search. Query can include the following components.\n* name is a shortcut that allows to put together several elements `n:B. bubo Linn. 1750-1800`\n  \n* genus `g:B.`, `g:Bub.`, `g:Bubo`\n* species `sp:bubo`, `sp:gallop.`\n* infraspecies `isp:bubo`, `isp:interp.`\n* either species or infraspecies (all sp) `asp:bubo`\n* data-sources IDs `ds:1,2,3`\n* parent taxon `tx:Aves`. Uses classification of the first data-source from `d  s:`. If data-sources are not set, uses Catalogue of Life.\n* author `au:Linnaeus`, `au:Linn.`, `au:L.`\n* year `y:1888`, `y:1888-1900`, `y:1888-`, `y:-1888`\n    \nThe query must contain the species or infraspecies data\n",
+        "example": "n:B. bubo ds:1,2 au:Linn. y:1700-"
+      },
+      "Name": {
+        "required": [
+          "curation",
+          "dataSourcesNum",
+          "input",
+          "inputId",
+          "matchType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "An UUID v5 generated from the input string using \"globalnames.org\" DNS domain name as a seed.\n\nThis UUID can be used as a distributed global unique identifier of the string and can be created independently in any popular programming language.\n",
+            "format": "uuid",
+            "example": "2284b0d6-d965-5c39-ace5-3ef673da6691"
+          },
+          "name": {
+            "type": "string",
+            "description": "An input name-string entered for the verification, or found by search.",
+            "example": "Pomatomus soltator"
+          },
+          "matchType": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "bestResult": {
+            "$ref": "#/components/schemas/ResultData"
+          },
+          "results": {
+            "type": "array",
+            "description": "Matched records found in selected data-sources.",
+            "items": {
+              "$ref": "#/components/schemas/ResultData"
+            }
+          },
+          "dataSourcesNum": {
+            "type": "integer",
+            "description": "The number of data-sources where the string had a match to a scientific name.\n",
+            "example": 12
+          },
+          "curation": {
+            "type": "string",
+            "description": "The best curation level from matched data-sources.\n\nPossible values are\n\n- `NotCurated`\n- `AutoCurated`\n- `Curated`\n\nIf this flag has a `NotCurated` value, it does not mean that original data-source is not curated, rather it means the curation level is not known to `gnames`.\n",
+            "example": "Curated"
+          },
+          "overloadDetected": {
+            "type": "string",
+            "description": "Sometimes there are too many records in a database corresponding to a name.\nUsually it happens because of a large amount of surrogate names like `Lepidoptera BOLD:1234` or strains like `Escherichia coli EC1856`.\nIn such cases there is a truncation of results.\n",
+            "example": "Too many variants (possibly strains), some results are truncated."
+          },
+          "error": {
+            "type": "string",
+            "description": "Normally an empty string.\n\nIn case of an unexpected error, it will be shown here. \n\nIf error is not empty, it means that matching failed because of a bug in the system.\n"
+          }
+        },
+        "description": "Verification result for a particular input name-string."
+      },
+      "ResultData": {
+        "required": [
+          "dataSourceID",
+          "dataSourceTitleShort",
+          "curation",
+          "recordId",
+          "entryDate",
+          "sortScore",
+          "matchedName",
+          "matchedCardinality",
+          "currentRecordId",
+          "currentName",
+          "taxonomicStatus",
+          "isSynonym",
+          "editDistance",
+          "stemEditDistance",
+          "matchType",
+          "scoreDetails"
+        ],
+        "type": "object",
+        "description": "A successsful match of input name-string to a record in a data-source.\nResultData with the highest score appears as a best match.\nResultData from selected data-sources are aggregated into `results` array.\nThe total score is represented by `sortScore` field and is calculated by an internal algorithm.\n\nScoring takes the following into account (sorted from the highest impact to the least)\n- infraspecific rank (`Aus bus var. cus` vs `Aus bus f. cus`)\n- fuzzy matching edit distance (less is better)\n- authorship matching\n- accepted name vs synonyms (accepted name wins)\n- parsing quality\n",
+        "properties": {
+          "dataSourceId": {
+            "type": "integer",
+            "description": "An Id of the data-source where the match was found.\n\nThis is a local Id at GlobalNames, and it has been stable for more than 10 years.\n",
+            "example": 1
+          },
+          "dataSourceTitleShort": {
+            "type": "string",
+            "description": "A simplified/abbreviated title of the data-source.",
+            "example": "Catalogue of Life"
+          },
+          "curation": {
+            "type": "string",
+            "description": "A curation level for the record's data-source.\n\nIf data-source is known to be curated, there is less risk of misspelling of the matched name.\n",
+            "example": "Curated"
+          },
+          "recordId": {
+            "type": "string",
+            "description": "The record ID of the `matchedName` from the data-source.\n\nIf the data-source does not provide record ID, the ID is generated by `gnames` and is prepended with a 'gn_' prefix.\n",
+            "example": "TX123"
+          },
+          "globalId": {
+            "type": "string",
+            "description": "A globally unique record ID (UUID, LSID, DOI etc.).",
+            "example": "2284b0d6-d965-5c39-ace5-3ef673da6691"
+          },
+          "localId": {
+            "type": "string",
+            "description": "An additional ID that is used internally by the data-source.\n\nQuite often such IDs are used by data-sources to generate URLs to their records.\n",
+            "example": "33"
+          },
+          "outlink": {
+            "type": "string",
+            "description": "An external URL provided by the data-source for the record.\n",
+            "example": "http://www.catalogueoflife.org/annual-checklist/2019/details/species/id/d9ac988f149a3d2822d71c673be09317"
+          },
+          "entryDate": {
+            "type": "string",
+            "description": "A date when a record was harvested to GNames.\n\nIt follows a pattern 'YYYY-MM-DD'.\n",
+            "example": "2020-06-30T00:00:00.000Z"
+          },
+          "sortScore": {
+            "type": "number",
+            "description": "SortScore is a numeric representation of the total score.\nIt can be used to find the `BestMatch` overall, as well as the best match for every data-source.\n\nSortScore takes data from all other scores, using the priority sequence from highest to lowest.\n- InfraSpecificRankScore\n- FuzzyLessScore\n- CuratedDataScore\n- AuthorMatchScore\n- AcceptedNameScor\n- ParsingQualityScore\n\nHigher priorities trump lower priorities.\nWhen the final score value is calculated, it is used to sort verification or search results.\n \nComparing this score between results of different verifications will not necessarily be accurate.\nThe score is used for comparison of names from the same result.\n"
+          },
+          "matchedName": {
+            "type": "string",
+            "description": "A verbatim scientific name matched to the input.",
+            "example": "Pomatomus saltator (Linnaeus, 1766)"
+          },
+          "matchedCardinality": {
+            "type": "integer",
+            "description": "A cardinality value of the matched name.\n\nBinomial names have cardinality 2, uninomials have cardinality 1 etc.\n\nCardinality 0 means we cannot determine cardinality of a string.\n",
+            "example": 2
+          },
+          "matchedCanonicalSimple": {
+            "type": "string",
+            "description": "The most normalized canonical form of a scientific name.\nIt does not contain infraspecific ranks, hybrid signs for named hybrids, authors or years. \nThis canonical form is the best for matching names.\n",
+            "example": "Pomatomus saltator"
+          },
+          "matchedCanonicalFull": {
+            "type": "string",
+            "description": "A less normalized canonical form of the matched name with more details.\nIt does not have authors and years, but does have hybrid signes and ranks (if given).\nThis canonical form is better for presentation and creating matching scores.\n",
+            "example": "Pomatomus saltator"
+          },
+          "currentRecordId": {
+            "type": "string",
+            "description": "If the data-source allows taxonomic resolution of a name, `currentRecordId` will contain the data-source record ID of the currently accepted name for the matched taxon. \n",
+            "example": "TX543"
+          },
+          "currentName": {
+            "type": "string",
+            "description": "The currently accepted name for the taxon according to the data-source.\n",
+            "example": "Pomatomus saltatrix (Linnaeus, 1766)"
+          },
+          "currentCardinality": {
+            "type": "integer",
+            "description": "Cardinality of the currently accepted name.\n",
+            "example": 2
+          },
+          "currentCanonicalSimple": {
+            "type": "string",
+            "description": "The most normalized canonical form of a scientific name.\nIt does not contain infraspecific ranks, hybrid signs for named hybrids, authors or years. \nThis canonical form is the best for matching names.\n",
+            "example": "Pomatomus saltatrix"
+          },
+          "currentCanonicalFull": {
+            "type": "string",
+            "description": "A less normalized canonical form of the matched name with more details.\nIt does not have authors and years, but does have hybrid signes and ranks (if given).\nThis canonical form is better for presentation and creating matching scores.\n",
+            "example": "Pomatomus saltatrix"
+          },
+          "taxonomicStatus": {
+            "type": "string",
+            "description": "Indicates if matched name is `accepted` or `synonym` according to the data-source. If data-source deos not provide such information, returns `N/A`.\n"
+          },
+          "isSynonym": {
+            "type": "boolean",
+            "description": "`DEPRECATED:` use `taxonomicStatus` instead.\n\nA flag, that is true if the data-source regards matched name as an any kind of synonym to the currently accepted name.\n",
+            "example": true
+          },
+          "classificationPath": {
+            "type": "string",
+            "description": "A classification path for the matched taxon provided by the data-source.\n",
+            "example": "Animalia|Chordata|Actinopterygii|Perciformes|Pomatomidae|Pomatomus|Pomatomus saltatrix"
+          },
+          "classificationRanks": {
+            "type": "string",
+            "description": "The ranks of the `classificationPath` entries.",
+            "example": "kingdom|phylum|class|order|family|genus|species"
+          },
+          "editDistance": {
+            "type": "integer",
+            "description": "Edit distance according to Levenshtein algorithm in case of fuzzy matching.\nExact matches would have `editDistance` at 0.\n",
+            "example": 1
+          },
+          "editDistanceStem": {
+            "type": "integer",
+            "description": "Edit distance according to Levenshtein algorithm between stemmed versions of canonical forms of input name and matched name.\n\nStemmed versions are the most normalized forms of scientific names with stripped suffixes and transformation of some characters (v->u, j->i).\nThey are not provided by the API, but can be obtained with `gnparser` app.\n",
+            "example": 1
+          },
+          "matchType": {
+            "$ref": "#/components/schemas/MatchType"
+          },
+          "scoreDetails": {
+            "$ref": "#/components/schemas/ScoreDetails"
+          }
+        }
+      },
+      "MatchType": {
+        "description": "Indicates the quality and/or kind of found matches.\n- `NoMatch` (no matched name found)\n- `PartialFuzzy` (fuzzy partial match after removing some parts)\n- `PartialExact` (match after removing last or middle epithets)\n- `Fuzzy` (fuzzy match to a canonical form)\n- `Exact` (exact match to a canonical form or a verbatim string)\n- `Virus` (literal match of Viruses, plasmids, prions and other non-cellular entities)\n- `FacetedSearch` (match by a faceted search)\n",
+        "type": "string",
+        "example": "Fuzzy"
+      },
+      "ScoreDetails": {
+        "description": "Explains which score properties participated in sorting of the data.\n\nProperties located higher provide more weight in the sorting.\n\nAll properties vary from 0 to 1, where 0 has no influence on sorting, and 1 has the highest priority for sorting.\n",
+        "type": "object",
+        "required": [
+          "cardinalityScore",
+          "infraSpecificRankScore",
+          "fuzzyLessScore",
+          "curatedDataScore",
+          "authorMatchScore",
+          "acceptedNameScore",
+          "parsingQualityScore"
+        ],
+        "properties": {
+          "cardinalityScore": {
+            "description": "Is 1 if cardinality matches (for example if both the input and a match are `trinomials`), is 0 otherwise.",
+            "type": "number",
+            "example": 1
+          },
+          "infraSpecificRankScore": {
+            "description": "Is at maximum if infraspecific ranks match.",
+            "type": "number",
+            "example": 0
+          },
+          "fuzzyLessScore": {
+            "description": "It is at maximum for exact matches.",
+            "type": "number",
+            "example": 1
+          },
+          "curatedDataScore": {
+            "description": "It is at maximum for data-sources marked as `curated`.",
+            "type": "number",
+            "example": 1
+          },
+          "authorMatchScore": {
+            "description": "It is at maximum if authors and year matched completely.",
+            "type": "number",
+            "example": 0.5
+          },
+          "acceptedNameScore": {
+            "description": "It is at maximum if matched name marked as currently accepted.",
+            "type": "number",
+            "example": 1
+          },
+          "parsingQualityScore": {
+            "description": "It is at maximum if no name-parsing problems were detected.",
+            "type": "number",
+            "example": 1
+          }
+        }
+      }
+    }
+  }
+}

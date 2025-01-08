@@ -8,12 +8,13 @@ description = "A Python package for resolving taxonomic hierarchies using the Gl
 authors = [{name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
     "requests", 
     "tqdm",
     "polars",
     "pyarrow",
+    "pydantic"
 ]
 
 dynamic = ["version"]
@@ -21,7 +22,8 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "ruff",
-    "pytest"
+    "pytest",
+    "datamodel-code-generator"
     ]
 
 [project.scripts]
