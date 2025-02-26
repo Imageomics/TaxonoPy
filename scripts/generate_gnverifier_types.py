@@ -32,7 +32,8 @@ def generate_types(input_spec, output_file):
         "--input", str(input_spec),
         "--output", str(output_file),
         "--target-python-version", "3.9",
-        "--snake-case-field"
+        "--snake-case-field",
+        "--output-model-type", "pydantic_v2.BaseModel"
     ], check=True)
 
 def normalize_file(file_path):
