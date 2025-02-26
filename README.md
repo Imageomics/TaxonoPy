@@ -70,31 +70,32 @@ Install the package in development mode:
 ```console
 pip install -e .[dev]
 ```
-
-## Usage
-```console
-usage: taxonopy [-h] [--version] -i INPUT -o OUTPUT_DIR [--batch-size BATCH_SIZE] [--output-format {csv,parquet}] [--force-input] [--print-raw-output]
-                [--gnverifier-image GNVERIFIER_IMAGE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
-
-TaxonoPy: Resolve taxonomic names using GNVerifier
-
-options:
-  -h, --help            show this help message and exit
-  --version             Show version number and exit
-  -i INPUT, --input INPUT
-                        Path to input Parquet file or directory containing Parquet files
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        Directory to save resolved and investigation output files
-  --batch-size BATCH_SIZE
-                        Number of name queries to process in each GNVerifier batch (default: 10000)
-  --output-format {csv,parquet}
-                        Output file format (default: parquet)
-  --force-input         Force use of input metadata without resolution
-  --gnverifier-image GNVERIFIER_IMAGE
-                        Docker image for GNVerifier (default: gnames/gnverifier:v1.2.2)
-  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Set logging level (default: INFO)
-```
+> [!WARNING]
+> This section is deprecated, some options will be changed
+> ### Usage
+> ```console
+> usage: taxonopy [-h] [--version] -i INPUT -o OUTPUT_DIR [--batch-size > BATCH_SIZE] [--output-format {csv,parquet}] [--force-input] [--print-raw-output]
+>                 [--gnverifier-image GNVERIFIER_IMAGE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+> 
+> TaxonoPy: Resolve taxonomic names using GNVerifier
+> 
+> options:
+>   -h, --help            show this help message and exit
+>   --version             Show version number and exit
+>   -i INPUT, --input INPUT
+>                         Path to input Parquet file or directory containing Parquet files
+>   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
+>                         Directory to save resolved and investigation output files
+>   --batch-size BATCH_SIZE
+>                         Number of name queries to process in each GNVerifier batch (default: 10000)
+>   --output-format {csv,parquet}
+>                         Output file format (default: parquet)
+>   --force-input         Force use of input metadata without resolution
+>   --gnverifier-image GNVERIFIER_IMAGE
+>                         Docker image for GNVerifier (default: gnames/gnverifier:v1.2.2)
+>   --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+>                         Set logging level (default: INFO)
+> ```
 
 ## Development
 
