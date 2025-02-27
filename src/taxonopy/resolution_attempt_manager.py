@@ -16,7 +16,7 @@ from taxonopy.types.data_classes import (
 from taxonopy.types.gnverifier import Name as GNVerifierName
 
 
-class ResolutionManager:
+class ResolutionAttemptManager:
     """Manages the creation and tracking of resolution attempts.
     
     This class is responsible for:

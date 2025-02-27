@@ -30,7 +30,7 @@ TaxonoPy
 │       │   └── __init__.py
 │       ├── cli.py                # Command-line interface
 │       ├── logging_config.py     # Logging configuration
-│       ├── resolution_manager.py # Logic to manage resolution attempts
+│       ├── resolution_attempt_manager.py # Logic to manage resolution attempts
 │       ├── __init__.py           # Package initialization
 │       └── __main__.py           # Entry point
 ├── pyproject.toml
@@ -57,9 +57,9 @@ These classes form a progression that represents the staged transformation of da
 Input Data → TaxonomicEntry → EntryGroupRef → QueryGroupRef → ResolutionAttempt → Resolved Output
 ```
 
-### 2. Resolution Manager
+### 2. Resolution Attempt Manager
 
-The `ResolutionManager` provides a centralized mechanism for managing resolution attempts:
+The `ResolutionAttemptManager` provides a centralized mechanism for managing resolution attempts:
 
 - **Attempt Creation**: Generates unique identifiers for attempts and maintains links between related attempts
 - **Attempt Tracking**: Stores attempts and provides methods for retrieving them by ID or query group

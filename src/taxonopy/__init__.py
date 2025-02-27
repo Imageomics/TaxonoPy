@@ -21,5 +21,5 @@ __all__ = [
     "EntryGroupRef",
     "QueryGroupRef",
     "ResolutionAttempt",
-    "ResolutionManager",
+    "ResolutionAttemptManager",
 ]
