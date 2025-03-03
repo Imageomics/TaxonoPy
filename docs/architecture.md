@@ -43,7 +43,7 @@ TaxonoPy
 
 The core data model is defined in `src/taxonopy/types/data_classes.py`.
 
-Input data is expected to be tabular (CSV or Parquet) following the metadata schema for taxonomic labels establised for the TreeOfLife dataset. Each entry here is represented by a `TaxonomicEntry` object.
+Input data is expected to be tabular (CSV or Parquet) following the metadata schema for taxonomic labels established for the TreeOfLife dataset. Each entry here is represented by a `TaxonomicEntry` object.
 
 - **TaxonomicEntry**: Represents a single taxonomic entry from the input data, containing taxonomic ranks, names, and metadata.
 - **EntryGroupRef**: Groups taxonomic entries with identical taxonomic data to minimize API calls.

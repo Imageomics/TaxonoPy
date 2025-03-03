@@ -174,7 +174,9 @@ class ResolutionAttempt:
     It contains both the query information and the result, as well as
     metadata about the resolution attempt.
     """
-    
+    # Unique identifier for this attempt
+    attempt_id: str
+
     # The query group this attempt is for
     query_group_key: str
     
@@ -196,8 +198,10 @@ class ResolutionAttempt:
     # Additional metadata about the resolution
     metadata: Dict[str, Union[str, int, float, bool]] = field(default_factory=dict)
     
-    # Timestamp of when the resolution was attempted
-    timestamp: datetime = field(default_factory=datetime.now)
+    # Reference to the previous attempt in the chain, if any
+    previous_attempt_id: Optional[str] = None
     
-    # If this is a retry, reference to the previous attempt(s)
-    previous_attempts: List[str] = field(default_factory=list)
+    @property
+    def is_retry(self) -> bool:
+        """Check if this attempt is a retry (has a previous attempt)."""
+        return self.previous_attempt_id is not None

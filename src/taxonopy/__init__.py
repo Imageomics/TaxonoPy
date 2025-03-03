@@ -14,6 +14,7 @@ from taxonopy.types.data_classes import (
     QueryGroupRef,
     ResolutionAttempt,
 )
+from taxonopy.resolution_attempt_manager import ResolutionAttemptManager
 
 __all__ = [
     "ResolutionStatus",

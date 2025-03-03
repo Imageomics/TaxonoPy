@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "taxonopy"
-description = "A Python package for resolving taxonomic hierarchies using the Global Names Resolver API."
+description = "A Python package for resolving taxonomic hierarchies using the Global Names Verifier API."
 authors = [{name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"

@@ -35,6 +35,14 @@ class ResolutionAttemptManager:
     def attempts(self) -> Dict[str, ResolutionAttempt]:
         """Get a dictionary of all resolution attempts."""
         return dict(self._attempts)  # Return a copy to prevent modification
+
+    def _generate_attempt_id(self) -> str:
+        """Generate a unique ID for a resolution attempt.
+        
+        Returns:
+            A string representation of a UUID4
+        """
+        return str(uuid.uuid4())
     
     def create_attempt(self,
                       query_group_key: str,
@@ -65,7 +73,7 @@ class ResolutionAttemptManager:
             The created ResolutionAttempt
         """
         # Generate a unique ID for this attempt
-        attempt_id = str(uuid.uuid4())
+        attempt_id = self._generate_attempt_id()
         
         # Get the previous attempt ID for this query group, if any
         previous_attempt_id = self._group_latest_attempts.get(query_group_key)
@@ -136,7 +144,7 @@ class ResolutionAttemptManager:
         current_id = attempt_id
         
         # Build the chain by following previous_attempt_id references
-        while current_id:
+        while current_id is not None:
             attempt = self._attempts.get(current_id)
             if not attempt:
                 break

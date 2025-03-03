@@ -61,7 +61,7 @@ pip install git+https://github.com/Imageomics/TaxonoPy.git
 
 Clone the repository and install the package in development mode with an activated virtual environment:
 ```console
-git clone git@github.com:Imageomics/Taxonopy.git
+git clone git@github.com:Imageomics/TaxonoPy.git
 cd TaxonoPy
 ```
 Set up and activate a virtual environment.
