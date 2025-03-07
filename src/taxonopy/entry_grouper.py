@@ -8,6 +8,7 @@ import hashlib
 from typing import Dict, Set, List, Iterator, Tuple, Optional
 
 from tqdm import tqdm
+import logging
 
 from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef
 from taxonopy.stats_collector import DatasetStats
@@ -50,7 +51,11 @@ def group_entries(entries: Iterator[TaxonomicEntry], total_count: Optional[int] 
     Returns:
         Dictionary mapping group keys to EntryGroupRef objects
     """
-    groups: Dict[str, Dict[str, Set[str]]] = {}  # key -> {uuid set, representative}
+    # Dictionary for building groups: key -> set of entry UUIDs
+    groups: Dict[str, Set[str]] = {}
+    
+    # Dictionary for storing taxonomic data for each group: key -> taxonomic fields
+    group_taxonomy: Dict[str, Dict[str, Optional[str]]] = {}
     
     # Create a progress bar if total_count is provided
     entries_iter = tqdm(entries, total=total_count, desc="Grouping entries") if total_count else entries
@@ -63,22 +68,32 @@ def group_entries(entries: Iterator[TaxonomicEntry], total_count: Optional[int] 
             
         group_key = generate_group_key(entry)
         
+        # Initialize new groups
         if group_key not in groups:
-            groups[group_key] = {
-                "uuids": set(),
-                "representative": entry.uuid
+            groups[group_key] = set()
+            # Store the taxonomic data for this group
+            group_taxonomy[group_key] = {
+                'kingdom': entry.kingdom,
+                'phylum': entry.phylum,
+                'class_': entry.class_,
+                'order': entry.order,
+                'family': entry.family,
+                'genus': entry.genus,
+                'species': entry.species,
+                'scientific_name': entry.scientific_name
             }
         
-        groups[group_key]["uuids"].add(entry.uuid)
+        # Add this entry's UUID to the group
+        groups[group_key].add(entry.uuid)
     
     # Convert to EntryGroupRef objects
     return {
         key: EntryGroupRef(
             key=key,
-            entry_uuids=frozenset(data["uuids"]),
-            representative_entry_uuid=data["representative"]
+            entry_uuids=frozenset(uuids),
+            **group_taxonomy[key]  # Unpack taxonomic data into the constructor
         )
-        for key, data in groups.items()
+        for key, uuids in groups.items()
     }
 
 

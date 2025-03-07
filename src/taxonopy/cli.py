@@ -16,7 +16,9 @@ from taxonopy.logging_config import setup_logging
 from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef
 from taxonopy.input_parser import parse_input
 from taxonopy.entry_grouper import create_entry_groups, count_entries_in_input
+from taxonopy.query_planner import create_query_plans
 from taxonopy.stats_collector import DatasetStats
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
@@ -61,6 +63,7 @@ def create_parser() -> argparse.ArgumentParser:
     
     return parser
 
+
 def process_input_data(input_path: str, stats: DatasetStats) -> List[EntryGroupRef]:
     """Process input data into entry groups.
     
@@ -86,6 +89,7 @@ def process_input_data(input_path: str, stats: DatasetStats) -> List[EntryGroupR
     logging.info(f"Created {len(entry_groups):,} entry groups")
     
     return entry_groups
+
 
 def main(args: Optional[List[str]] = None) -> int:
     """Main entry point for the TaxonoPy CLI.
@@ -119,6 +123,10 @@ def main(args: Optional[List[str]] = None) -> int:
         
         # Update entry group stats
         stats.update_from_entry_groups(entry_groups)
+        
+        # Create query groups
+        query_groups = create_query_plans(entry_groups)
+        logging.info(f"Created {len(query_groups):,} query groups")
         
         # Print statistics report
         print(stats.generate_report())

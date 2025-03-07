@@ -122,6 +122,8 @@ class EntryGroupRef:
     
     This represents the first transformation of the data - the grouping stage.
     Entries with identical taxonomic data are grouped to minimize API calls.
+    The group stores the actual taxonomic data fields directly to eliminate
+    the need for separate lookups.
     """
     
     # Unique key for this group, typically based on the taxonomic data
@@ -130,14 +132,37 @@ class EntryGroupRef:
     # The UUIDs of all entries in this group
     entry_uuids: Set[str] = field(default_factory=frozenset)
     
-    # Representative taxonomic data, taken from one of the entries
-    representative_entry_uuid: str = field(default="")
+    # The actual taxonomic data that defines this group
+    kingdom: Optional[str] = None
+    phylum: Optional[str] = None
+    class_: Optional[str] = None  # Using class_ to avoid conflict with Python keyword
+    order: Optional[str] = None
+    family: Optional[str] = None
+    genus: Optional[str] = None
+    species: Optional[str] = None
+    scientific_name: Optional[str] = None
     
     @property
-    def entry_count(self) -> int:
+    def group_count(self) -> int:
         """Return the number of entries in this group."""
         return len(self.entry_uuids)
-
+    
+    @property
+    def most_specific_rank(self) -> Optional[str]:
+        """Return the most specific taxonomic rank that is not empty."""
+        for rank in ['species', 'genus', 'family', 'order', 'class_', 'phylum', 'kingdom']:
+            value = getattr(self, rank)
+            if value and value.strip().lower() not in ['unknown', 'null', 'none', '', 'n/a']:
+                return rank
+        return None
+    
+    @property
+    def most_specific_term(self) -> Optional[str]:
+        """Return the value of the most specific taxonomic rank that is not empty."""
+        rank = self.most_specific_rank
+        if rank:
+            return getattr(self, rank)
+        return None
 
 @dataclass(frozen=True)
 class QueryGroupRef:
