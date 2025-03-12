@@ -48,6 +48,14 @@ class DatasetStats:
             else:
                 if not getattr(entry, field):
                     self.null_counts[field] += 1
+    def update_from_entries(self, entries: List[TaxonomicEntry]) -> None:
+        """Update statistics from a list of entries.
+        
+        Args:
+            entries: List of taxonomic entries
+        """
+        for entry in entries:
+            self.update_from_entry(entry)
     
     def update_from_entry_groups(self, entry_groups: List[EntryGroupRef]) -> None:
         """Update statistics from entry groups.

@@ -6,6 +6,7 @@ resolution attempts during the taxonomic resolution process.
 
 import uuid
 from typing import Dict, List, Optional, Set, Tuple, Union
+import logging
 from datetime import datetime
 
 from taxonopy.types.data_classes import (
@@ -20,7 +21,7 @@ class ResolutionAttemptManager:
     """Manages the creation and tracking of resolution attempts.
     
     This class is responsible for:
-    - Generating unique IDs for resolution attempts
+    - Generating unique IDs for resolution attempts (UUIDs as strings)
     - Creating and storing resolution attempts
     - Retrieving attempt chains
     - Managing the resolution strategy
@@ -30,6 +31,7 @@ class ResolutionAttemptManager:
         """Initialize a new resolution manager."""
         self._attempts: Dict[str, ResolutionAttempt] = {}
         self._group_latest_attempts: Dict[str, str] = {}  # Maps query_group_key → latest attempt_id
+        self.logger = logging.getLogger(__name__)
     
     @property
     def attempts(self) -> Dict[str, ResolutionAttempt]:

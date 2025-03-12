@@ -17,7 +17,10 @@ from taxonopy.types.data_classes import (
     EntryGroupRef, 
     QueryGroupRef
 )
+from taxonopy.cache_manager import cached
+from taxonopy.entry_grouper import create_entry_groups
 
+logger = logging.getLogger(__name__)
 
 def get_query_term_and_rank(entry_group: EntryGroupRef) -> Tuple[str, str]:
     """Determine the optimal query term and its rank for an entry group.
@@ -65,7 +68,8 @@ def get_query_term_and_rank(entry_group: EntryGroupRef) -> Tuple[str, str]:
     msg = f"""
     No valid query term found for entry group {entry_group.key}.
     Count: {entry_group.group_count} 
-    Taxonomic data: {entry_group.kingdom} {entry_group.phylum} {entry_group.class_} {entry_group.order} {entry_group.family} {entry_group.genus} {entry_group.scientific_name} {entry_group.species}
+    Taxonomic data: {entry_group.kingdom} {entry_group.phylum} {entry_group.class_} {entry_group.order} {entry_group.family} {entry_group.genus} {entry_group.scientific_name} 
+{entry_group.species}
     """
     raise ValueError(msg)
 
@@ -130,7 +134,7 @@ def create_query_groups(
             
         except ValueError as e:
             # Log error and skip this entry group
-            logging.warning(f"Warning: {str(e)}")
+            logger.warning(f"Warning: {str(e)}")
             continue
     
     # Convert to QueryGroupRef objects
@@ -144,18 +148,24 @@ def create_query_groups(
         for key, data in query_groups.items()
     }
 
-
-def create_query_plans(entry_groups: List[EntryGroupRef]) -> List[QueryGroupRef]:
+@cached(
+    prefix="query_plans",
+    key_args=["input_path"]
+)
+def create_query_plans(input_path: str) -> List[QueryGroupRef]:
     """Create query plans from entry groups.
     
     This is the main entry point for the module.
     
     Args:
-        entry_groups: List of entry group references
+        input_path: Path to input directory or file
         
     Returns:
         List of QueryGroupRef objects
     """
+    # Get entry groups for this input path
+    entry_groups = create_entry_groups(input_path)
+    
     # Create query groups directly from entry groups
     query_groups = create_query_groups(entry_groups)
     

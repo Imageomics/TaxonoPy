@@ -12,7 +12,10 @@ import logging
 
 from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef
 from taxonopy.stats_collector import DatasetStats
+from taxonopy.cache_manager import cached
+from taxonopy.input_parser import parse_input_list
 
+logger = logging.getLogger(__name__)
 
 def generate_group_key(entry: TaxonomicEntry) -> str:
     """Generate a unique key for a taxonomic entry based on its taxonomic data.
@@ -39,12 +42,12 @@ def generate_group_key(entry: TaxonomicEntry) -> str:
     return hashlib.sha256(tax_data.encode()).hexdigest()
 
 
-def group_entries(entries: Iterator[TaxonomicEntry], total_count: Optional[int] = None, 
+def group_entries(entries: List[TaxonomicEntry], total_count: Optional[int] = None, 
                   stats_collector: Optional[DatasetStats] = None) -> Dict[str, EntryGroupRef]:
     """Group taxonomic entries based on identical taxonomic data.
     
     Args:
-        entries: Iterator of taxonomic entries
+        entries: List of taxonomic entries
         total_count: Total number of entries (optional, for progress bar)
         stats_collector: Optional stats collector to update during processing
         
@@ -64,6 +67,7 @@ def group_entries(entries: Iterator[TaxonomicEntry], total_count: Optional[int] 
     for entry in entries_iter:
         # Update statistics if a collector is provided
         if stats_collector:
+            # Call update_from_entry instead of update_from_entries
             stats_collector.update_from_entry(entry)
             
         group_key = generate_group_key(entry)
@@ -127,20 +131,32 @@ def count_entries_in_input(input_path: str) -> int:
     return total_count
 
 
-def create_entry_groups(entries: Iterator[TaxonomicEntry], total_count: Optional[int] = None,
-                        stats_collector: Optional[DatasetStats] = None) -> List[EntryGroupRef]:
+@cached(
+    prefix="entry_groups",
+    key_args=["input_path"],
+    max_age=60*60*24*7 # 1 week
+)
+def create_entry_groups(input_path: str, total_count: Optional[int] = None, 
+                       stats_collector: Optional[DatasetStats] = None) -> List[EntryGroupRef]:
     """Create entry groups from taxonomic entries.
     
     This is the main entry point for the module.
     
     Args:
-        entries: Iterator of taxonomic entries
+        input_path: Path to input directory or file
         total_count: Total number of entries (optional, for progress bar)
         stats_collector: Optional stats collector to update during processing
         
     Returns:
         List of EntryGroupRef objects
     """
+    # Get taxonomic entries directly from the cached parser
+    entries = parse_input_list(input_path)
+    
+    # Update stats if collector is provided
+    if stats_collector:
+        stats_collector.update_from_entries(entries)
+    
     # Group entries by taxonomic data
     groups = group_entries(entries, total_count, stats_collector)
     

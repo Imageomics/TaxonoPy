@@ -17,7 +17,7 @@ from enum import Enum, auto
 from typing import Dict, List, Optional, Set, Union
 from uuid import UUID
 
-from .gnverifier import Name as GNVerifierName
+from taxonopy.types.gnverifier import Name as GNVerifierName
 
 
 class ResolutionStatus(Enum):

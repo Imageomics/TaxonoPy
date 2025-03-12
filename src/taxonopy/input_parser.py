@@ -14,7 +14,10 @@ import polars as pl
 from tqdm import tqdm
 
 from taxonopy.types.data_classes import TaxonomicEntry
+from taxonopy.cache_manager import cached
+import logging
 
+logger = logging.getLogger(__name__)
 
 # Required schema for input files
 REQUIRED_COLUMNS = {
@@ -225,23 +228,46 @@ def read_all_files(
                 yield entry
             pbar.update(1)
 
-
-def parse_input(input_path: str) -> Iterator[TaxonomicEntry]:
-    """Parse input data and convert to TaxonomicEntry objects.
+@cached(
+    prefix="taxonomic_entries",
+    key_args=["input_path"],
+    max_age=60*60*24*7  # 1 week
+)
+def parse_input_list(input_path: str) -> List[TaxonomicEntry]:
+    """Parse input data into a complete list for caching purposes.
     
-    This is the main entry point for the module.
+    This internal function handles the actual parsing and is decorated
+    with caching to avoid reprocessing input files unnecessarily.
     
     Args:
         input_path: Path to input directory or file
         
     Returns:
-        Iterator of TaxonomicEntry objects
+        List of TaxonomicEntry objects for caching
     """
     # Find all input files
     file_paths = find_input_files(input_path)
     
-    # Validate all file schemas
+    # Validate all file schemas to determine file format
     file_format = validate_all_files(file_paths)
     
-    # Read all files and yield entries
-    yield from read_all_files(file_paths, file_format)
+    # Process the files
+    logger.info(f"Processing input files to create taxonomic entries from {input_path}")
+    return list(read_all_files(file_paths, file_format))
+
+def parse_input(input_path: str, refresh: bool = False) -> Iterator[TaxonomicEntry]:
+    """Parse input data and provide an iterator over TaxonomicEntry objects.
+    
+    This function maintains an iterator interface for memory-efficient processing
+    while using caching internally to avoid reprocessing when possible.
+    
+    Args:
+        input_path: Path to input directory or file
+        refresh: If True, ignore existing cache and re-parse the input
+        
+    Returns:
+        An iterator over TaxonomicEntry objects
+    """
+    entries = parse_input_list(input_path, refresh_cache=refresh)
+    for entry in entries:
+        yield entry
