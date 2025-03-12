@@ -25,6 +25,11 @@ dev = [
     "pytest",
     "datamodel-code-generator"
     ]
+nb = [
+    "ipykernel",
+    "jupyterlab",
+    "marimo[recommended]"
+]
 
 [project.scripts]
 taxonopy = "taxonopy.__main__:main"
