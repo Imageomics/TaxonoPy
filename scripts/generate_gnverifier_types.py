@@ -29,6 +29,7 @@ def generate_types(input_spec, output_file):
     """Generate Python types from an OpenAPI spec."""
     subprocess.run([
         "datamodel-codegen",
+        "--force-optional", # e.g. dataSourcesNum is listed as required in the OpenAPI spec but it is not included in API responses
         "--input", str(input_spec),
         "--output", str(output_file),
         "--target-python-version", "3.9",
