@@ -22,6 +22,7 @@ from taxonopy.gnverifier_client import GNVerifierClient
 from taxonopy.query_executor import execute_all_queries
 from taxonopy.resolution_attempt_manager import ResolutionAttemptManager
 from taxonopy.cache_manager import clear_cache, get_cache_stats
+from taxonopy.config import config
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -29,13 +30,6 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="TaxonoPy: Resolve taxonomic names using GNVerifier",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-        help="Show version number and exit"
     )
 
     parser.add_argument(
@@ -55,29 +49,66 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=10000,
+        default=config.batch_size,
         help="Number of name queries to process in each GNVerifier batch"
     )
     
     parser.add_argument(
         "--gnverifier-image",
         type=str,
-        default="gnames/gnverifier:v1.2.3",
+        default=config.gnverifier_image,
         help="Docker image for GNVerifier"
     )
     
     parser.add_argument(
         "--data-sources",
         type=str,
-        default="11",  # GBIF Backbone Taxonomy
+        default=config.data_sources,
         help="Comma-separated list of data source IDs (e.g., '11' for GBIF)"
     )
     
     parser.add_argument(
         "--output-format",
         choices=["csv", "parquet"],
-        default="parquet",
+        default=config.output_format,
         help="Output file format"
+    )
+
+    gnverifier_group = parser.add_argument_group("GNVerifier Settings")
+    # Boolean flags
+    gnverifier_group.add_argument(
+        "--all-matches",
+        action="store_true",
+        default=config.all_matches,
+        help="Return all matches instead of just the best one"
+    )
+
+    gnverifier_group.add_argument(
+        "--capitalize",
+        action="store_true",
+        default=config.capitalize,
+        help="Capitalize the first letter of each name"
+    )
+
+    gnverifier_group.add_argument(
+        "--fuzzy-uninomial",
+        action="store_true",
+        default=config.fuzzy_uninomial,
+        help="Enable fuzzy matching for uninomial names"
+    )
+    
+    gnverifier_group.add_argument(
+        "--fuzzy-relaxed",
+        action="store_true",
+        default=config.fuzzy_relaxed,
+        help="Relax fuzzy matching criteria. ⚠️ Known bug: https://github.com/gnames/gnverifier/issues/128"
+    )
+
+    gnverifier_group.add_argument(
+        "--species-group",
+        action="store_true",
+        default=config.species_group,
+        help="Enable group species matching"
     )
     
     parser.add_argument(
@@ -121,6 +152,20 @@ def create_parser() -> argparse.ArgumentParser:
         help="Display statistics about the cache and exit"
     )
 
+    meta_group = parser.add_argument_group("Application Metadata")
+    meta_group.add_argument(
+        "--show-config",
+        action="store_true",
+        help="Show current configuration and exit"
+    )
+
+    meta_group.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Show version number and exit"
+    )
+
     return parser
 
 def process_input_data(input_path: str, stats: DatasetStats, refresh_cache: bool = False) -> List[EntryGroupRef]:
@@ -140,12 +185,6 @@ def process_input_data(input_path: str, stats: DatasetStats, refresh_cache: bool
     
     # Set the total entry count for statistics
     stats.entry_count = total_count
-    
-    # Parse input data into TaxonomicEntry objects
-    # entries = list(parse_input(input_path, refresh=refresh_cache))
-    # entries = parse_input(input_path, refresh=refresh_cache)
-    # # Create entry groups from taxonomic entries and collect statistics
-    # entry_groups = create_entry_groups(entries, total_count, stats, refresh_cache=refresh_cache)
 
     # Create entry groups directly from input path
     entry_groups = create_entry_groups(input_path, total_count, stats, refresh_cache=refresh_cache)
@@ -156,16 +195,51 @@ def process_input_data(input_path: str, stats: DatasetStats, refresh_cache: bool
 
 
 def main(args: Optional[List[str]] = None) -> int:
-    """Main entry point for the TaxonoPy CLI.
-    
-    Args:
-        args: Command-line arguments (defaults to sys.argv[1:])
-        
-    Returns:
-        Exit code (0 for success, non-zero for errors)
-    """
+    """Main entry point for the TaxonoPy CLI."""
     parser = create_parser()
+    
+    # First, parse the args without enforcing required arguments
+    for action in parser._actions:
+        if action.required:
+            action.required = False
+    
+    # Parse arguments
     parsed_args = parser.parse_args(args)
+    
+    # Handle standalone commands first
+
+    # Version is already handled by argparse.
+
+    if parsed_args.show_config:
+        print(config.get_config_summary())
+        return 0
+        
+    if parsed_args.cache_stats:
+        stats = get_cache_stats()
+        print("\nTaxonoPy Cache Statistics:")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+        return 0
+        
+    if parsed_args.clear_cache:
+        count = clear_cache()
+        print(f"\nCleared {count} cache files")
+        if not parsed_args.input or not parsed_args.output_dir:
+            return 0
+       
+    # If we've reached here and no standalone command was executed,
+    # enforce required arguments
+    if not parsed_args.input:
+        parser.error("the following arguments are required: -i/--input")
+    
+    if not parsed_args.output_dir:
+        parser.error("the following arguments are required: -o/--output-dir")
+    
+    # Update the config with command-line arguments
+    config.update_from_args(vars(parsed_args))
+    
+    # Ensure required directories exist
+    config.ensure_directories()
     
     # Setup logging based on command line arguments
     setup_logging(parsed_args.log_level, parsed_args.log_file)
@@ -181,6 +255,7 @@ def main(args: Optional[List[str]] = None) -> int:
     if parsed_args.clear_cache:
         count = clear_cache()
         print(f"\nCleared {count} cache files")
+
     
     # Create output directory if it doesn't exist
     output_dir = Path(parsed_args.output_dir)

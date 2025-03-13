@@ -14,6 +14,7 @@ from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef
 from taxonopy.stats_collector import DatasetStats
 from taxonopy.cache_manager import cached
 from taxonopy.input_parser import parse_input_list
+from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ def count_entries_in_input(input_path: str) -> int:
 @cached(
     prefix="entry_groups",
     key_args=["input_path"],
-    max_age=60*60*24*7 # 1 week
+    max_age=config.cache_max_age
 )
 def create_entry_groups(input_path: str, total_count: Optional[int] = None, 
                        stats_collector: Optional[DatasetStats] = None) -> List[EntryGroupRef]:

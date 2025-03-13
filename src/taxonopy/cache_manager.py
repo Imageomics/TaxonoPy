@@ -20,11 +20,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union, Callable
+from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
 # Define cache directory
-CACHE_DIR = Path(os.path.expanduser(".cache/taxonopy"))
+CACHE_DIR = Path(config.cache_dir)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_cache_file_path(key: str) -> Path:
@@ -138,6 +139,11 @@ def load_cache(key: str, expected_checksum: str,
             return None
         
         # Check age if specified
+        # Use configured max_age if not provided
+        if max_age is None:
+            max_age = config.cache_max_age
+
+
         if max_age is not None:
             timestamp = datetime.fromisoformat(meta.get("timestamp", "2000-01-01T00:00:00"))
             age = (datetime.now() - timestamp).total_seconds()
@@ -250,14 +256,15 @@ def cached(
             cache_key, file_checksum = _create_cache_key(
                 func, func_prefix, args, kwargs, key_args, include_all_args
             )
-            
+
             # Try to load from cache if not refreshing
             if not refresh and file_checksum:
-                cached_result = load_cache(cache_key, file_checksum, max_age=max_age)
+                _max_age = max_age if max_age is not None else config.cache_max_age
+                cached_result = load_cache(cache_key, file_checksum, max_age=_max_age)
                 if cached_result is not None:
                     logger.debug(f"Cache hit for {func.__name__}")
                     return cached_result
-            
+
             # Call the original function
             start_time = time.time()
             result = func(*args, **kwargs)

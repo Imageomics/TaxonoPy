@@ -8,12 +8,14 @@ import json
 import logging
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, Any
 
 from taxonopy.types.data_classes import QueryGroupRef
 from taxonopy.types.gnverifier import VerificationOutput, Name
+from taxonopy.config import config
+
 
 
 @dataclass
@@ -21,31 +23,31 @@ class GNVerifierConfig:
     """Configuration for the GNVerifier client."""
     
     # Docker image to use for container-based execution
-    gnverifier_image: str = "gnames/gnverifier:v1.2.3"
-    
+    gnverifier_image: str = field(default_factory=lambda: config.gnverifier_image)
+
     # Data sources to query (comma-separated IDs)
-    data_sources: str = "11"  # Default to GBIF (11)
+    data_sources: str = field(default_factory=lambda: config.data_sources)
     
     # Whether to return all matches instead of just the best one
-    all_matches: bool = True
+    all_matches: bool = field(default_factory=lambda: config.all_matches)
     
     # Whether to capitalize the first letter of each name
-    capitalize: bool = True
+    capitalize: bool = field(default_factory=lambda: config.capitalize)
     
-    # Number of parallel jobs to run (1 ensures consistent ordering)
-    jobs: int = 1
+    # Number of parallel jobs to run
+    jobs: int = field(default_factory=lambda: config.jobs)
     
     # Output format (compact, pretty, csv, tsv)
     format: str = "compact"
     
     # Whether to enable group species matching
-    species_group: bool = False
+    species_group: bool = field(default_factory=lambda: config.species_group)
     
     # Whether to enable fuzzy matching for uninomial names
-    fuzzy_uninomial: bool = False
+    fuzzy_uninomial: bool = field(default_factory=lambda: config.fuzzy_uninomial)
     
     # Whether to relax fuzzy matching criteria
-    fuzzy_relaxed: bool = False
+    fuzzy_relaxed: bool = field(default_factory=lambda: config.fuzzy_relaxed)
 
 
 class GNVerifierClient:

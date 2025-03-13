@@ -15,6 +15,8 @@ from tqdm import tqdm
 
 from taxonopy.types.data_classes import TaxonomicEntry
 from taxonopy.cache_manager import cached
+from taxonopy.config import config
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -231,7 +233,7 @@ def read_all_files(
 @cached(
     prefix="taxonomic_entries",
     key_args=["input_path"],
-    max_age=60*60*24*7  # 1 week
+    max_age=config.cache_max_age 
 )
 def parse_input_list(input_path: str) -> List[TaxonomicEntry]:
     """Parse input data into a complete list for caching purposes.
