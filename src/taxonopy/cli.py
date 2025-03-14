@@ -132,24 +132,24 @@ def create_parser() -> argparse.ArgumentParser:
     
     cache_group = parser.add_argument_group("Cache Management")
     cache_group.add_argument(
-        "--refresh-cache",
-        action="store_true",
-        default=False,
-        help="Force refresh of TaxonoPy object cache"
-    )
-    
-    cache_group.add_argument(
-        "--clear-cache",
-        action="store_true",
-        default=False,
-        help="Clear the TaxonoPy object cache before running"
-    )
-    
-    cache_group.add_argument(
         "--cache-stats",
         action="store_true",
         default=False,
         help="Display statistics about the cache and exit"
+    )
+
+    cache_group.add_argument(
+        "--clear-cache",
+        action="store_true",
+        default=False,
+        help="Clear the TaxonoPy object cache. May be used in isolation."
+    )
+
+    cache_group.add_argument(
+        "--refresh-cache",
+        action="store_true",
+        default=False,
+        help="Force refresh of TaxonoPy object cache before running. Must be used with -i and -o."
     )
 
     meta_group = parser.add_argument_group("Application Metadata")
