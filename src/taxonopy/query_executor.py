@@ -18,7 +18,7 @@ from taxonopy.types.data_classes import (
 )
 from taxonopy.types.gnverifier import Name as GNVerifierName
 from taxonopy.gnverifier_client import GNVerifierClient
-from taxonopy.resolution_attempt_manager import ResolutionAttemptManager
+from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
 
 def batch_query_groups(

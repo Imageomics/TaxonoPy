@@ -20,7 +20,7 @@ from taxonopy.query_planner import create_query_plans
 from taxonopy.stats_collector import DatasetStats
 from taxonopy.gnverifier_client import GNVerifierClient
 from taxonopy.query_executor import execute_all_queries
-from taxonopy.resolution_attempt_manager import ResolutionAttemptManager
+from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 from taxonopy.cache_manager import clear_cache, get_cache_stats
 from taxonopy.config import config
 

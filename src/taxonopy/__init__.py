@@ -14,13 +14,25 @@ from taxonopy.types.data_classes import (
     QueryGroupRef,
     ResolutionAttempt,
 )
-from taxonopy.resolution_attempt_manager import ResolutionAttemptManager
+
+from taxonopy.resolution import (
+    ResolutionAttemptManager,
+    ResolutionStrategyConfig,
+    ResolutionStrategyManager,
+    ResolutionStrategy,
+)
 
 __all__ = [
+    # Data classes
     "ResolutionStatus",
     "TaxonomicEntry",
     "EntryGroupRef",
     "QueryGroupRef",
     "ResolutionAttempt",
+    
+    # Resolution components
     "ResolutionAttemptManager",
+    "ResolutionStrategyConfig",
+    "ResolutionStrategyManager",
+    "ResolutionStrategy",
 ]
