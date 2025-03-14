@@ -47,34 +47,53 @@ def create_parser() -> argparse.ArgumentParser:
     )
     
     parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=config.batch_size,
-        help="Number of name queries to process in each GNVerifier batch"
-    )
-    
-    parser.add_argument(
-        "--gnverifier-image",
-        type=str,
-        default=config.gnverifier_image,
-        help="Docker image for GNVerifier"
-    )
-    
-    parser.add_argument(
-        "--data-sources",
-        type=str,
-        default=config.data_sources,
-        help="Comma-separated list of data source IDs (e.g., '11' for GBIF)"
-    )
-    
-    parser.add_argument(
         "--output-format",
         choices=["csv", "parquet"],
         default=config.output_format,
         help="Output file format"
     )
+    
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set logging level"
+    )
+    
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        help="Optional file to write logs to (in addition to console output)"
+    )
+
+    parser.add_argument(
+        "--force-input",
+        action="store_true",
+        help="Force use of input metadata without resolution"
+    )
 
     gnverifier_group = parser.add_argument_group("GNVerifier Settings")
+    gnverifier_group.add_argument(
+        "--gnverifier-image",
+        type=str,
+        default=config.gnverifier_image,
+        help="Docker image for GNVerifier"
+    )
+
+    gnverifier_group.add_argument(
+        "--data-sources",
+        type=str,
+        default=config.data_sources,
+        help="Comma-separated list of data source IDs (e.g., '11' for GBIF)"
+    )
+
+    gnverifier_group.add_argument(
+        "--batch-size",
+        type=int,
+        default=config.batch_size,
+        help="Number of name queries to process in each GNVerifier batch"
+    )
+
     # Boolean flags
     gnverifier_group.add_argument(
         "--all-matches",
@@ -109,25 +128,6 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=config.species_group,
         help="Enable group species matching"
-    )
-    
-    parser.add_argument(
-        "--force-input",
-        action="store_true",
-        help="Force use of input metadata without resolution"
-    )
-    
-    parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default="INFO",
-        help="Set logging level"
-    )
-    
-    parser.add_argument(
-        "--log-file",
-        type=str,
-        help="Optional file to write logs to (in addition to console output)"
     )
     
     cache_group = parser.add_argument_group("Cache Management")
