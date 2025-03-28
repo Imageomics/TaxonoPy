@@ -18,11 +18,12 @@ from taxonopy.input_parser import parse_input
 from taxonopy.entry_grouper import create_entry_groups, count_entries_in_input
 from taxonopy.query_planner import create_query_plans
 from taxonopy.stats_collector import DatasetStats
-from taxonopy.gnverifier_client import GNVerifierClient
+from taxonopy.query.gnverifier_client import GNVerifierClient
 from taxonopy.query_executor import execute_all_queries
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 from taxonopy.cache_manager import clear_cache, get_cache_stats
 from taxonopy.config import config
+from taxonopy.output_manager import generate_forced_output, generate_resolution_output
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -269,6 +270,28 @@ def main(args: Optional[List[str]] = None) -> int:
         # Create statistics collector
         stats = DatasetStats()
         
+        # Skip resolution if force-input is specified
+        if parsed_args.force_input:
+            logging.info("Skipping resolution due to --force-input flag")
+            
+            # Generate forced output directly from input
+            generated_files = generate_forced_output(
+                parsed_args.input,
+                parsed_args.output_dir,
+                parsed_args.output_format
+            )
+            
+            logging.info(f"Generated {len(generated_files)} forced output files:")
+            for file_path in generated_files:
+                logging.info(f"  {file_path}")
+                
+            # Log completion
+            elapsed_time = time.time() - start_time
+            logging.info(f"Processing completed in {elapsed_time:.2f} seconds")
+            
+            return 0
+        
+        # Normal processing path (resolution)
         # Process input data and collect statistics
         entry_groups = process_input_data(
             parsed_args.input, 
@@ -280,49 +303,51 @@ def main(args: Optional[List[str]] = None) -> int:
         stats.update_from_entry_groups(entry_groups)
         
         # Create query groups
-        # query_groups = create_query_plans(entry_groups)
         query_groups = create_query_plans(parsed_args.input, refresh_cache=parsed_args.refresh_cache)
         logging.info(f"Created {len(query_groups):,} query groups")
         
         # Print statistics report
         print(stats.generate_report())
         
-        # Skip resolution if force-input is specified
-        if parsed_args.force_input:
-            logging.info("Skipping resolution due to --force-input flag")
-        else:
-            # Initialize the GNVerifier client
-            try:
-                client = GNVerifierClient(
-                    gnverifier_image=parsed_args.gnverifier_image,
-                    data_sources=parsed_args.data_sources
-                )
-                logging.info("GNVerifier client initialized successfully")
-            except RuntimeError as e:
-                logging.error(f"Failed to initialize GNVerifier client: {e}")
-                return 1
-            
-            # Create resolution attempt manager
-            resolution_manager = ResolutionAttemptManager()
-            
-            # Execute all queries
-            logging.info(f"Executing queries with batch size {parsed_args.batch_size}")
-            resolution_attempts = execute_all_queries(
-                query_groups,
-                client,
-                resolution_manager,
-                batch_size=parsed_args.batch_size
+        # Initialize the GNVerifier client
+        try:
+            client = GNVerifierClient(
+                gnverifier_image=parsed_args.gnverifier_image,
+                data_sources=parsed_args.data_sources
             )
-            
-            # Log resolution statistics
-            resolution_stats = resolution_manager.get_statistics()
-            logging.info(f"Resolution statistics: {resolution_stats}")
-            
-            # Save resolution state for future processing
-            # resolution_manager.save_state(output_dir / "resolution_state.json")
-            
-            # TODO: Add business logic for applying resolutions to taxonomic data
-            # This is where we'd transform the resolved taxonomic data and write output files
+            logging.info("GNVerifier client initialized successfully")
+        except RuntimeError as e:
+            logging.error(f"Failed to initialize GNVerifier client: {e}")
+            return 1
+        
+        # Create resolution attempt manager
+        resolution_manager = ResolutionAttemptManager()
+        
+        # Execute all queries
+        logging.info(f"Executing queries with batch size {parsed_args.batch_size}")
+        resolution_attempts = execute_all_queries(
+            query_groups,
+            client,
+            resolution_manager,
+            batch_size=parsed_args.batch_size
+        )
+        
+        # Log resolution statistics
+        resolution_stats = resolution_manager.get_statistics()
+        logging.info(f"Resolution statistics: {resolution_stats}")
+        
+        # Generate output files based on resolution results
+        resolved_files, unsolved_files = generate_resolution_output(
+            parsed_args.input,
+            parsed_args.output_dir,
+            resolution_manager,
+            entry_groups,
+            query_groups,
+            parsed_args.output_format
+        )
+        
+        logging.info(f"Generated {len(resolved_files)} resolved output files")
+        logging.info(f"Generated {len(unsolved_files)} unsolved output files")
         
         # Log completion
         elapsed_time = time.time() - start_time

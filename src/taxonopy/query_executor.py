@@ -17,8 +17,12 @@ from taxonopy.types.data_classes import (
     ResolutionAttempt
 )
 from taxonopy.types.gnverifier import Name as GNVerifierName
-from taxonopy.gnverifier_client import GNVerifierClient
+from taxonopy.query.gnverifier_client import GNVerifierClient
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
+from taxonopy.resolution.strategy.manager import ResolutionStrategyManager
+from taxonopy.resolution.strategy.modes.singular_exact_match import SingularExactMatchStrategy
+from taxonopy.resolution.strategy.modes.exact_match import ExactMatchStrategy
+
 
 
 def batch_query_groups(
@@ -109,7 +113,7 @@ def execute_query_batch(
         
         resolution_attempts[query_group.query_term] = attempt
 
-        print(f"Attempts: {resolution_attempts}")
+        # print(f"Attempts: {resolution_attempts}")
     
     return resolution_attempts
 
@@ -136,48 +140,78 @@ def _create_resolution_attempt_from_result(
             metadata={"error": "Failed to parse GNVerifier result"}
         )
     
-    match_type = result_obj.match_type.root if result_obj.match_type else "NoMatch"
-    
-    if match_type == "NoMatch":
-        status = ResolutionStatus.NO_MATCH
-    elif match_type == "Exact":
-        status = ResolutionStatus.EXACT_MATCH
-    elif match_type in ["Fuzzy", "FuzzyRelaxed"]:
-        status = ResolutionStatus.FUZZY_MATCH
-    elif match_type in ["Partial", "PartialFuzzy", "PartialFuzzyRelaxed", "Virus", "FacetedSearch"]:
-        status = ResolutionStatus.PARTIAL_MATCH
-    else:
-        status = ResolutionStatus.AMBIGUOUS_MATCH
-    
-    # Extract classification if available
-    resolved_classification = None
-    if status in [ResolutionStatus.EXACT_MATCH, ResolutionStatus.FUZZY_MATCH, ResolutionStatus.PARTIAL_MATCH]:
-        if result_obj.best_result and result_obj.best_result.classification_path and result_obj.best_result.classification_ranks:
-            resolved_classification = _extract_classification(
-                result_obj.best_result.classification_path,
-                result_obj.best_result.classification_ranks
-            )
-    
-    # Create metadata for the resolution attempt
-    metadata = {
-        "data_sources_num": result_obj.data_sources_num,
-        "curation": result_obj.curation,
-        "match_type": match_type,
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    if result_obj.error:
-        metadata["error"] = result_obj.error
-    
-    return resolution_manager.create_attempt(
+    # Create an initial attempt with the raw response
+    initial_attempt = resolution_manager.create_attempt(
         query_group_key=query_group.query_term,
         query_term=query_group.query_term,
         query_rank=query_group.query_rank,
-        status=status,
+        status=ResolutionStatus.PROCESSING,  # Mark as processing initially
         gnverifier_response=result_obj,
-        resolved_classification=resolved_classification,
-        metadata=metadata
+        metadata={"timestamp": datetime.now().isoformat()}
     )
+    
+    # Create a strategy manager with our strategies
+    strategy_manager = ResolutionStrategyManager(resolution_manager)
+    
+    # Add strategies in order of specificity (most specific first)
+    strategy_manager.add_strategy(SingularExactMatchStrategy())
+    strategy_manager.add_strategy(ExactMatchStrategy())
+    
+    # Apply the strategies to resolve the attempt
+    resolved_attempt = strategy_manager.resolve(initial_attempt)
+    
+    # If no strategy could handle this attempt, do our fallback handling
+    if resolved_attempt.status == ResolutionStatus.FAILED:
+        # Use our original logic as fallback
+        match_type = result_obj.match_type.root if result_obj.match_type else "NoMatch"
+        
+        if match_type == "NoMatch":
+            status = ResolutionStatus.NO_MATCH
+        elif match_type == "Exact":
+            status = ResolutionStatus.EXACT_MATCH
+        elif match_type in ["Fuzzy", "FuzzyRelaxed"]:
+            status = ResolutionStatus.FUZZY_MATCH
+        elif match_type in ["Partial", "PartialFuzzy", "PartialFuzzyRelaxed", "Virus", "FacetedSearch"]:
+            status = ResolutionStatus.PARTIAL_MATCH
+        else:
+            status = ResolutionStatus.AMBIGUOUS_MATCH
+        
+        # Extract classification if available
+        resolved_classification = None
+        if status in [ResolutionStatus.EXACT_MATCH, ResolutionStatus.FUZZY_MATCH, ResolutionStatus.PARTIAL_MATCH]:
+            if result_obj.best_result and result_obj.best_result.classification_path and result_obj.best_result.classification_ranks:
+                resolved_classification = _extract_classification(
+                    result_obj.best_result.classification_path,
+                    result_obj.best_result.classification_ranks
+                )
+        
+        # Create metadata for the resolution attempt
+        metadata = {
+            "data_sources_num": result_obj.data_sources_num,
+            "curation": result_obj.curation,
+            "match_type": match_type,
+            "fallback_logic": True,  # Indicate that we used fallback logic
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        if result_obj.error:
+            metadata["error"] = result_obj.error
+        
+        # Add previous attempt ID to metadata
+        metadata["previous_attempt_id"] = initial_attempt.attempt_id
+        
+        # Create a new attempt with fallback logic
+        return resolution_manager.create_attempt(
+            query_group_key=query_group.query_term,
+            query_term=query_group.query_term,
+            query_rank=query_group.query_rank,
+            status=status,
+            gnverifier_response=result_obj,
+            resolved_classification=resolved_classification,
+            metadata=metadata
+        )
+    
+    return resolved_attempt
 
 
 def _extract_classification(
@@ -264,7 +298,7 @@ def execute_all_queries(
     Returns:
         Dictionary mapping query group keys to resolution attempts
     """
-    all_attempts = {}
+    all_resolution_attempts = {}
     
     # Batch the query groups
     batches = list(batch_query_groups(query_groups, batch_size))
@@ -275,7 +309,7 @@ def execute_all_queries(
     for i, batch in enumerate(batches):
         logging.info(f"Processing batch {i+1}/{len(batches)} with {len(batch)} query groups")
         
-        batch_attempts = execute_query_batch(
+        batch_resolution_attempts = execute_query_batch(
             batch, 
             client, 
             resolution_manager,
@@ -283,8 +317,8 @@ def execute_all_queries(
         )
         
         # Add batch results to overall results
-        all_attempts.update(batch_attempts)
+        all_resolution_attempts.update(batch_resolution_attempts)
     
     logging.info(f"Completed processing {len(query_groups)} query groups")
     
-    return all_attempts
+    return all_resolution_attempts
