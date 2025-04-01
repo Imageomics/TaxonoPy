@@ -47,8 +47,8 @@ def map_entry_to_output_format(
     
     # Add all taxonomic ranks
     for rank in TAXONOMIC_RANKS:
-        field_name = rank
-        
+        field_name = 'class' if rank == 'class_' else rank      
+          
         # If we have a resolved classification, use it
         if resolved_classification and rank in resolved_classification:
             result[field_name] = resolved_classification[rank]
