@@ -6,7 +6,7 @@ allowing them to be looked up by name and instantiated dynamically.
 
 from typing import Dict, List, Type, Optional
 
-from taxonopy.resolution.strategy_base import ResolutionStrategy
+from taxonopy.resolution.strategy.base import ResolutionStrategy
 from taxonopy.resolution.config import ResolutionStrategyConfig
 
 

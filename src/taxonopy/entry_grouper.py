@@ -18,33 +18,94 @@ from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
-def generate_group_key(entry: TaxonomicEntry) -> str:
-    """Generate a unique key for a taxonomic entry based on its taxonomic data.
+# def generate_group_key(entry: TaxonomicEntry) -> str:
+#     """Generate a unique key for a taxonomic entry based on its taxonomic data.
     
-    Args:
-        entry: A taxonomic entry
+#     Args:
+#         entry: A taxonomic entry
         
-    Returns:
-        A hash string that uniquely identifies the taxonomic data
-    """
-    # Concatenate all taxonomic fields in a consistent order
-    tax_data = "|".join([
-        str(entry.kingdom or ""),
-        str(entry.phylum or ""),
-        str(entry.class_ or ""),
-        str(entry.order or ""),
-        str(entry.family or ""),
-        str(entry.genus or ""),
-        str(entry.species or ""),
-        str(entry.scientific_name or ""),
-    ]).lower()  # Convert to lowercase for case-insensitive grouping
+#     Returns:
+#         A hash string that uniquely identifies the taxonomic data
+#     """
+#     # Concatenate all taxonomic fields in a consistent order
+#     tax_data = "|".join([
+#         str(entry.kingdom or ""),
+#         str(entry.phylum or ""),
+#         str(entry.class_ or ""),
+#         str(entry.order or ""),
+#         str(entry.family or ""),
+#         str(entry.genus or ""),
+#         str(entry.species or ""),
+#         str(entry.scientific_name or ""),
+#     ]).lower()  # Convert to lowercase for case-insensitive grouping
     
-    # Generate a SHA-256 hash of the taxonomic data
-    return hashlib.sha256(tax_data.encode()).hexdigest()
+#     # Generate a SHA-256 hash of the taxonomic data
+#     return hashlib.sha256(tax_data.encode()).hexdigest()
 
 
-def group_entries(entries: List[TaxonomicEntry], total_count: Optional[int] = None, 
-                  stats_collector: Optional[DatasetStats] = None) -> Dict[str, EntryGroupRef]:
+# def group_entries(entries: List[TaxonomicEntry], total_count: Optional[int] = None, 
+#                   stats_collector: Optional[DatasetStats] = None) -> Dict[str, EntryGroupRef]:
+#     """Group taxonomic entries based on identical taxonomic data.
+    
+#     Args:
+#         entries: List of taxonomic entries
+#         total_count: Total number of entries (optional, for progress bar)
+#         stats_collector: Optional stats collector to update during processing
+        
+#     Returns:
+#         Dictionary mapping group keys to EntryGroupRef objects
+#     """
+#     # Dictionary for building groups: key -> set of entry UUIDs
+#     groups: Dict[str, Set[str]] = {}
+    
+#     # Dictionary for storing taxonomic data for each group: key -> taxonomic fields
+#     group_taxonomy: Dict[str, Dict[str, Optional[str]]] = {}
+    
+#     # Create a progress bar if total_count is provided
+#     entries_iter = tqdm(entries, total=total_count, desc="Grouping entries") if total_count else entries
+    
+#     # Group entries by taxonomic data
+#     for entry in entries_iter:
+#         # Update statistics if a collector is provided
+#         if stats_collector:
+#             # Call update_from_entry instead of update_from_entries
+#             stats_collector.update_from_entry(entry)
+            
+#         group_key = generate_group_key(entry)
+        
+#         # Initialize new groups
+#         if group_key not in groups:
+#             groups[group_key] = set()
+#             # Store the taxonomic data for this group
+#             group_taxonomy[group_key] = {
+#                 'kingdom': entry.kingdom,
+#                 'phylum': entry.phylum,
+#                 'class_': entry.class_,
+#                 'order': entry.order,
+#                 'family': entry.family,
+#                 'genus': entry.genus,
+#                 'species': entry.species,
+#                 'scientific_name': entry.scientific_name
+#             }
+        
+#         # Add this entry's UUID to the group
+#         groups[group_key].add(entry.uuid)
+    
+#     # Convert to EntryGroupRef objects
+#     return {
+#         key: EntryGroupRef(
+#             key=key,
+#             entry_uuids=frozenset(uuids),
+#             **group_taxonomy[key]  # Unpack taxonomic data into the constructor
+#         )
+#         for key, uuids in groups.items()
+#     }
+
+def group_entries(
+    entries: List[TaxonomicEntry],
+    total_count: Optional[int] = None,
+    stats_collector: Optional[DatasetStats] = None
+) -> List[EntryGroupRef]:
     """Group taxonomic entries based on identical taxonomic data.
     
     Args:
@@ -53,31 +114,34 @@ def group_entries(entries: List[TaxonomicEntry], total_count: Optional[int] = No
         stats_collector: Optional stats collector to update during processing
         
     Returns:
-        Dictionary mapping group keys to EntryGroupRef objects
+        List of EntryGroupRef objects.
     """
-    # Dictionary for building groups: key -> set of entry UUIDs
-    groups: Dict[str, Set[str]] = {}
-    
-    # Dictionary for storing taxonomic data for each group: key -> taxonomic fields
-    group_taxonomy: Dict[str, Dict[str, Optional[str]]] = {}
-    
-    # Create a progress bar if total_count is provided
+    # Use a tuple of taxonomic fields as the grouping key.
+    groups: Dict[Tuple[str, ...], Set[str]] = {}
+    group_taxonomy: Dict[Tuple[str, ...], Dict[str, Optional[str]]] = {}
+
+    # Create a progress bar if total_count is provided.
     entries_iter = tqdm(entries, total=total_count, desc="Grouping entries") if total_count else entries
-    
-    # Group entries by taxonomic data
+
     for entry in entries_iter:
-        # Update statistics if a collector is provided
         if stats_collector:
-            # Call update_from_entry instead of update_from_entries
             stats_collector.update_from_entry(entry)
-            
-        group_key = generate_group_key(entry)
         
-        # Initialize new groups
-        if group_key not in groups:
-            groups[group_key] = set()
-            # Store the taxonomic data for this group
-            group_taxonomy[group_key] = {
+        # Build a grouping key tuple (empty string if field is None)
+        grouping_key = (
+            entry.kingdom or "",
+            entry.phylum or "",
+            entry.class_ or "",
+            entry.order or "",
+            entry.family or "",
+            entry.genus or "",
+            entry.species or "",
+            entry.scientific_name or ""
+        )
+
+        if grouping_key not in groups:
+            groups[grouping_key] = set()
+            group_taxonomy[grouping_key] = {
                 'kingdom': entry.kingdom,
                 'phylum': entry.phylum,
                 'class_': entry.class_,
@@ -88,19 +152,18 @@ def group_entries(entries: List[TaxonomicEntry], total_count: Optional[int] = No
                 'scientific_name': entry.scientific_name
             }
         
-        # Add this entry's UUID to the group
-        groups[group_key].add(entry.uuid)
-    
-    # Convert to EntryGroupRef objects
-    return {
-        key: EntryGroupRef(
-            key=key,
-            entry_uuids=frozenset(uuids),
-            **group_taxonomy[key]  # Unpack taxonomic data into the constructor
-        )
-        for key, uuids in groups.items()
-    }
+        groups[grouping_key].add(entry.uuid)
 
+    groups_list = [
+        EntryGroupRef(
+            entry_uuids=frozenset(uuids),
+            **group_taxonomy[external_key]
+        )
+        for external_key, uuids in groups.items()
+    ]
+    
+    # Build an index keyed by object's internally computed key
+    return {group.key: group for group in groups_list}
 
 def count_entries_in_input(input_path: str) -> int:
     """Count the total number of entries in the input files.

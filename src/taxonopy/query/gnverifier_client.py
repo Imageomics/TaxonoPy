@@ -26,7 +26,7 @@ class GNVerifierConfig:
     gnverifier_image: str = field(default_factory=lambda: config.gnverifier_image)
 
     # Data sources to query (comma-separated IDs)
-    data_sources: str = field(default_factory=lambda: config.data_sources)
+    data_source_id: str = field(default_factory=lambda: config.data_source_id)
     
     # Whether to return all matches instead of just the best one
     all_matches: bool = field(default_factory=lambda: config.all_matches)
@@ -53,35 +53,23 @@ class GNVerifierConfig:
 class GNVerifierClient:
     """Client for interacting with the Global Names Verifier service."""
     
-    def __init__(self, 
-                 gnverifier_image: str = "gnames/gnverifier:v1.2.3",
-                 data_sources: str = "11",
-                 all_matches: bool = True,
-                 capitalize: bool = True,
-                 config: Optional[GNVerifierConfig] = None):
+    def __init__(self, config_obj: Optional[GNVerifierConfig] = None):
         """Initialize the GNVerifier client.
         
         Args:
-            gnverifier_image: Docker image to use
-            data_sources: Data source IDs (comma-separated)
-            all_matches: Whether to return all matches
-            capitalize: Whether to capitalize name strings
-            config: Optional configuration object that overrides other parameters
+            config_obj: Optional configuration object that overrides other parameters.
         """
-        # Set up logging for this module
         self.logger = logging.getLogger(__name__)
-        # Apply config if provided, otherwise use parameters
-        if config:
-            self.config = config
+        if config_obj:
+            self.config = config_obj
         else:
+            # Use global configuration values as defaults
             self.config = GNVerifierConfig(
-                gnverifier_image=gnverifier_image,
-                data_sources=data_sources,
-                all_matches=all_matches,
-                capitalize=capitalize
+                gnverifier_image=config.gnverifier_image,
+                data_source_id=config.data_source_id,
+                all_matches=config.all_matches,
+                capitalize=config.capitalize
             )
-        
-        # Determine execution method
         self.use_docker, self.gnverifier_available = self._determine_execution_method()
     
     def _determine_execution_method(self) -> Tuple[bool, bool]:

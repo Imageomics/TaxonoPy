@@ -23,7 +23,7 @@ class Config:
         
         # GNVerifier settings
         self.gnverifier_image = "gnames/gnverifier:v1.2.3"
-        self.data_sources = "11"  # Default to GBIF (11)
+        self.data_source_id = "11"  # Default to GBIF (11)
         self.all_matches = True
         self.capitalize = True
         self.jobs = 1
@@ -56,8 +56,8 @@ class Config:
         if 'gnverifier_image' in args and args['gnverifier_image'] is not None:
             self.gnverifier_image = args['gnverifier_image']
             
-        if 'data_sources' in args and args['data_sources'] is not None:
-            self.data_sources = args['data_sources']
+        if 'data_source_id' in args and args['data_source_id'] is not None:
+            self.data_source_id = args['data_source_id']
             
         if 'output_format' in args and args['output_format'] is not None:
             self.output_format = args['output_format']

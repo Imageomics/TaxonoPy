@@ -10,7 +10,7 @@ from typing import List, Optional
 from taxonopy.types.data_classes import ResolutionAttempt, ResolutionStatus
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 from taxonopy.resolution.config import ResolutionStrategyConfig
-from taxonopy.resolution.strategy_base import ResolutionStrategy
+from taxonopy.resolution.strategy.base import ResolutionStrategy
 
 
 class ResolutionStrategyManager:
@@ -76,16 +76,20 @@ class ResolutionStrategyManager:
         Returns:
             A new resolution attempt with FAILED status
         """
+        # Create metadata with previous attempt ID
+        metadata = {
+            "previous_attempt_id": attempt.attempt_id,
+            "failure_reason": reason,
+            "timestamp": datetime.now().isoformat(),
+            "all_strategies_tried": [s.__class__.__name__ for s in self.strategies]
+        }
+        
+        # Create and return the failed attempt
         return self.attempt_manager.create_attempt(
             query_group_key=attempt.query_group_key,
             query_term=attempt.query_term,
             query_rank=attempt.query_rank,
             status=ResolutionStatus.FAILED,
             gnverifier_response=attempt.gnverifier_response,
-            metadata={
-                "failure_reason": reason,
-                "timestamp": datetime.now().isoformat(),
-                "all_strategies_tried": [s.__class__.__name__ for s in self.strategies]
-            },
-            previous_attempt_id=attempt.attempt_id
+            metadata=metadata
         )

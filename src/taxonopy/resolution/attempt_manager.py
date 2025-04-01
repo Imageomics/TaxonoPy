@@ -4,7 +4,6 @@ This module provides a manager for creating, tracking, and retrieving
 resolution attempts during the taxonomic resolution process.
 """
 
-import uuid
 from typing import Dict, List, Optional, Set, Tuple, Union
 import logging
 from datetime import datetime
@@ -30,91 +29,57 @@ class ResolutionAttemptManager:
     def __init__(self):
         """Initialize a new resolution manager."""
         self._attempts: Dict[str, ResolutionAttempt] = {}
-        self._group_latest_attempts: Dict[str, str] = {}  # Maps query_group_key → latest attempt_id
+        self._group_latest_attempts: Dict[str, str] = {}  # Maps query_group_key → latest attempt key
         self.logger = logging.getLogger(__name__)
     
     @property
     def attempts(self) -> Dict[str, ResolutionAttempt]:
         """Get a dictionary of all resolution attempts."""
         return dict(self._attempts)  # Return a copy to prevent modification
-
-    def _generate_attempt_id(self) -> str:
-        """Generate a unique ID for a resolution attempt.
-        
-        Returns:
-            A string representation of a UUID4
-        """
-        return str(uuid.uuid4())
     
-    def create_attempt(self,
-                      query_group_key: str,
-                      query_term: str,
-                      query_rank: str,
-                      status: ResolutionStatus,
-                      gnverifier_response: Optional[GNVerifierName] = None,
-                      resolved_classification: Optional[Dict[str, str]] = None,
-                      metadata: Optional[Dict[str, Union[str, int, float, bool]]] = None) -> ResolutionAttempt:
-        """Create a new resolution attempt.
-        
-        This method automatically:
-        - Generates a unique ID for the attempt
-        - Links to the previous attempt for the same query group, if any
-        - Stores the attempt for future retrieval
-        - Updates the latest attempt for the query group
-        
-        Args:
-            query_group_key: The key of the query group this attempt is for
-            query_term: The term used in the query
-            query_rank: The taxonomic rank of the query term
-            status: The status of the resolution
-            gnverifier_response: Optional GNVerifier response
-            resolved_classification: Optional resolved classification
-            metadata: Optional metadata about the resolution
-            
-        Returns:
-            The created ResolutionAttempt
+    def create_attempt(
+            self,
+            query_group_key: str,
+            query_term: str,
+            query_rank: str,
+            status: ResolutionStatus,
+            gnverifier_response: Optional[GNVerifierName] = None,
+            resolved_classification: Optional[Dict[str, str]] = None,
+            metadata: Optional[Dict[str, Union[str, int, float, bool]]] = None
+        ) -> ResolutionAttempt:
         """
-        # Generate a unique ID for this attempt
-        attempt_id = self._generate_attempt_id()
-        
-        # Get the previous attempt ID for this query group, if any
-        previous_attempt_id = self._group_latest_attempts.get(query_group_key)
-        
-        # Create the metadata dictionary if not provided
+        Create a new resolution attempt with a computed unique key.
+        """
         if metadata is None:
             metadata = {}
-        
         # Create the resolution attempt
         attempt = ResolutionAttempt(
-            attempt_id=attempt_id,
             query_group_key=query_group_key,
             query_term=query_term,
             query_rank=query_rank,
             status=status,
             gnverifier_response=gnverifier_response,
             resolved_classification=resolved_classification,
-            metadata=metadata,
-            previous_attempt_id=previous_attempt_id
+            metadata=metadata
         )
         
-        # Store the attempt
-        self._attempts[attempt_id] = attempt
-        
-        # Update the latest attempt for this query group
-        self._group_latest_attempts[query_group_key] = attempt_id
+        # Store the attempt using its computed key.
+        self._attempts[attempt.key] = attempt
+        # Link the query group to this attempt
+        self._group_latest_attempts[query_group_key] = attempt.key
         
         return attempt
     
-    def get_attempt(self, attempt_id: str) -> Optional[ResolutionAttempt]:
+    def get_attempt(self, key: str) -> Optional[ResolutionAttempt]:
         """Get a specific resolution attempt by ID.
         
         Args:
-            attempt_id: The ID of the attempt to retrieve
+            key: The ID of the attempt to retrieve
             
         Returns:
             The resolution attempt, or None if not found
         """
-        return self._attempts.get(attempt_id)
+        return self._attempts.get(key)
     
     def get_latest_attempt(self, query_group_key: str) -> Optional[ResolutionAttempt]:
         """Get the latest resolution attempt for a query group.
@@ -125,36 +90,39 @@ class ResolutionAttemptManager:
         Returns:
             The latest resolution attempt, or None if no attempts exist
         """
-        attempt_id = self._group_latest_attempts.get(query_group_key)
-        if attempt_id:
-            return self._attempts.get(attempt_id)
+        key = self._group_latest_attempts.get(query_group_key)
+        if key:
+            return self._attempts.get(key)
+        
+        # If the key doesn't exist in our records, log a debug message
+        self.logger.debug(f"No attempts found for query group key: {query_group_key}")
         return None
     
-    def get_attempt_chain(self, attempt_id: str) -> List[ResolutionAttempt]:
+    def get_attempt_chain(self, key: str) -> List[ResolutionAttempt]:
         """Get the full chain of attempts starting from the given ID.
         
         The chain starts with the specified attempt and follows the
-        previous_attempt_id references to reconstruct the full history.
+        previous_attempt_key references to reconstruct the full history.
         
         Args:
-            attempt_id: The ID of the attempt to start from
+            key: The ID of the attempt to start from
             
         Returns:
             List of resolution attempts in chronological order (oldest first)
         """
         chain = []
-        current_id = attempt_id
+        current_key = key
         
-        # Build the chain by following previous_attempt_id references
-        while current_id is not None:
-            attempt = self._attempts.get(current_id)
+        # Build the chain by following previous_attempt_key references
+        while current_key is not None:
+            attempt = self._attempts.get(current_key)
             if not attempt:
                 break
             
             chain.append(attempt)
-            current_id = attempt.previous_attempt_id
+            current_key = attempt.previous_key
         
-        # Reverse the chain to get chronological order (oldest first)
+        # Reverse the chain to get chronological order (oldest first)##TODO: wut
         return list(reversed(chain))
     
     def get_group_attempt_chain(self, query_group_key: str) -> List[ResolutionAttempt]:
@@ -166,9 +134,9 @@ class ResolutionAttemptManager:
         Returns:
             List of resolution attempts in chronological order (oldest first)
         """
-        attempt_id = self._group_latest_attempts.get(query_group_key)
-        if attempt_id:
-            return self.get_attempt_chain(attempt_id)
+        attempt_key = self._group_latest_attempts.get(query_group_key)
+        if attempt_key:
+            return self.get_attempt_chain(attempt_key)
         return []
     
     def get_resolution_status(self, query_group_key: str) -> Optional[ResolutionStatus]:
@@ -196,14 +164,14 @@ class ResolutionAttemptManager:
         """
         retry_groups = []
         
-        for query_group_key, attempt_id in self._group_latest_attempts.items():
-            attempt = self._attempts.get(attempt_id)
+        for query_group_key, key in self._group_latest_attempts.items():
+            attempt = self._attempts.get(key)
             if attempt and attempt.status in [
                 ResolutionStatus.NO_MATCH,
                 ResolutionStatus.FAILED,
                 ResolutionStatus.PROCESSING  # For interrupted attempts
             ]:
-                retry_groups.append((query_group_key, attempt_id))
+                retry_groups.append((query_group_key, key))
         
         return retry_groups
     
