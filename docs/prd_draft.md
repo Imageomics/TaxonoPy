@@ -84,6 +84,36 @@ To trace the provenance of a resolved taxonomic entry (or failed resolution), ev
 
 ### 4. Resolution Strategy System Requirements 
 <!-- TODO: add section -->
+#### 4.x Resolution Strategy Status Logic
+The `ResultionStatus` enum contains a fine-grained indication of the status of a resolution attempt, with coarser groupings embedded in the enum members.
+
+The following coarse groups are defined:
+- `"processing"`: The resolution attempt is in progress and has not yet reached a final state.
+- `"terminal"`: The resolution attempt has reached a final state and is ready to be written to an output file, either success or failure.
+- `"non-terminal"`: The resolution attempt is still in progress and has not yet reached a final state.
+- `"success"`: The resolution attempt has successfully resolved the taxonomic entry. This is also a terminal state.
+- `"failure"`: The resolution attempt has failed to resolve the taxonomic entry. This is also a terminal state.
+- `"non-terminal"`: The resolution attempt is still in progress and has not yet reached a final state.
+- `"retry"`: The resolution attempt is to be retried with a different query term or data authority.
+
+<!-- TODO: decide whethe to add 'original taxonomic data' -->
+
+The following fine-grained statuses are defined:
+- `SINGULAR_EXACT_MATCH`
+  - Exactly one result?
+    - → "results": [ { … } ] has length 1.
+  - Exact match?
+    - → "matchType": "Exact" is present in both the overall response and in the result entry.
+  - Accepted status?
+    - → "taxonomicStatus": "Accepted" must be true.
+  - Full set of classification ranks?
+    - → "classificationRanks" must be exactly "kingdom|phylum|class|order|family|genus|species" (or its equivalent based on valid EntryGroupRef data).
+  - Exact match of classification path?
+    - → "classificationPath" must exactly match the taxonomic terms of the originating EntryGroupRef (in the same order).
+  - Data source check?
+    - → "dataSourceId": 11 (i.e. GBIF) is required.
+  - Query consistency?
+    - → The QueryGroupRef (and therefore the ResolutionAttempt) must reflect the same query term and rank as derived from the EntryGroupRef’s most specific valid taxonomic data.  
 
 ### 5. Technical Requirements
 Priority levels:
