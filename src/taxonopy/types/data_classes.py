@@ -28,29 +28,94 @@ from taxonopy.constants import (
 
 
 class ResolutionStatus(Enum):
-    """The possible resolution statuses of a taxonomic entry."""
-    def __init__(self, groups: Tuple[str, ...]):
+    """The possible resolution statuses of a taxonomic entry defining the resolution profile."""
+    def __init__(self, status_name: str, groups: Tuple[str, ...]):
+        self._value_ = (status_name, groups)
         self.groups: Set[str] = set(groups)
-    
+
     # Terminal success status group
-    SINGULAR_EXACT_MATCH = (("terminal", "success"),)
-    FORCE_ACCEPTED = (("terminal", "success"),)
+    # How can I define a variable over two lines?
+    # For example, you can do:
+    #  variable_name = (
+    #      "variable_value",
+    #      ("terminal", "success")
+    #  )
+
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED", 
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RETRY = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RETRY", 
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_INNER_RANK_DISAMBIGUATION = ( 
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_INNER_RANK_DISAMBIGUATION",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RANK_LEVEL_DISAMBIGUATION = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RANK_LEVEL_DISAMBIGUATION",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_SYNONYM_DISAMBIGUATION = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_SYNONYM_DISAMBIGUATION",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_MULTI_RESULT_DISAMBIGUATION = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_MULTI_RESULT_DISAMBIGUATION",
+        ("terminal", "success")
+    )
+    FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED = (
+        "FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_SYNONYM = (
+        "EXACT_MATCH_PRIMARY_SOURCE_SYNONYM",
+        ("terminal", "success")
+    )
+    PARTIAL_EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_DISAMBIGUATED = (
+        "PARTIAL_EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_DISAMBIGUATED",
+        ("terminal", "success")
+    )
+    FORCE_ACCEPTED = (
+        "FORCE_ACCEPTED",
+        ("terminal", "success")
+    )
+
 
     # Terminal failure status group
-    EMPTY_INPUT_TAXONOMY = (("terminal", "failure"),)
+    EMPTY_INPUT_TAXONOMY = (
+        "EMPTY_INPUT_TAXONOMY",
+        ("terminal", "failure")
+    )
+    FAILED = (
+        "FAILED",
+        ("terminal", "failure")
+    )
+    NO_MATCH_RETRIES_EXHAUSTED = (
+        "NO_MATCH_RETRIES_EXHAUSTED",
+        ("terminal", "failure")
+    )
 
     # Retry status group
-    NO_MATCH_NONEMPTY_QUERY = (("non-terminal", "retry",),)
+    NO_MATCH_NONEMPTY_QUERY = (
+        "NO_MATCH_NONEMPTY_QUERY",
+        ("non-terminal", "retry")
+    )
 
     # Non-terminal status group
-    PROCESSING = (("non-terminal", "processing"),)
-    MULTIPLE_EXACT_MATCHES = (("non-terminal", "processing"),)
-    
-    # Temporary deprecated status group for forcing
-    # TODO: Remove this once the deprecated status is no longer needed
-    EXACT_MATCH = (("terminal", "deprecated"),)
-    FUZZY_MATCH = (("terminal", "deprecated"),)
-    PARTIAL_MATCH = (("terminal", "deprecated"),)
+    PROCESSING = (
+        "PROCESSING",
+        ("non-terminal", "processing")
+    )
+    MULTIPLE_EXACT_MATCHES = (
+        "MULTIPLE_EXACT_MATCHES",
+        ("non-terminal", "processing")
+    )
+    RETRY_SCHEDULED = (
+        "RETRY_SCHEDULED",
+        ("non-terminal", "processing")
+    ) 
 
     @property
     def is_terminal(self) -> bool:
@@ -101,6 +166,10 @@ class TaxonomicEntry:
             value = getattr(self, rank)
             if value and value.lower() not in INVALID_VALUES:
                 return True
+        # Check scientific_name separately if all ranks are empty/invalid
+        value = self.scientific_name
+        if value and value.lower() not in INVALID_VALUES:
+             return True
         return False
     
     @property
@@ -176,7 +245,10 @@ class EntryGroupRef:
     
     @property
     def most_specific_rank(self) -> Optional[str]:
-        """Return the most specific taxonomic rank that has valid data."""
+        """
+        Return the most specific taxonomic rank that has valid data. 
+        If taxonomic data is empty, return None.
+        """
         for field, rank in TAXONOMIC_QUERY_PRECEDENCE:
             value = getattr(self, field)
             if value and value.strip().lower() not in INVALID_VALUES:
@@ -188,6 +260,7 @@ class EntryGroupRef:
         """
         Return the term (value) corresponding to the most specific rank available,
         based on the precedence order.
+        If taxonomic data is empty, return None.
         """
         for field_name, rank in TAXONOMIC_QUERY_PRECEDENCE:
             value = getattr(self, field_name, None)
@@ -197,16 +270,14 @@ class EntryGroupRef:
 
     @property
     def key(self) -> str:
-        """Unique, deterministic key based on hash of entry IDs + shared taxonomic data."""
-        entry_id_str = "|".join(sorted(self.entry_uuids))
+        """Unique, deterministic key based on hash of shared taxonomic data."""
         terms = []
         for field, _ in TAXONOMIC_QUERY_PRECEDENCE:
             term = getattr(self, field, "") or ""
             terms.append(term.strip().lower())
         taxa_data = "|".join(terms)
-        full_str = f"{entry_id_str}|{taxa_data}"
 
-        return hashlib.sha256(full_str.encode("utf-8")).hexdigest()
+        return hashlib.sha256(taxa_data.encode("utf-8")).hexdigest()
 
 
     def resolve_taxonomic_entries(self, resolver: Callable[[str], Optional[TaxonomicEntry]]) -> List[TaxonomicEntry]:
@@ -220,135 +291,89 @@ class EntryGroupRef:
             A list of TaxonomicEntry objects sorted by their UUIDs. 
 
         Usage example:
+            # Assuming entry_index is a Dict[str, TaxonomicEntry]
             resolved_entries = entry_group.resolve_taxonomic_entries(entry_index.get)
         """
         # Sort UUIDs for consistent ordering
         return [resolver(uuid) for uuid in sorted(self.entry_uuids) if resolver(uuid) is not None]
 
 @dataclass(frozen=True)
-class QueryGroupRef:
-    """A reference to a group of entry groups with the same query term.
-    
-    This represents the second transformation - the query planning stage.
-    Entry groups that will use the same query term are grouped to optimize 
-    API calls.
-    """
-    
-    # The taxonomic rank of the query term
-    query_rank: str
-
-    # The term that will be used for the query
-    query_term: str
-    
-    # The GNVerifier data source ID for this query group
-    data_source_id: int
-    
-    # The keys of all entry groups in this query group
-    entry_group_keys: FrozenSet[str] = field(default_factory=frozenset)
-    
-    @property
-    def group_count(self) -> int:
-        """Return the number of entry groups in this query group."""
-        return len(self.entry_group_keys)
-
-    @property
-    def key(self) -> str:
-        """Generate a deterministic key for this query group.
-        
-        The key is based on the combination of entry_group_keys, query_rank, 
-        query_term, 
-        and data_source_id.
-        """
-        # Create a string combining all relevant attributes
-        key_parts = [
-            "|".join(sorted(self.entry_group_keys)),
-            self.query_rank or "",
-            self.query_term or "",
-            str(self.data_source_id)
-        ]
-        
-        key_str = "|".join(key_parts)
-        return hashlib.sha256(key_str.encode("utf-8")).hexdigest()
-
-    def resolve_entry_groups(self, resolver: Callable[[str], Optional[EntryGroupRef]]) -> List[EntryGroupRef]:
-        """
-        Retrieve the full EntryGroupRef objects corresponding to the stored keys.
-
-        Args:
-            resolver: A function that takes an entry group key (str) and returns
-                      the corresponding EntryGroupRef (or None if not found).
-
-        Returns:
-            A list of EntryGroupRef objects corresponding to this query group,
-            sorted by their keys.
-
-        Usage example:
-            resolved_groups = query_group.resolve_entry_groups(entry_group_index.get)
-        """
-        # Sort the keys for consistent ordering
-        return [resolver(key) for key in sorted(self.entry_group_keys) if resolver(key) is not None]
-
+class QueryParameters:
+    """Represents the parameters for a unique GNVerifier query."""
+    term: str
+    rank: str
+    source_id: int
 
 @dataclass(frozen=True)
 class ResolutionAttempt:
-    """Records the result of a GNVerifier query and its interpretation.
-    
-    This represents the final transformation - the resolution outcome.
-    It contains both the query information and the result, as well as
-    metadata about the resolution attempt.
-    """
+    """Records the result of a GNVerifier query and its interpretation."""
 
-    # The query group this attempt is for
-    query_group_key: str
-    
-    # The taxonomic rank of the query term
+    # Core linking and query info
+    entry_group_key: str
     query_rank: str
-
-    # The term that was used in the query
     query_term: str
-    
-    # The status of the resolution
+    data_source_id: int # The GNVerifier data source ID used for this attempt's query
+
+    # Resolution outcome, assigned after query result obtained
     status: ResolutionStatus
-    
-    # The raw response from GNVerifier, if applicable
-    gnverifier_response: Optional[GNVerifierName] = None
-    
-    # The resolved classification, if successful
-    resolved_classification: Optional[Dict[str, str]] = None
-    
-    # Additional metadata about the resolution
-    metadata: Dict[str, Union[str, int, float, bool]] = field(default_factory=dict)
-    
-    # Reference to the previous attempt in the chain, if any
-    previous_key: Optional[str] = None
+    resolved_classification: Optional[Dict[str, str]] = None # If successful
+
+    # Provenance and diagnostics
+    gnverifier_response: Optional[GNVerifierName] = None # Raw Pydantic model from API response
+    previous_key: Optional[str] = None # Key of the attempt before this one (if retry)
+    error: Optional[str] = None # Records errors during execution or classification
+    resolution_strategy_name: Optional[str] = None # Which strategy assigned the status
+    failure_reason: Optional[str] = None # Specific reason if status is FAILED/error
+    scheduled_query_params: Optional[QueryParameters] = None 
+
+    # Flexible metadata
+    # For extra, non-essential info specific to a strategy or temporary state
+    metadata: Dict[str, Union[str, int, float, bool]] = field(default_factory=dict) 
 
     @property
     def is_retry(self) -> bool:
-        """Check if this attempt is a retry (has a previous attempt)."""
         return self.previous_key is not None
     
     @property
     def is_successful(self) -> bool:
-        """Return whether the attempt was successful."""
         return self.status.is_successful
-    
-    @property
-    def needs_retry(self) -> bool:
-        """Return whether the attempt needs to be retried."""
-        return self.status.needs_retry
 
     @property
     def key(self) -> str:
         """
-        Compute a unique key for this resolution attempt based on its
-        QueryGroupRef linkage and GNVerifier response.
+        Compute a unique key that deterministically identifies this resolution attempt.
+        
+        Includes the core components that define the attempt's identity:
+        - entry_group_key: The group being resolved
+        - query information: rank, term, and data source ID
+        - gnverifier_response: The API response (or empty string if none)
         """
-        # Convert the GNVerifier response to a JSON string for deterministic hashing.
-        # If there's no response, use an empty string.
-        response_str = (
-            json.dumps(self.gnverifier_response, sort_keys=True)
-            if self.gnverifier_response is not None else ""
-        )
-        # Combine with the query group key, query term, and query rank.
-        combined = f"{self.query_group_key}|{self.query_term}|{self.query_rank}|{response_str}"
+        response_str = ""
+        if self.gnverifier_response is not None:
+            try:
+                # Step 1: Dump Pydantic model to dict
+                response_dict = self.gnverifier_response.model_dump(mode='json')
+                # Step 2: Dump dict to sorted JSON string
+                response_str = json.dumps(response_dict, sort_keys=True)
+            except AttributeError: # Fallback for older Pydantic or different environments
+                 try:
+                      response_dict = self.gnverifier_response.dict()
+                      response_str = json.dumps(response_dict, sort_keys=True)
+                 except Exception as e:
+                      # Log differently here if needed, maybe just print for dataclass context
+                      print(f"Warning: Could not serialize self.gnverifier_response for key property: {e}")
+                      response_str = ""
+            except Exception as e:
+                 print(f"Warning: Could not serialize self.gnverifier_response for key property: {e}")
+                 response_str = ""
+
+        key_components = [
+            self.entry_group_key or "",
+            self.query_term or "",
+            self.query_rank or "",
+            str(self.data_source_id) if self.data_source_id is not None else "",
+            response_str # Add the serialized response
+        ]
+
+        combined = "|".join(key_components)
         return hashlib.sha256(combined.encode("utf-8")).hexdigest()

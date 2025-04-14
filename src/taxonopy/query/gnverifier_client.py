@@ -12,11 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union, Any
 
-from taxonopy.types.data_classes import QueryGroupRef
 from taxonopy.types.gnverifier import VerificationOutput, Name
 from taxonopy.config import config
-
-
 
 @dataclass
 class GNVerifierConfig:
@@ -49,27 +46,31 @@ class GNVerifierConfig:
     # Whether to relax fuzzy matching criteria
     fuzzy_relaxed: bool = field(default_factory=lambda: config.fuzzy_relaxed)
 
-
 class GNVerifierClient:
     """Client for interacting with the Global Names Verifier service."""
-    
+
     def __init__(self, config_obj: Optional[GNVerifierConfig] = None):
-        """Initialize the GNVerifier client.
-        
-        Args:
-            config_obj: Optional configuration object that overrides other parameters.
-        """
+        """Initialize the GNVerifier client."""
         self.logger = logging.getLogger(__name__)
         if config_obj:
             self.config = config_obj
         else:
-            # Use global configuration values as defaults
-            self.config = GNVerifierConfig(
-                gnverifier_image=config.gnverifier_image,
-                data_source_id=config.data_source_id,
-                all_matches=config.all_matches,
-                capitalize=config.capitalize
-            )
+            self.config = GNVerifierConfig() # Use defaults from class definition
+
+        # Check and update flags based on global config if defaults were used
+        # Ensures CLI args passed to global config are respected
+        # if no specific config_obj was provided to the client.
+        if not config_obj:
+             self.config.gnverifier_image = config.gnverifier_image
+             self.config.data_source_id = config.data_source_id # Assumes global config holds the preferred source list/string
+             self.config.all_matches = config.all_matches
+             self.config.capitalize = config.capitalize
+             self.config.jobs = config.jobs # Use global job count if specified
+             self.config.species_group = config.species_group
+             self.config.fuzzy_uninomial = config.fuzzy_uninomial
+             self.config.fuzzy_relaxed = config.fuzzy_relaxed
+             # Note: format is fixed to 'compact' for JSON parsing
+
         self.use_docker, self.gnverifier_available = self._determine_execution_method()
     
     def _determine_execution_method(self) -> Tuple[bool, bool]:
@@ -80,7 +81,6 @@ class GNVerifierClient:
             - use_docker (bool): Whether to use Docker
             - gnverifier_available (bool): Whether GNVerifier is available
         """
-        # First, check Docker availability
         if self._is_docker_available():
             # Check if the image is available
             if self._is_docker_image_available(self.config.gnverifier_image):
@@ -103,6 +103,7 @@ class GNVerifierClient:
         
         # Neither Docker nor local installation is available
         self.logger.warning("GNVerifier not found via Docker or local installation")
+        self.logger.warning("Please install GNVerifier or set up Docker with the GNVerifier image")
         return False, False
     
     def _is_docker_available(self) -> bool:
@@ -151,7 +152,7 @@ class GNVerifierClient:
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                # timeout=300  # 5 minutes
+                # timeout=300
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             error_msg = f"Failed to pull Docker image '{image}': {str(e)}"
@@ -167,34 +168,50 @@ class GNVerifierClient:
         return shutil.which("gnverifier") is not None
     
     def execute_query(self, names: List[str]) -> List[Dict[str, Any]]:
-        """Verify scientific names using GNVerifier.
-        
+        """
+        Verify a list of scientific names using GNVerifier. This method handles
+        a single batch of names.
+
         Args:
-            names: List of scientific names to verify
-            
+            names: List of scientific names to verify in this batch.
+
         Returns:
-            List of verification results as dictionaries
-            
+            List of verification result dictionaries, one for each input name,
+            in the same order. Returns an empty dictionary {} for a name if
+            an error occurs during its processing or parsing within the batch.
+
         Raises:
-            RuntimeError: If GNVerifier is not available or execution fails
+            RuntimeError: If GNVerifier is not available or a fatal execution error occurs
+                          (e.g., non-zero exit code from the gnverifier process).
+                          Individual parsing errors are handled internally and result
+                          in {} entries in the output list.
         """
         if not self.gnverifier_available:
             error_msg = "GNVerifier is not available via Docker or local installation"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-        
-        # Prepare input
+        if not names:
+            return [] # Return empty list if no names provided
+
+        # Prepare input for the command-line tool (newline-separated)
         query_input = "\n".join(names)
-        
-        # Run verification
+
+        # Run verification using the determined method
         try:
             if self.use_docker:
+                # Pass expected_count = len(names)
                 return self._run_with_docker(query_input, len(names))
             else:
+                 # Pass expected_count = len(names)
                 return self._run_with_local_gnverifier(query_input, len(names))
+        except RuntimeError as e:
+             # Re-raise fatal execution errors from _run methods
+             self.logger.error(f"Fatal error during GNVerifier execution: {e}")
+             raise
         except Exception as e:
-            self.logger.error(f"Error verifying names: {e}")
-            # Return empty results for each name
+            # Catch unexpected errors during the call setup/handling
+            self.logger.error(f"Unexpected error executing GNVerifier query: {e}", exc_info=True)
+            # Return list of empty dicts matching the input count
             return [{} for _ in range(len(names))]
     
     def _run_with_docker(self, query_input: str, expected_count: int) -> List[Dict[str, Any]]:
@@ -220,8 +237,8 @@ class GNVerifierClient:
         ]
         
         # Add optional flags
-        if self.config.data_sources:
-            cmd.extend(["--sources", self.config.data_sources])
+        if self.config.data_source_id:
+            cmd.extend(["--sources", self.config.data_source_id])
         
         if self.config.all_matches:
             cmd.append("--all_matches")
@@ -280,8 +297,8 @@ class GNVerifierClient:
         cmd.extend(["-j", str(self.config.jobs)])
         cmd.extend(["--format", self.config.format])
         
-        if self.config.data_sources:
-            cmd.extend(["--sources", self.config.data_sources])
+        if self.config.data_source_id:
+            cmd.extend(["--sources", self.config.data_source_id])
         
         if self.config.all_matches:
             cmd.append("--all_matches")
@@ -377,37 +394,3 @@ class GNVerifierClient:
                 return False
         
         return True
-    
-    def process_query_groups(self, query_groups: List[QueryGroupRef], batch_size: int = 10000) -> Dict[str, Dict[str, Any]]:
-        """Process a list of query groups in batches.
-        
-        Args:
-            query_groups: List of query groups to process
-            batch_size: Number of queries to process in each batch
-            
-        Returns:
-            Dictionary mapping query group keys to verification results
-        """
-        # Extract query terms from each query group
-        query_terms = [qg.query_term for qg in query_groups]
-        query_group_keys = [qg.query_term for qg in query_groups]
-        
-        # Process in batches
-        results = {}
-        for i in range(0, len(query_terms), batch_size):
-            batch_terms = query_terms[i:i+batch_size]
-            batch_keys = query_group_keys[i:i+batch_size]
-            
-            self.logger.info(f"Processing batch {i//batch_size + 1} with {len(batch_terms)} queries")
-            batch_results = self.verify_names(batch_terms)
-            
-            # Map results to query groups
-            for key, result in zip(batch_keys, batch_results):
-                # Validate response
-                if self.validate_response(result):
-                    results[key] = result
-                else:
-                    self.logger.warning(f"Invalid result for query term '{key}'")
-                    results[key] = {}
-        
-        return results

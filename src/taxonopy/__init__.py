@@ -11,7 +11,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus,
     TaxonomicEntry,
     EntryGroupRef,
-    QueryGroupRef,
+    QueryParameters,
     ResolutionAttempt,
 )
 
@@ -27,7 +27,7 @@ __all__ = [
     "ResolutionStatus",
     "TaxonomicEntry",
     "EntryGroupRef",
-    "QueryGroupRef",
+    "QueryParameters",
     "ResolutionAttempt",
     
     # Resolution components

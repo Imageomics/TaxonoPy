@@ -22,7 +22,7 @@ class Config:
         self.cache_dir = str(Path.home() / ".cache" / "taxonopy")
         
         # GNVerifier settings
-        self.gnverifier_image = "gnames/gnverifier:v1.2.3"
+        self.gnverifier_image = "gnames/gnverifier:v1.2.5"
         self.data_source_id = "11"  # Default to GBIF (11)
         self.all_matches = True
         self.capitalize = True

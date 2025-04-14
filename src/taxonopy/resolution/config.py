@@ -5,6 +5,7 @@ behavior of resolution strategies.
 """
 
 from typing import Dict, Any, List
+from taxonopy.constants import TAXONOMIC_RANKS
 
 
 class ResolutionStrategyConfig:
@@ -21,7 +22,7 @@ class ResolutionStrategyConfig:
         self.preferred_data_sources = [11, 172, 1]  # GBIF, OTOL, CoL
         self.max_retry_attempts = 3
         self.synonym_resolution = "accept"  # Options: accept, reject, resolve_to_accepted
-        self.taxonomic_ranks = ["kingdom", "phylum", "class_", "order", "family", "genus", "species"]
+        self.taxonomic_ranks = TAXONOMIC_RANKS
         
     def update(self, config_dict: Dict[str, Any]) -> None:
         """Update configuration from a dictionary.

@@ -8,434 +8,138 @@ ResolutionAttempt objects.
 import logging
 from typing import List, Dict, Optional, Tuple, Iterator
 from datetime import datetime
+import itertools
 
 from tqdm import tqdm
+from pydantic import ValidationError
 
-from taxonopy.types.data_classes import (
-    QueryGroupRef, 
-    ResolutionStatus, 
-    ResolutionAttempt
-)
+from taxonopy.types.data_classes import QueryParameters
 from taxonopy.types.gnverifier import Name as GNVerifierName
 from taxonopy.query.gnverifier_client import GNVerifierClient
-# from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
-# from taxonopy.resolution.strategy.manager import ResolutionStrategyManager
-# from taxonopy.resolution.strategy.modes.singular_exact_match import SingularExactMatchStrategy
-# from taxonopy.resolution.strategy.modes.exact_match import ExactMatchStrategy
-from taxonopy.types.data_classes import QueryGroupRef, ResolutionAttempt, ResolutionStatus
+from taxonopy.config import config # To get default batch_size if not provided
 
 logger = logging.getLogger(__name__)
 
-
-# def batch_query_groups(
-#     query_groups: List[QueryGroupRef], 
-#     batch_size: int = 10000
-# ) -> Iterator[List[QueryGroupRef]]:
-#     """Batch query groups for efficient processing.
-    
-#     Args:
-#         query_groups: List of query groups to batch
-#         batch_size: Maximum number of query groups per batch
-        
-#     Yields:
-#         Batches of query groups
-#     """
-#     for i in range(0, len(query_groups), batch_size):
-#         yield query_groups[i:i + batch_size]
-
-
-# def execute_query_batch(
-#     batch: List[QueryGroupRef],
-#     client: GNVerifierClient,
-#     resolution_manager: ResolutionAttemptManager,
-#     show_progress: bool = True,
-#     timeout: int = 300
-# ) -> Dict[str, ResolutionAttempt]:
-#     """Execute a batch of queries and create resolution attempts.
-    
-#     Args:
-#         batch: Batch of query groups to process
-#         client: GNVerifier client for executing queries
-#         resolution_manager: Manager for creating resolution attempts
-#         show_progress: Whether to show a progress bar
-#         timeout: Timeout in seconds for query execution
-        
-#     Returns:
-#         Dictionary mapping query group keys to resolution attempts
-#     """
-#     # Extract query terms from query groups
-#     query_terms = []
-#     query_group_map = {}  # Maps query term to query group
-    
-#     for query_group in batch:
-#         query_terms.append(query_group.query_term)
-#         query_group_map[query_group.query_term] = query_group
-    
-#     # Execute the query batch
-#     logging.info(f"Executing batch of {len(query_terms)} query terms")
-    
-#     try:
-#         results = client.execute_query(query_terms)#, timeout=timeout)
-#     except (RuntimeError, TimeoutError) as e:
-#         logging.error(f"Failed to execute query batch: {str(e)}")
-#         # Create failed resolution attempts for all query groups in the batch
-#         return _create_failed_resolution_attempts(
-#             batch, 
-#             resolution_manager, 
-#             ResolutionStatus.FAILED,
-#             {"error": str(e)}
-#         )
-    
-#     # Process results and create resolution attempts
-#     resolution_attempts = {}
-    
-#     # Create an iterator with or without progress bar
-#     iter_terms = tqdm(query_terms, desc="Processing results") if show_progress else query_terms
-    
-#     for i, term in enumerate(iter_terms):
-#         query_group = query_group_map[term]
-#         # Access the corresponding result by index
-#         result = results[i] if i < len(results) else None
-
-#         if result:
-#             # Create resolution attempt based on result
-#             attempt = _create_resolution_attempt_from_result(
-#                 query_group, result, resolution_manager
-#             )
-#         else:
-#             # Create a failed resolution attempt
-#             attempt = resolution_manager.create_attempt(
-#                 query_group_key=query_group.query_term,
-#                 query_term=query_group.query_term,
-#                 query_rank=query_group.query_rank,
-#                 status=ResolutionStatus.FAILED,
-#                 gnverifier_response=None,
-#                 metadata={"error": "No result received from GNVerifier"}
-#             )
-        
-#         resolution_attempts[query_group.query_term] = attempt
-
-#         # print(f"Attempts: {resolution_attempts}")
-    
-#     return resolution_attempts
-
-
-# def _create_resolution_attempt_from_result(
-#     query_group: QueryGroupRef,
-#     result: dict,  # note that result is now a dict
-#     resolution_manager: ResolutionAttemptManager) -> ResolutionAttempt:
-#     # Convert the dictionary to a GNVerifierName object
-#     try:
-#         result_obj = GNVerifierName.parse_obj(result)
-#     except Exception as e:
-#         resolution_manager.logger.error(f"Error parsing GNVerifier result: {e}")
-#         result_obj = None
-
-#     # If conversion failed, treat it as no match
-#     if result_obj is None:
-#         return resolution_manager.create_attempt(
-#             query_group_key=query_group.query_term,
-#             query_term=query_group.query_term,
-#             query_rank=query_group.query_rank,
-#             status=ResolutionStatus.FAILED,
-#             gnverifier_response=None,
-#             metadata={"error": "Failed to parse GNVerifier result"}
-#         )
-    
-#     # Create an initial attempt with the raw response
-#     initial_attempt = resolution_manager.create_attempt(
-#         query_group_key=query_group.query_term,
-#         query_term=query_group.query_term,
-#         query_rank=query_group.query_rank,
-#         status=ResolutionStatus.PROCESSING,  # Mark as processing initially
-#         gnverifier_response=result_obj,
-#         metadata={"timestamp": datetime.now().isoformat()}
-#     )
-    
-#     # Create a strategy manager with our strategies
-#     strategy_manager = ResolutionStrategyManager(resolution_manager)
-    
-#     # Add strategies in order of specificity (most specific first)
-#     strategy_manager.add_strategy(SingularExactMatchStrategy())
-#     strategy_manager.add_strategy(ExactMatchStrategy())
-    
-#     # Apply the strategies to resolve the attempt
-#     resolved_attempt = strategy_manager.resolve(initial_attempt)
-    
-#     # If no strategy could handle this attempt, do our fallback handling
-#     if resolved_attempt.status == ResolutionStatus.FAILED:
-#         # Use our original logic as fallback
-#         match_type = result_obj.match_type.root if result_obj.match_type else "NoMatch"
-        
-#         if match_type == "NoMatch":
-#             status = ResolutionStatus.NO_MATCH
-#         elif match_type == "Exact":
-#             status = ResolutionStatus.EXACT_MATCH
-#         elif match_type in ["Fuzzy", "FuzzyRelaxed"]:
-#             status = ResolutionStatus.FUZZY_MATCH
-#         elif match_type in ["Partial", "PartialFuzzy", "PartialFuzzyRelaxed", "Virus", "FacetedSearch"]:
-#             status = ResolutionStatus.PARTIAL_MATCH
-#         else:
-#             status = ResolutionStatus.AMBIGUOUS_MATCH
-        
-#         # Extract classification if available
-#         resolved_classification = None
-#         if status in [ResolutionStatus.EXACT_MATCH, ResolutionStatus.FUZZY_MATCH, ResolutionStatus.PARTIAL_MATCH]:
-#             if result_obj.best_result and result_obj.best_result.classification_path and result_obj.best_result.classification_ranks:
-#                 resolved_classification = _extract_classification(
-#                     result_obj.best_result.classification_path,
-#                     result_obj.best_result.classification_ranks
-#                 )
-        
-#         # Create metadata for the resolution attempt
-#         metadata = {
-#             "data_sources_num": result_obj.data_sources_num,
-#             "curation": result_obj.curation,
-#             "match_type": match_type,
-#             "fallback_logic": True,  # Indicate that we used fallback logic
-#             "timestamp": datetime.now().isoformat()
-#         }
-        
-#         if result_obj.error:
-#             metadata["error"] = result_obj.error
-        
-#         # Add previous attempt ID to metadata
-#         metadata["previous_attempt_key"] = initial_attempt.key
-        
-#         # Create a new attempt with fallback logic
-#         return resolution_manager.create_attempt(
-#             query_group_key=query_group.key,
-#             query_term=query_group.query_term,
-#             query_rank=query_group.query_rank,
-#             status=status,
-#             gnverifier_response=result_obj,
-#             resolved_classification=resolved_classification,
-#             metadata=metadata
-#         )
-    
-#     return resolved_attempt
-
-
-# def _extract_classification(
-#     classification_path: str, 
-#     classification_ranks: str
-# ) -> Dict[str, str]:
-#     """Extract classification from GNVerifier result paths.
-    
-#     Args:
-#         classification_path: Pipe-separated path of taxon names
-#         classification_ranks: Pipe-separated path of ranks
-        
-#     Returns:
-#         Dictionary mapping ranks to taxon names
-#     """
-#     classification = {}
-    
-#     # Split the paths into lists
-#     taxa = classification_path.split('|')
-#     ranks = classification_ranks.split('|')
-    
-#     # Map ranks to taxa
-#     for i, rank in enumerate(ranks):
-#         if i < len(taxa):
-#             # Convert 'class' to 'class_' to match TaxonomicEntry fields
-#             if rank == "class":
-#                 rank = "class_"
-#             classification[rank] = taxa[i]
-    
-#     return classification
-
-
-# def _create_failed_resolution_attempts(
-#     batch: List[QueryGroupRef],
-#     resolution_manager: ResolutionAttemptManager,
-#     status: ResolutionStatus,
-#     metadata: Dict
-# ) -> Dict[str, ResolutionAttempt]:
-#     """Create failed resolution attempts for all query groups in a batch.
-    
-#     Args:
-#         batch: Batch of query groups
-#         resolution_manager: Manager for creating resolution attempts
-#         status: Resolution status to set
-#         metadata: Metadata to include in the attempts
-        
-#     Returns:
-#         Dictionary mapping query group keys to resolution attempts
-#     """
-#     attempts = {}
-    
-#     for query_group in batch:
-#         attempt = resolution_manager.create_attempt(
-#             query_group_key=query_group.query_term,
-#             query_term=query_group.query_term,
-#             query_rank=query_group.query_rank,
-#             status=status,
-#             gnverifier_response=None,
-#             metadata=metadata
-#         )
-#         attempts[query_group.query_term] = attempt
-    
-#     return attempts
-
-
-# def execute_all_queries(
-#     query_groups: List[QueryGroupRef],
-#     client: GNVerifierClient,
-#     resolution_manager: ResolutionAttemptManager,
-#     batch_size: int = 10000,
-#     show_progress: bool = True
-# ) -> Dict[str, ResolutionAttempt]:
-#     """Execute all queries for taxonomic resolution.
-    
-#     This is the main entry point for the module.
-    
-#     Args:
-#         query_groups: List of query groups to process
-#         client: GNVerifier client for executing queries
-#         resolution_manager: Manager for creating resolution attempts
-#         batch_size: Maximum number of query groups per batch
-#         show_progress: Whether to show a progress bar
-        
-#     Returns:
-#         Dictionary mapping query group keys to resolution attempts
-#     """
-#     all_resolution_attempts = {}
-    
-#     # Batch the query groups
-#     batches = list(batch_query_groups(query_groups, batch_size))
-    
-#     logging.info(f"Processing {len(query_groups)} query groups in {len(batches)} batches")
-    
-#     # Process each batch
-#     for i, batch in enumerate(batches):
-#         logging.info(f"Processing batch {i+1}/{len(batches)} with {len(batch)} query groups")
-        
-#         batch_resolution_attempts = execute_query_batch(
-#             batch, 
-#             client, 
-#             resolution_manager,
-#             show_progress=show_progress
-#         )
-        
-#         # Add batch results to overall results
-#         all_resolution_attempts.update(batch_resolution_attempts)
-    
-#     logging.info(f"Completed processing {len(query_groups)} query groups")
-    
-#     return all_resolution_attempts
-def execute_all_queries(
-    query_groups: List[QueryGroupRef],
+def execute_queries(
+    queries_to_run: Dict[str, QueryParameters],
     client: GNVerifierClient,
-    batch_size: int = 1000,
-    progress_bar: bool = True
-) -> Dict[str, ResolutionAttempt]:
+    batch_size: Optional[int] = None
+) -> Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]]:
     """
-    Execute all queries and create initial resolution attempts.
-    
-    Args:
-        query_groups: List of query groups to execute
-        client: GNVerifier client for executing queries
-        batch_size: Number of queries per batch
-        progress_bar: Whether to show a progress bar
-        
-    Returns:
-        Dictionary mapping query group keys to resolution attempts
-    """
-    # Split query groups into batches
-    batches = [query_groups[i:i+batch_size] for i in range(0, len(query_groups), batch_size)]
-    
-    # Create an iterator with or without progress bar
-    iter_batches = tqdm(batches, desc="Executing queries") if progress_bar else batches
-    
-    # Execute each batch and collect results
-    results = {}
-    for batch in iter_batches:
-        batch_results = execute_query_batch(batch, client)
-        results.update(batch_results)
-    
-    return results
+    Executes GNVerifier queries for the given parameters in batches.
 
-def execute_query_batch(
-    batch: List[QueryGroupRef],
-    client: GNVerifierClient
-) -> Dict[str, ResolutionAttempt]:
-    """
-    Execute a batch of queries and create initial resolution attempts.
-    
     Args:
-        batch: List of query groups to execute
-        client: GNVerifier client for executing queries
-        
+        queries_to_run: Dictionary mapping EntryGroupRef keys to QueryParameters.
+        client: An initialized GNVerifierClient instance.
+        batch_size: The maximum number of queries to send to the client in one batch.
+                    Defaults to config.batch_size if None.
+
     Returns:
-        Dictionary mapping query group keys to resolution attempts
+        Dictionary mapping EntryGroupRef keys back to a tuple containing the
+        original QueryParameters used and the parsed GNVerifierName result (or None).
+
+    Raises:
+        RuntimeError: If critical integrity checks fail (count mismatch, name mismatch)
+                      or if the client raises an error during execution.
     """
-    # Collect query terms
-    query_terms = [qg.query_term for qg in batch]
+    if not queries_to_run:
+        logger.info("No queries provided to execute.")
+        return {}
+
+    if batch_size is None:
+        batch_size = config.batch_size
+    logger.info(f"Executing {len(queries_to_run)} queries in batches of size {batch_size}...")
+
+    all_results: Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]] = {}
     
-    # Execute queries
-    try:
-        gnverifier_results = client.execute_query(query_terms)
-        
-        # Create resolution attempts from results
-        attempts = {}
-        for i, query_group in enumerate(batch):
-            if i < len(gnverifier_results):
-                result = gnverifier_results[i]
-                
-                # Create initial resolution attempt with PROCESSING status
-                attempt = ResolutionAttempt(
-                    query_group_key=query_group.key,
-                    query_rank=query_group.query_rank,
-                    query_term=query_group.query_term,
-                    status=ResolutionStatus.PROCESSING,
-                    gnverifier_response=result,
-                    metadata={
-                        "created_at": datetime.now().isoformat(),
-                        "data_source_id": query_group.data_source_id
-                    }
-                )
-                
-                attempts[query_group.key] = attempt
-            else:
-                # Missing result, create a failed attempt
-                logger.warning(f"Missing result for query: {query_group.query_term}")
-                attempt = ResolutionAttempt(
-                    query_group_key=query_group.key,
-                    query_rank=query_group.query_rank,
-                    query_term=query_group.query_term,
-                    status=ResolutionStatus.PROCESSING,
-                    gnverifier_response=None,
-                    metadata={
-                        "created_at": datetime.now().isoformat(),
-                        "data_source_id": query_group.data_source_id,
-                        "error": "No result returned from GNVerifier"
-                    }
-                )
-                
-                attempts[query_group.key] = attempt
-        
-        return attempts
-        
-    except Exception as e:
-        logger.error(f"Error executing query batch: {str(e)}")
-        
-        # Create failed attempts for all query groups in the batch
-        attempts = {}
-        for query_group in batch:
-            attempt = ResolutionAttempt(
-                query_group_key=query_group.key,
-                query_rank=query_group.query_rank,
-                query_term=query_group.query_term,
-                status=ResolutionStatus.PROCESSING,
-                gnverifier_response=None,
-                metadata={
-                    "created_at": datetime.now().isoformat(),
-                    "data_source_id": query_group.data_source_id,
-                    "error": f"Query execution error: {str(e)}"
-                }
-            )
+    # Prepare items for batching
+    items_to_process = list(queries_to_run.items())
+    total_queries = len(items_to_process)
+
+    with tqdm(total=total_queries, desc="Executing queries", unit="query") as pbar:
+        for i in range(0, total_queries, batch_size):
+            batch_items = items_to_process[i:i+batch_size]
             
-            attempts[query_group.key] = attempt
-        
-        return attempts
+            # Prepare input for this specific batch
+            batch_eg_keys = [item[0] for item in batch_items]
+            batch_params = [item[1] for item in batch_items]
+            batch_query_terms = [param.term for param in batch_params]
+            
+            batch_start_index = i
+            batch_end_index = min(i + batch_size, total_queries)
+            logger.debug(f"Processing batch {batch_start_index+1}-{batch_end_index}...")
+
+            try:
+                # Call the client with the list of terms for this batch
+                gnverifier_results_dicts: List[Dict] = client.execute_query(batch_query_terms)
+
+                # Integrity check 1: Count
+                if len(gnverifier_results_dicts) != len(batch_query_terms):
+                    error_msg = (
+                        f"Fatal Error: GNVerifier returned {len(gnverifier_results_dicts)} results for batch, "
+                        f"but {len(batch_query_terms)} queries were sent. Halting execution."
+                    )
+                    logger.critical(error_msg)
+                    raise RuntimeError(error_msg)
+
+                # Process results for this batch
+                for j, result_dict in enumerate(gnverifier_results_dicts):
+                    original_eg_key = batch_eg_keys[j]
+                    original_params = batch_params[j]
+                    sent_term = batch_query_terms[j]
+                    parsed_response: Optional[GNVerifierName] = None
+                    parsing_error: Optional[str] = None
+
+                    # Integrity check 2: Name
+                    # Ensure the result dict corresponds to the sent term
+                    # Allow empty dicts (client might return {} on error)
+                    if result_dict and result_dict.get("name") != sent_term:
+                         error_msg = (
+                            f"Fatal Error: Result name mismatch in batch. "
+                            f"Sent term '{sent_term}' (index {j}), but received result "
+                            f"with name '{result_dict.get('name', 'N/A')}'. Halting execution."
+                         )
+                         logger.critical(error_msg)
+                         raise RuntimeError(error_msg)
+
+                    # Parse result
+                    if result_dict: # Only parse if the dict isn't empty/None
+                        try:
+                            parsed_response = GNVerifierName.model_validate(result_dict)
+                        except ValidationError as val_err:
+                            parsing_error = f"Pydantic validation failed: {val_err}"
+                            logger.error(f"Query Term: '{sent_term}' (EG Key: {original_eg_key}) - {parsing_error}")
+                        except Exception as parse_err: # Catch other potential errors
+                            parsing_error = f"Unexpected error parsing response: {parse_err}"
+                            logger.error(f"Query Term: '{sent_term}' (EG Key: {original_eg_key}) - {parsing_error}", exc_info=True)
+
+                    # Store result mapped back to original EntryGroupRef key
+                    if parsing_error:
+                         # Store None for the response object if parsing failed
+                         all_results[original_eg_key] = (original_params, None)
+                         # TODO: store the error somewhere.For now, just log.
+                    else:
+                         all_results[original_eg_key] = (original_params, parsed_response)
+
+                pbar.update(len(batch_items))
+
+            except RuntimeError: # Catch fatal integrity errors or client execution errors
+                 raise # Re-raise to halt the process as per design
+            except Exception as e:
+                logger.error(f"Unexpected error processing batch {batch_start_index+1}-{batch_end_index}: {e}", exc_info=True)
+                # Handle non-fatal batch error: record None for all items in this batch
+                for k in range(len(batch_items)):
+                    original_eg_key = batch_eg_keys[k]
+                    original_params = batch_params[k]
+                    if original_eg_key not in all_results: # Avoid overwriting successful results from previous batches if error occurs later
+                        all_results[original_eg_key] = (original_params, None)
+                pbar.update(len(batch_items)) # Ensure progress bar updates even on batch error
+                # Decide whether to continue to next batch or halt? For now, let's halt.
+                raise RuntimeError(f"Batch processing error: {e}")
+
+
+    logger.info(f"Finished executing queries. Obtained results for {len(all_results)} EntryGroupRefs.")
+    if len(all_results) != total_queries:
+         logger.warning(f"Number of results ({len(all_results)}) does not match total queries ({total_queries}). Some queries may have failed.")
+
+    return all_results

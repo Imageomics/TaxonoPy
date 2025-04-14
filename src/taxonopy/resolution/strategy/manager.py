@@ -86,7 +86,7 @@ class ResolutionStrategyManager:
         
         # Create and return the failed attempt
         return self.attempt_manager.create_attempt(
-            query_group_key=attempt.query_group_key,
+            entry_group_key=attempt.entry_group_key,
             query_term=attempt.query_term,
             query_rank=attempt.query_rank,
             status=ResolutionStatus.FAILED,

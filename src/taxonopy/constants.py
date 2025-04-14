@@ -22,12 +22,13 @@ DATA_SOURCE_PRECEDENCE = OrderedDict([
     ("GBIF", 11),
     ("COL", 1),
     ("OTOL", 179),
-    ("NCBI", 4),
-    ("Wikidata", 207),
-    ("IndexFungorum", 5),
-    ("MycoBank", 203),
-    ("WoRMS", 9),
-    ("ICTV", 201)
+#     ("NCBI", 4),
+#     ("Wikidata", 207),
+#     ("IndexFungorum", 5),
+#     ("MycoBank", 203),
+#     ("WoRMS", 9),
+#     ("ICTV", 201)
 ])
+
 
 INVALID_VALUES = ['unknown', 'null', 'none', '', 'n/a']
