@@ -26,7 +26,6 @@ from taxonopy.constants import (
     INVALID_VALUES
 )
 
-
 class ResolutionStatus(Enum):
     """The possible resolution statuses of a taxonomic entry defining the resolution profile."""
     def __init__(self, status_name: str, groups: Tuple[str, ...]):
@@ -34,13 +33,6 @@ class ResolutionStatus(Enum):
         self.groups: Set[str] = set(groups)
 
     # Terminal success status group
-    # How can I define a variable over two lines?
-    # For example, you can do:
-    #  variable_name = (
-    #      "variable_value",
-    #      ("terminal", "success")
-    #  )
-
     EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED = (
         "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED", 
         ("terminal", "success")
@@ -77,11 +69,15 @@ class ResolutionStatus(Enum):
         "PARTIAL_EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_DISAMBIGUATED",
         ("terminal", "success")
     )
+    EXACT_MATCH_SECONDARY_SOURCE_ACCEPTED_PRUNED = (
+        "EXACT_MATCH_SECONDARY_SOURCE_ACCEPTED_PRUNED",
+        ("terminal", "success")
+    )
+    # Forced acceptance status
     FORCE_ACCEPTED = (
         "FORCE_ACCEPTED",
         ("terminal", "success")
     )
-
 
     # Terminal failure status group
     EMPTY_INPUT_TAXONOMY = (

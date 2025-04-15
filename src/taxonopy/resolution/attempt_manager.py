@@ -27,6 +27,9 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_synonym,
     # Retry cases
     no_match_nonempty_query,
+    exact_match_primary_source_accepted_inner_rank_missing_in_result,
+    exact_match_secondary_source_accepted_pruned,
+    exact_match_primary_source_accepted_result_within_query,
     # adding profiles as they are implemented
 )
 from taxonopy.types.gnverifier import Name as GNVerifierName
@@ -58,6 +61,9 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_synonym.check_and_resolve,
     # Retry cases
     no_match_nonempty_query.check_and_resolve,
+    exact_match_primary_source_accepted_inner_rank_missing_in_result.check_and_resolve,
+    exact_match_secondary_source_accepted_pruned.check_and_resolve,
+    exact_match_primary_source_accepted_result_within_query.check_and_resolve,
     # add more cases
 ]
 
@@ -171,13 +177,19 @@ class ResolutionAttemptManager:
             previous_key_for_new_obj = previous_key_leading_to_this
 
             new_attempt = ResolutionAttempt(
-                entry_group_key=entry_group_key, query_term=query_term, query_rank=query_rank,
-                data_source_id=data_source_id, status=status,
-                gnverifier_response=gnverifier_response, resolved_classification=resolved_classification,
-                error=error, resolution_strategy_name=resolution_strategy_name,
+                entry_group_key=entry_group_key,
+                query_term=query_term,
+                query_rank=query_rank,
+                data_source_id=data_source_id,
+                status=status,
+                gnverifier_response=gnverifier_response,
+                resolved_classification=resolved_classification,
+                error=error,
+                resolution_strategy_name=resolution_strategy_name,
                 failure_reason=failure_reason,
                 previous_key=previous_key_for_new_obj,
-                scheduled_query_params=scheduled_query_params, metadata=metadata
+                scheduled_query_params=scheduled_query_params,
+                metadata=metadata
             )
             # Sanity check key
             if new_attempt.key != attempt_key:
@@ -426,6 +438,7 @@ class ResolutionAttemptManager:
                 # Apply cases
                 profile_matched = False
                 for case_func in CLASSIFICATION_CASES:
+                    strategy_name_to_log = getattr(case_func, '__module__', 'unknown_module') # Get module name
                     try:
                         # This call might replace the object in self._attempts via create_attempt
                         newly_created_or_updated_attempt = case_func(current_attempt, entry_group, self)
@@ -444,19 +457,20 @@ class ResolutionAttemptManager:
                                 classified_count += 1
                             break # Stop checking cases for this attempt
                     except Exception as e:
-                         strategy_name = getattr(case_func, 'STRATEGY_NAME', getattr(case_func, '__name__', 'unknown'))
-                         self.logger.error(f"Error in case func '{strategy_name}' for attempt {current_attempt.key}: {e}", exc_info=True)
-                         # Create a FAILED attempt if case crashes
-                         self.create_attempt(
+                        strategy_name = getattr(case_func, 'STRATEGY_NAME', getattr(case_func, '__name__', 'unknown'))
+                        self.logger.error(f"Error in case func '{strategy_name}' for attempt {current_attempt.key}: {e}", exc_info=True)
+                        # Create a FAILED attempt if case crashes
+                        self.create_attempt(
                              entry_group_key=entry_group_key, query_term=current_attempt.query_term,
                              query_rank=current_attempt.query_rank, data_source_id=current_attempt.data_source_id,
                              status=ResolutionStatus.FAILED, gnverifier_response=current_attempt.gnverifier_response,
                              error=f"Case execution failed: {e}", failure_reason="Case execution failed",
                              resolution_strategy_name=strategy_name
                          )
-                         profile_matched = True # Treat crash as a classification
-                         classified_count += 1
-                         break # Stop checking cases after crash
+                        profile_matched = True # Treat crash as a classification
+                        classified_count += 1
+                        break # Stop checking cases after crash
+
 
                 # If no case matched after trying all, mark as FAILED (unhandled)
                 if not profile_matched:

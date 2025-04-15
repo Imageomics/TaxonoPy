@@ -10,7 +10,11 @@ from taxonopy.types.data_classes import (
 from taxonopy.types.gnverifier import ResultData, MatchType
 from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
 
+from .profile_logging import setup_profile_logging
+# Set to True in the specific file(s) you want to debug
+_PROFILE_DEBUG_OVERRIDE_ = False
 logger = logging.getLogger(__name__)
+setup_profile_logging(logger, _PROFILE_DEBUG_OVERRIDE_)
 
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
@@ -40,6 +44,7 @@ class ExactMatchPrimarySourceAcceptedSynonymDisambiguationStrategy(ResolutionStr
         if not (attempt.gnverifier_response and
                 attempt.gnverifier_response.results and
                 len(attempt.gnverifier_response.results) == 2):
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Attempt does not have exactly two results.")
             return None
 
         result0: ResultData = attempt.gnverifier_response.results[0]
@@ -48,22 +53,25 @@ class ExactMatchPrimarySourceAcceptedSynonymDisambiguationStrategy(ResolutionStr
         # 2. Both match types 'Exact'?
         if not (result0.match_type and isinstance(result0.match_type, MatchType) and result0.match_type.root == "Exact" and
                 result1.match_type and isinstance(result1.match_type, MatchType) and result1.match_type.root == "Exact"):
-             return None
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: One or both results do not have match type 'Exact'.")
+            return None
 
         # 3. Both use data from the primary data source?
         try:
             primary_source_id = next(iter(DATA_SOURCE_PRECEDENCE.values()))
         except StopIteration:
-             logger.error(f"Cannot check primary source for {STRATEGY_NAME}: DATA_SOURCE_PRECEDENCE is empty.")
-             return self._create_failed_attempt(attempt, manager, reason="Configuration Error", error_msg="DATA_SOURCE_PRECEDENCE is empty")
+            logger.error(f"Cannot check primary source for {STRATEGY_NAME}: DATA_SOURCE_PRECEDENCE is empty.")
+            return self._create_failed_attempt(attempt, manager, reason="Configuration Error", error_msg="DATA_SOURCE_PRECEDENCE is empty")
 
         if not (result0.data_source_id == primary_source_id and result1.data_source_id == primary_source_id):
-             return None
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: One or both results do not use the primary data source.")
+            return None
 
         # 4. Canonical forms match each other and the query term?
         if not (result0.matched_canonical_simple and
                 result0.matched_canonical_simple == result1.matched_canonical_simple and
                 result0.matched_canonical_simple == attempt.query_term):
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Canonical forms do not match each other or the query term.")
             return None
 
         # 5. Exactly one Accepted and one Synonym? Identify which is which.
@@ -78,6 +86,7 @@ class ExactMatchPrimarySourceAcceptedSynonymDisambiguationStrategy(ResolutionStr
             synonym_result = result0
         else:
             # Does not match the one-accepted, one-synonym pattern
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Does not match the one-accepted, one-synonym pattern.")
             return None
 
         # Disambiguation Logic based on Accepted result's path

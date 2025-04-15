@@ -3,7 +3,6 @@
 This module provides a client for interacting with the GNVerifier service through a Docker container or a local installation.
 It handles execution, result parsing, and error handling.
 """
-
 import json
 import logging
 import shutil
@@ -167,13 +166,14 @@ class GNVerifierClient:
         """
         return shutil.which("gnverifier") is not None
     
-    def execute_query(self, names: List[str]) -> List[Dict[str, Any]]:
+    def execute_query(self, names: List[str], source_id_override: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Verify a list of scientific names using GNVerifier. This method handles
-        a single batch of names.
+        Verify a list of scientific names using GNVerifier.
 
         Args:
             names: List of scientific names to verify in this batch.
+            source_id_override: Optional specific source ID (as string) to use,
+                                overriding the client's default config.
 
         Returns:
             List of verification result dictionaries, one for each input name,
@@ -199,22 +199,22 @@ class GNVerifierClient:
         # Run verification using the determined method
         try:
             if self.use_docker:
-                # Pass expected_count = len(names)
-                return self._run_with_docker(query_input, len(names))
+                return self._run_with_docker(query_input, len(names), source_id_override)
             else:
-                 # Pass expected_count = len(names)
-                return self._run_with_local_gnverifier(query_input, len(names))
+                return self._run_with_local_gnverifier(query_input, len(names), source_id_override)
         except RuntimeError as e:
-             # Re-raise fatal execution errors from _run methods
              self.logger.error(f"Fatal error during GNVerifier execution: {e}")
              raise
         except Exception as e:
-            # Catch unexpected errors during the call setup/handling
             self.logger.error(f"Unexpected error executing GNVerifier query: {e}", exc_info=True)
-            # Return list of empty dicts matching the input count
             return [{} for _ in range(len(names))]
     
-    def _run_with_docker(self, query_input: str, expected_count: int) -> List[Dict[str, Any]]:
+    def _run_with_docker(
+        self, 
+        query_input: str, 
+        expected_count: int, 
+        source_id_override: Optional[str] = None
+    ) -> List[Dict[str, Any]]:        
         """Run GNVerifier using Docker.
         
         Args:
@@ -237,8 +237,10 @@ class GNVerifierClient:
         ]
         
         # Add optional flags
-        if self.config.data_source_id:
-            cmd.extend(["--sources", self.config.data_source_id])
+        source_to_use = source_id_override if source_id_override is not None else self.config.data_source_id
+
+        if source_to_use: # Check if non-empty/None
+            cmd.extend(["--sources", str(source_to_use)])
         
         if self.config.all_matches:
             cmd.append("--all_matches")
@@ -257,6 +259,7 @@ class GNVerifierClient:
         
         try:
             self.logger.debug(f"Running Docker command: {' '.join(cmd)}")
+
             result = subprocess.run(
                 cmd,
                 input=query_input.encode("utf-8"),
@@ -278,7 +281,12 @@ class GNVerifierClient:
             self.logger.error("GNVerifier Docker execution timed out")
             return [{} for _ in range(expected_count)]
     
-    def _run_with_local_gnverifier(self, query_input: str, expected_count: int) -> List[Dict[str, Any]]:
+    def _run_with_local_gnverifier(
+            self, 
+            query_input: str, 
+            expected_count: int, 
+            source_id_override: Optional[str] = None
+        ) -> List[Dict[str, Any]]:        
         """Run GNVerifier using local installation.
         
         Args:
@@ -296,9 +304,11 @@ class GNVerifierClient:
         # Add optional flags
         cmd.extend(["-j", str(self.config.jobs)])
         cmd.extend(["--format", self.config.format])
+
+        source_to_use = source_id_override if source_id_override is not None else self.config.data_source_id
         
-        if self.config.data_source_id:
-            cmd.extend(["--sources", self.config.data_source_id])
+        if source_to_use:
+            cmd.extend(["--sources", str(source_to_use)])
         
         if self.config.all_matches:
             cmd.append("--all_matches")

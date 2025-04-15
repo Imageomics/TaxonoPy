@@ -10,7 +10,11 @@ from taxonopy.types.data_classes import (
 from taxonopy.types.gnverifier import ResultData, MatchType
 from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
+from .profile_logging import setup_profile_logging
+# Set to True in the specific file(s) you want to debug
+_PROFILE_DEBUG_OVERRIDE_ = False
 logger = logging.getLogger(__name__)
+setup_profile_logging(logger, _PROFILE_DEBUG_OVERRIDE_)
 
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
@@ -39,6 +43,7 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
         if not (attempt.gnverifier_response and
                 attempt.gnverifier_response.results and
                 len(attempt.gnverifier_response.results) == 1):
+            logger.debug(f"Attempt {attempt.key} does not have exactly one result. Skipping profile check for {STRATEGY_NAME}.")
             return None
 
         result: ResultData = attempt.gnverifier_response.results[0]
@@ -47,7 +52,8 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
         if not (attempt.gnverifier_response.match_type and
                 isinstance(attempt.gnverifier_response.match_type, MatchType) and
                 attempt.gnverifier_response.match_type.root == "Exact"):
-             return None
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Top-level matchType is not 'Exact' ({attempt.gnverifier_response.match_type})")
+            return None
 
         # 3. Primary Source?
         try:
@@ -57,16 +63,18 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
              return self._create_failed_attempt(attempt, manager, reason="Configuration Error", error_msg="DATA_SOURCE_PRECEDENCE is empty")
 
         if result.data_source_id != primary_source_id:
-             return None
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result data source ID '{result.data_source_id}' does not match primary source ID '{primary_source_id}'.")
+            return None
 
         # 4. Result Status 'Synonym'?
         if result.taxonomic_status != "Synonym":
-             return None
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result status is not 'Synonym' ({result.taxonomic_status})")
+            return None
 
         # 5. Canonical of SYNONYM matches query term?
         if not (result.matched_canonical_simple and
                 result.matched_canonical_simple == attempt.query_term):
-            # logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Synonym canonical '{result.matched_canonical_simple}' doesn't match query term '{attempt.query_term}'.")
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Synonym canonical '{result.matched_canonical_simple}' doesn't match query term '{attempt.query_term}'.")
             return None
 
         # 6. Accepted name details provided? (currentName and classificationPath)

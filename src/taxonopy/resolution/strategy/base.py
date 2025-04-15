@@ -139,7 +139,8 @@ class ResolutionStrategy:
                 return TAXONOMIC_RANKS[index - 1]
             return None # Kingdom has no parent in this list
         except ValueError:
-            return None # Rank not found
+            logger.warning(f"Cannot find parent rank for '{rank_field}': Not in TAXONOMIC_RANKS.")
+            return None
             
     def _get_rank_of_term(
         self,
@@ -173,7 +174,7 @@ class ResolutionStrategy:
             if value and value.strip() == term_to_find_stripped:
                 # Found the term at this rank
                 try:
-                     # Use TAXONOMIC_RANKS for hierarchical comparison index
+                    # Use TAXONOMIC_RANKS for hierarchical comparison index
                     # Map scientific_name/class_ to standard rank names if needed for index lookup,
                     # but return the actual field name.
                     compare_rank = rank_field

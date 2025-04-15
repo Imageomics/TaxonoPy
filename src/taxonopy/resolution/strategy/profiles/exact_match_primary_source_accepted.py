@@ -12,7 +12,11 @@ from taxonopy.types.gnverifier import ResultData, MatchType
 from taxonopy.constants import INVALID_VALUES, TAXONOMIC_RANKS, DATA_SOURCE_PRECEDENCE
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 
+from .profile_logging import setup_profile_logging
+# Set to True in the specific file(s) you want to debug
+_PROFILE_DEBUG_OVERRIDE_ = False
 logger = logging.getLogger(__name__)
+setup_profile_logging(logger, _PROFILE_DEBUG_OVERRIDE_)
 
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager

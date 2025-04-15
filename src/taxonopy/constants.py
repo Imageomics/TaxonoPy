@@ -30,5 +30,4 @@ DATA_SOURCE_PRECEDENCE = OrderedDict([
 #     ("ICTV", 201)
 ])
 
-
 INVALID_VALUES = ['unknown', 'null', 'none', '', 'n/a']

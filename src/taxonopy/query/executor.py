@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from taxonopy.types.data_classes import QueryParameters
 from taxonopy.types.gnverifier import Name as GNVerifierName
 from taxonopy.query.gnverifier_client import GNVerifierClient
-from taxonopy.config import config # To get default batch_size if not provided
+from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,10 @@ def execute_queries(
             batch_eg_keys = [item[0] for item in batch_items]
             batch_params = [item[1] for item in batch_items]
             batch_query_terms = [param.term for param in batch_params]
+            # Get unique source ID for this batch (assuming all use same source in batch)
+            source_id = batch_params[0].source_id if batch_params else None
+            # Convert to string for the client
+            source_id_str = str(source_id) if source_id is not None else None
             
             batch_start_index = i
             batch_end_index = min(i + batch_size, total_queries)
@@ -71,7 +75,10 @@ def execute_queries(
 
             try:
                 # Call the client with the list of terms for this batch
-                gnverifier_results_dicts: List[Dict] = client.execute_query(batch_query_terms)
+                gnverifier_results_dicts: List[Dict] = client.execute_query(
+                    batch_query_terms, 
+                    source_id_override=source_id_str
+                )
 
                 # Integrity check 1: Count
                 if len(gnverifier_results_dicts) != len(batch_query_terms):
