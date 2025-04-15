@@ -19,6 +19,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_accepted_rank_level_disambiguation,
     exact_match_primary_source_accepted_synonym_disambiguation,
     exact_match_primary_source_accepted_multi_result_disambiguation,
+    exact_match_primary_source_accepted_result_within_query,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted,
     # Partial matches
@@ -26,6 +27,7 @@ from taxonopy.resolution.strategy.profiles import (
     # Synonym matches
     exact_match_primary_source_synonym,
     # Retry cases
+    subfamily_to_family_fallback,
     no_match_nonempty_query,
     exact_match_primary_source_accepted_inner_rank_missing_in_result,
     exact_match_secondary_source_accepted_pruned,
@@ -53,6 +55,7 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_accepted_rank_level_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_synonym_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_multi_result_disambiguation.check_and_resolve,
+    exact_match_primary_source_accepted_result_within_query.check_and_resolve,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted.check_and_resolve,
     # Partial matches
@@ -60,6 +63,7 @@ CLASSIFICATION_CASES = [
     # Synonym matches
     exact_match_primary_source_synonym.check_and_resolve,
     # Retry cases
+    subfamily_to_family_fallback.check_and_resolve,
     no_match_nonempty_query.check_and_resolve,
     exact_match_primary_source_accepted_inner_rank_missing_in_result.check_and_resolve,
     exact_match_secondary_source_accepted_pruned.check_and_resolve,

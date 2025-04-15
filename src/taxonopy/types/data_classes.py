@@ -57,6 +57,10 @@ class ResolutionStatus(Enum):
         "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_MULTI_RESULT_DISAMBIGUATION",
         ("terminal", "success")
     )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RESULT_WITHIN_QUERY = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RESULT_WITHIN_QUERY",
+        ("terminal", "success")
+    )
     FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED = (
         "FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED",
         ("terminal", "success")
@@ -73,6 +77,7 @@ class ResolutionStatus(Enum):
         "EXACT_MATCH_SECONDARY_SOURCE_ACCEPTED_PRUNED",
         ("terminal", "success")
     )
+    
     # Forced acceptance status
     FORCE_ACCEPTED = (
         "FORCE_ACCEPTED",

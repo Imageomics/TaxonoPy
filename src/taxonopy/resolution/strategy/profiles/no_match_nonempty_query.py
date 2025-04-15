@@ -68,6 +68,19 @@ class NoMatchNonEmptyQueryStrategy(ResolutionStrategy):
             # It will eventually be marked FAILED by the manager if no other profile handles it.
             return None
 
+        # 3. EXCLUSION: Check if this is a subfamily to family fallback case
+        # This ensures mutual exclusivity with the SubfamilyToFamilyFallback profile
+        is_subfamily_case = (
+            attempt.query_rank == "scientific_name" and 
+            attempt.query_term.lower().endswith('inae') and
+            entry_group.family and 
+            entry_group.family.strip() != ""
+        )
+        
+        if is_subfamily_case:
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: This appears to be a subfamily case that should be handled by SubfamilyToFamilyFallback.")
+            return None
+            
         # Profile matched
         logger.debug(f"Attempt {attempt.key} matched profile for {STRATEGY_NAME}. Planning retry...")
 

@@ -2,18 +2,16 @@ import logging
 from typing import Optional, TYPE_CHECKING, Dict
 
 from taxonopy.resolution.strategy.base import ResolutionStrategy
-
 from taxonopy.types.data_classes import (
     EntryGroupRef,
     ResolutionAttempt,
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import INVALID_VALUES, TAXONOMIC_RANKS, DATA_SOURCE_PRECEDENCE
-from taxonopy.resolution.strategy.base import ResolutionStrategy
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
 
 from .profile_logging import setup_profile_logging
-# Set to True in the specific file(s) you want to debug
+# Set to True to enable debug logging JUST for this profile
 _PROFILE_DEBUG_OVERRIDE_ = False
 logger = logging.getLogger(__name__)
 setup_profile_logging(logger, _PROFILE_DEBUG_OVERRIDE_)
@@ -25,8 +23,10 @@ STRATEGY_NAME = "ExactMatchPrimarySourceAcceptedResultWithinQuery"
 
 class ExactMatchPrimarySourceAcceptedResultWithinQueryStrategy(ResolutionStrategy):
     """
-    Applies the ExactMatchPrimarySourceAcceptedResultWithinQuery profile.
-    Inherits _extract_classification and _get_expected_classification from ResolutionStrategy.
+    Handles cases with a single 'Exact', 'Accepted' match from the primary source,
+    where the result's classification matches the input up to a parent rank,
+    and the result classification terminates at that parent rank.
+    (e.g., Input query "Aus bus bus", result matches "Aus bus" at genus level).
     """
 
     def check_and_resolve(
@@ -36,84 +36,90 @@ class ExactMatchPrimarySourceAcceptedResultWithinQueryStrategy(ResolutionStrateg
         manager: "ResolutionAttemptManager"
     ) -> Optional[ResolutionAttempt]:
         """
-        Checks for the specific profile: Single, Exact, Accepted, primary source match
-        where classification and query term align with input group.
-        If matched, creates and returns the final EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED attempt.
-        Returns None otherwise.
+        Checks profile: Single Exact, Accepted, Primary Source match where the
+        result classification is a valid higher-rank match to the input query.
         """
         # Profile condition checks
+
         # 1. Has response and exactly one result?
-        if not (
-            attempt.gnverifier_response and
-            attempt.gnverifier_response.results is not None and
-            len(attempt.gnverifier_response.results) == 1
-        ):
-            results_list = attempt.gnverifier_response.results if attempt.gnverifier_response else None
-            result_count = len(results_list) if results_list is not None else "N/A (None)"
-            # Log carefully, avoiding len() on None
-            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: "
-                         f"Response exists: {bool(attempt.gnverifier_response)}, "
-                         f"Results list exists: {results_list is not None}, "
-                         f"Result count: {result_count}")
-            return None # Profile mismatch
+        if not (attempt.gnverifier_response and
+                attempt.gnverifier_response.results and
+                len(attempt.gnverifier_response.results) == 1):
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Does not have exactly one result.")
+            return None
 
         result: ResultData = attempt.gnverifier_response.results[0]
 
-        # 2. Match type 'Exact'?
-        if not (result.match_type and
-                isinstance(result.match_type, MatchType) and
-                result.match_type.root == "Exact"):
-            logger.debug(f"Checking if attempt {attempt.key} is 'Exact'")
-            logger.debug(f"Attempt {attempt.key} match type: {result.match_type}")
-            return None # Profile mismatch
+        # 2. Top-level Match type 'Exact'?
+        if not (attempt.gnverifier_response.match_type and
+                isinstance(attempt.gnverifier_response.match_type, MatchType) and
+                attempt.gnverifier_response.match_type.root == "Exact"):
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Match type is not 'Exact'.")
+            return None
 
-        # 3. Status 'Accepted'?
+        # 3. Result Status 'Accepted'?
         if result.taxonomic_status != "Accepted":
-            logger.debug(f"Checking if attempt {attempt.key} is 'Accepted'")
-            logger.debug(f"Attempt {attempt.key} taxonomic status: {result.taxonomic_status}")
-            return None # Profile mismatch
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result status is not 'Accepted'.")
+            return None
 
-        # 4. Uses data from the primary data source (GBIF)?
-        primary_source_key = list(DATA_SOURCE_PRECEDENCE.keys())[0]
-        primary_source_id = DATA_SOURCE_PRECEDENCE[primary_source_key]
-        if result.data_source_id != primary_source_id:
-            logger.debug(f"Checking if attempt {attempt.key} uses primary data source ({primary_source_key}, {primary_source_id})")
-            logger.debug(f"Attempt {attempt.key} data source ID: {result.data_source_id}")
-            return None # Profile mismatch
-
-        # 5. Classification matches input?
-        expected_classification = self._get_expected_classification(entry_group)
-
+        # 4. Primary Source?
         try:
+            primary_source_id = next(iter(DATA_SOURCE_PRECEDENCE.values()))
+        except StopIteration:
+             logger.error(f"Cannot check primary source for {STRATEGY_NAME}: DATA_SOURCE_PRECEDENCE is empty.")
+             return self._create_failed_attempt(attempt, manager, reason="Config Error", error_msg="No primary source")
+
+        if result.data_source_id != primary_source_id:
+            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Source ID {result.data_source_id} is not primary ({primary_source_id}).")
+            return None
+
+        # --- Core Logic ---
+        try:
+            # 5. Extract classifications
+            expected_classification = self._get_expected_classification(entry_group)
             result_classification = self._extract_classification(result)
+
+            # 6. Get terms and ranks
+            query_term = attempt.query_term
+            matched_term = result.matched_canonical_simple
+            if not query_term or not matched_term:
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Query term or matched term is missing.")
+                return None
+
+            # 7. Does the query term start with the matched term (and they are not identical)?
+            #    This identifies cases like query="Aus bus bus", matched="Aus bus"
+            if not query_term.startswith(matched_term) or query_term == matched_term:
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Query term '{query_term}' does not start with (or is identical to) matched term '{matched_term}'.")
+                return None
+
+            # 8. Find the rank of the *matched term* in the *result's* classification
+            result_match_rank_field = self._get_rank_of_term(matched_term, result_classification)
+            if result_match_rank_field is None:
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Matched term '{matched_term}' not found in result classification ranks: {result_classification}.")
+                return None
+
+            # 9. Check path consistency up to the matched rank
+            #    Does the result path match the input path up to the level where the result matched?
+            if not self._compare_paths_up_to_rank(expected_classification, result_classification, result_match_rank_field):
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result path does not match input path up to rank '{result_match_rank_field}'.")
+                return None
+
+            # 10. Does the result classification *terminate* at the matched rank?
+            #     (i.e., no ranks below the matched rank are present in the result)
+            highest_rank_in_result = self._get_highest_rank_in_classification(result_classification)
+            if highest_rank_in_result != result_match_rank_field:
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result classification terminates at '{highest_rank_in_result}', but expected termination at matched rank '{result_match_rank_field}'.")
+                return None
+
         except Exception as e:
-            logger.error(f"Attempt {attempt.key}: Error extracting classification for {STRATEGY_NAME}: {e}")
-            # Fail the attempt if extraction error occurs within the profile logic
-            return manager.create_failed_attempt(
-                attempt,
-                manager,
-                reason="Classification extraction failed", error_msg=str(e))
+             logger.error(f"Attempt {attempt.key}: Error during core logic for {STRATEGY_NAME}: {e}", exc_info=True)
+             return self._create_failed_attempt(attempt, manager, reason="Core logic failed", error_msg=str(e))
 
-        # Compare classifications (only ranks present in input)
-        match = True
-        for rank_field, expected_value in expected_classification.items():
-            if result_classification.get(rank_field) != expected_value:
-                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Classification mismatch on rank '{rank_field}'. Expected '{expected_value}', Got '{result_classification.get(rank_field)}'.")
-                match = False
-                break
-        if not match:
-             return None # Profile mismatch
-
-        # 6. Query term matches most specific input term?
-        if attempt.query_term != entry_group.most_specific_term:
-            logger.debug(f"Checking if attempt {attempt.key} query term matches input term")
-            logger.debug(f"Attempt {attempt.key} query term: {attempt.query_term}, input term: {entry_group.most_specific_term}")
-            return None # Profile mismatch
-            
         # Profile matched
-        logger.debug(f"Attempt {attempt.key} matched profile for {STRATEGY_NAME}.")
+        logger.debug(f"Attempt {attempt.key} matched profile for {STRATEGY_NAME}. Result classification accepted.")
 
-        # Action
+        # Action: Use the classification from the result (which is already verified)
+        final_classification = result_classification
 
         # Create final attempt
         final_attempt = manager.create_attempt(
@@ -121,13 +127,13 @@ class ExactMatchPrimarySourceAcceptedResultWithinQueryStrategy(ResolutionStrateg
             query_term=attempt.query_term,
             query_rank=attempt.query_rank,
             data_source_id=attempt.data_source_id,
-            status=ResolutionStatus.EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED,
+            status=ResolutionStatus.EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RESULT_WITHIN_QUERY,
             gnverifier_response=attempt.gnverifier_response,
-            resolved_classification=result_classification,
+            resolved_classification=final_classification,
             error=None,
             resolution_strategy_name=STRATEGY_NAME,
             failure_reason=None,
-            metadata={}
+            metadata={'matched_term': matched_term, 'matched_rank': result_match_rank_field}
         )
         logger.debug(f"Applied {STRATEGY_NAME}: Created final attempt {final_attempt.key} for original {attempt.key}")
         return final_attempt
