@@ -61,34 +61,53 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text") -> int:
 
     # Retrieve the entry groups.
     try:
-        entry_groups = create_entry_groups(input_path)
+        entry_groups, entry_group_map = create_entry_groups(input_path)
     except Exception as e:
         logger.error(f"Error grouping entries: {e}")
         entry_groups = []
+        entry_group_map = {}
 
     matching_group = None
-    for group in entry_groups:
+    for group_key, group in entry_group_map.items():
         if uuid in group.entry_uuids:
             matching_group = group
             break
 
     trace_result = {
         "entry": dataclasses.asdict(matching_entry),
-        "group": dataclasses.asdict(matching_group) if matching_group else None,
+        # "group": dataclasses.asdict(matching_group) if matching_group else None,
     }
+
+    if matching_group:
+        # Convert the group to a dict and add the computed key property
+        group_dict = dataclasses.asdict(matching_group)
+        group_dict["key"] = matching_group.key
+        group_dict["group_count"] = matching_group.group_count
+        trace_result["group"] = group_dict
+    else:
+        trace_result["group"] = None
+        trace_result["trace_note"] = "Entry group not found. Trace stops at the raw entry level."
+
 
     if not matching_group:
         trace_result["trace_note"] = "Entry group not found. Trace stops at the raw entry level."
     else:
-        # Compute QueryGroupRef objects from the entry groups.
-        query_groups = create_initial_query_plans(entry_groups)
-        matching_query_groups = [
-            qg for qg in query_groups if matching_group.key in qg.entry_group_keys
-        ]
-        trace_result["query_groups"] = [dataclasses.asdict(qg) for qg in matching_query_groups]
-        # If you have ResolutionAttempt objects (e.g. stored or computed during resolution),
-        # you could add them here. For now, we set it to None.
-        trace_result["resolution_attempts"] = None
+        # Get the initial query plan for this entry group
+        from taxonopy.query.planner import plan_initial_queries
+        entry_group_map = {matching_group.key: matching_group}
+        query_plans = plan_initial_queries(entry_group_map)
+        initial_plan = query_plans.get(matching_group.key)
+        if initial_plan:
+            trace_result["query_plan"] = dataclasses.asdict(initial_plan)
+        
+        # Load attempt chain from cache using the existing infrastructure
+        from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
+        resolution_attempts = ResolutionAttemptManager.load_chain_from_cache(matching_group.key)
+        if resolution_attempts:
+            trace_result["resolution_attempts"] = resolution_attempts
+        else:
+            trace_result["trace_note"] = "No cached resolution attempts found for this entry group."
+
 
     if output_format == "json":
         serializable_result = make_serializable(trace_result)

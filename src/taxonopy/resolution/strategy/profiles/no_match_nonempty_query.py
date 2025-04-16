@@ -1,3 +1,5 @@
+import sys
+
 import logging
 from typing import Optional, TYPE_CHECKING
 
@@ -41,65 +43,76 @@ class NoMatchNonEmptyQueryStrategy(ResolutionStrategy):
         Returns the newly created attempt, or None if this profile doesn't apply.
         """
         # Profile condition checks
+        # -- targeted for debugging --
+        if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+            print(f"Query term: {attempt.query_term}")
+            print(f"Query rank: {attempt.query_rank}")
+            print(f"Data source ID: {attempt.data_source_id}")
+            print(f"GNVerifier response: {attempt.gnverifier_response}")
 
         # 1. Was the query term non-empty?
         if not attempt.query_term or attempt.query_term.strip() == "":
             logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Query term is empty.")
+            # -- targeted for debugging --
+            if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+                print(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key} (query term: {attempt.query_term}): Query term is empty.")
             return None # Handled by empty_input profile
 
         # 2. Did the response indicate NoMatch or Failure?
         is_no_match_or_failure = False
         if not attempt.gnverifier_response:
-             # Case A: Query execution failed (no response object)
-             logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key}: No GNVerifier response (likely execution error).")
-             is_no_match_or_failure = True
+            # Case A: Query execution failed (no response object)
+            logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key} (query term: {attempt.query_term}): No GNVerifier response (likely execution error).")
+            is_no_match_or_failure = True
+            # -- targeted for debugging --
+            if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+                 print(f"Profile {STRATEGY_NAME} matching attempt {attempt.key} (query term: {attempt.query_term}): No GNVerifier response (likely execution error).")
         elif attempt.gnverifier_response.match_type and isinstance(attempt.gnverifier_response.match_type, MatchType) and attempt.gnverifier_response.match_type.root == "NoMatch":
-             # Case B: Explicit "NoMatch" type
-             logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key}: Explicit 'NoMatch' type found.")
-             is_no_match_or_failure = True
+            # Case B: Explicit "NoMatch" type
+            # -- targeted for debugging --
+            if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+                print(f"Profile {STRATEGY_NAME} matching attempt {attempt.key} (query term: {attempt.query_term}): Explicit 'NoMatch' type found.")
+            logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key}: Explicit 'NoMatch' type found.")
+            is_no_match_or_failure = True
         elif not attempt.gnverifier_response.results:
-             # Case C: Response exists but no results list (implicit no match)
-             logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key}: GNVerifier response has no results list.")
-             is_no_match_or_failure = True
+            # Case C: Response exists but no results list (implicit no match)
+            # -- targeted for debugging --
+            if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+                print(f"Profile {STRATEGY_NAME} matching attempt {attempt.key} (query term: {attempt.query_term}): GNVerifier response has no results list.")
+            logger.debug(f"Profile {STRATEGY_NAME} matching attempt {attempt.key}: GNVerifier response has no results list.")
+            is_no_match_or_failure = True
 
         # If none of the no-match/failure conditions are met, this profile doesn't apply
         if not is_no_match_or_failure:
+            # -- targeted for debugging --
+            if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+                print(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key} (query term: {attempt.query_term}): No match or failure found.")
             # This attempt might have results that just didn't match other success profiles.
             # It will eventually be marked FAILED by the manager if no other profile handles it.
-            return None
-
-        # 3. EXCLUSION: Check if this is a subfamily to family fallback case
-        # This ensures mutual exclusivity with the SubfamilyToFamilyFallback profile
-        is_subfamily_case = (
-            attempt.query_rank == "scientific_name" and 
-            attempt.query_term.lower().endswith('inae') and
-            entry_group.family and 
-            entry_group.family.strip() != ""
-        )
-        
-        if is_subfamily_case:
-            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: This appears to be a subfamily case that should be handled by SubfamilyToFamilyFallback.")
             return None
             
         # Profile matched
         logger.debug(f"Attempt {attempt.key} matched profile for {STRATEGY_NAME}. Planning retry...")
+        # -- targeted for debugging --
+        if attempt.query_term and (attempt.query_term == "Diapriinae" or attempt.query_term == "Diapriidae"):
+            print(f"Attempt {attempt.key} (query term: {attempt.query_term}) matched profile for {STRATEGY_NAME}. Planning retry...")
 
         # Action: Plan the next retry
         next_query_params: Optional[QueryParameters] = None
         try:
-             # Call the planner function
-             next_query_params = plan_retry_query(attempt, entry_group, manager)
+            # Call the planner function
+            next_query_params = plan_retry_query(attempt, entry_group, manager)
         except ValueError as e:
-             # Handle data inconsistency error from planner
-             logger.error(f"Error planning retry for attempt {attempt.key}: {e}. Failing this attempt.")
-             failed_attempt = self._create_failed_attempt(attempt, manager, reason="Retry planning failed (data inconsistency)", error_msg=str(e))
-             return failed_attempt # Return the FAILED attempt
+            # Handle data inconsistency error from planner
+            logger.error(f"Error planning retry for attempt {attempt.key}: {e}. Failing this attempt.")
+            failed_attempt = self._create_failed_attempt(attempt, manager, reason="Retry planning failed (data inconsistency)", error_msg=str(e))
+            return failed_attempt # Return the FAILED attempt
         except Exception as e:
-             # Handle unexpected errors during planning
-             logger.error(f"Unexpected error during retry planning for attempt {attempt.key}: {e}", exc_info=True)
-             failed_attempt = self._create_failed_attempt(attempt, manager, reason="Retry planner exception", error_msg=str(e))
-             return failed_attempt
-
+            # Handle unexpected errors during planning
+            logger.error(f"Unexpected error during retry planning for attempt {attempt.key}: {e}", exc_info=True)
+            failed_attempt = self._create_failed_attempt(attempt, manager, reason="Retry planner exception", error_msg=str(e))
+            return failed_attempt
+        print(f"Next query params: {next_query_params}")
         # Create the next attempt based on retry plan
         if next_query_params:
             retry_scheduled_attempt = manager.create_attempt(

@@ -164,7 +164,6 @@ def plan_retry_query(
     logger.info(f"Retries exhausted for EntryGroup {entry_group.key}.")
     return None # Exhausted
 
-
 def _get_available_term_rank_pairs(entry_group: EntryGroupRef) -> List[Tuple[str, Optional[str]]]:
     """
     Gets valid (non-empty/invalid) term/rank pairs from an EntryGroupRef,

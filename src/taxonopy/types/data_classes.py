@@ -280,7 +280,6 @@ class EntryGroupRef:
 
         return hashlib.sha256(taxa_data.encode("utf-8")).hexdigest()
 
-
     def resolve_taxonomic_entries(self, resolver: Callable[[str], Optional[TaxonomicEntry]]) -> List[TaxonomicEntry]:
         """
         Retrieve full TaxonomicEntry objects corresponding to the stored entry UUIDs.

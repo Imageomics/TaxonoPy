@@ -16,14 +16,9 @@ class ResolutionStrategyConfig:
     the resolution behavior to be adjusted without code changes.
     """
     
-    def __init__(self):
-        # Default configuration values
-        self.min_fuzzy_score = 0.8
-        self.preferred_data_sources = [11, 172, 1]  # GBIF, OTOL, CoL
-        self.max_retry_attempts = 3
-        self.synonym_resolution = "accept"  # Options: accept, reject, resolve_to_accepted
-        self.taxonomic_ranks = TAXONOMIC_RANKS
-        
+    # def __init__(self):
+        # Placeholder for configuration parameters if needed
+
     def update(self, config_dict: Dict[str, Any]) -> None:
         """Update configuration from a dictionary.
         

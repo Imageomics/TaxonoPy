@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union, Any
 import logging
 from datetime import datetime
 import json
@@ -9,6 +9,8 @@ from taxonopy.types.data_classes import (
     ResolutionStatus,
     ResolutionAttempt,
 )
+
+from taxonopy.cache_manager import save_cache, load_cache, compute_checksum
 
 from taxonopy.resolution.strategy.profiles import (
     empty_input_taxonomy,
@@ -27,7 +29,6 @@ from taxonopy.resolution.strategy.profiles import (
     # Synonym matches
     exact_match_primary_source_synonym,
     # Retry cases
-    subfamily_to_family_fallback,
     no_match_nonempty_query,
     exact_match_primary_source_accepted_inner_rank_missing_in_result,
     exact_match_secondary_source_accepted_pruned,
@@ -63,7 +64,6 @@ CLASSIFICATION_CASES = [
     # Synonym matches
     exact_match_primary_source_synonym.check_and_resolve,
     # Retry cases
-    subfamily_to_family_fallback.check_and_resolve,
     no_match_nonempty_query.check_and_resolve,
     exact_match_primary_source_accepted_inner_rank_missing_in_result.check_and_resolve,
     exact_match_secondary_source_accepted_pruned.check_and_resolve,
@@ -370,6 +370,9 @@ class ResolutionAttemptManager:
         final_stats = self.get_statistics()
         self.logger.info(f"Resolution process complete. Final Stats: {final_stats}")
 
+        # Save attempt chains to cache
+        self.save_chains_to_cache()
+
     def _create_initial_attempts(self, initial_results: Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]]):
         """Creates the first ResolutionAttempt (status PROCESSING) for each entry group."""
         created_count = 0
@@ -554,3 +557,76 @@ class ResolutionAttemptManager:
         # TODO: Implement deserialization
         self.logger.warning("load_state is not yet implemented.")
         return cls()
+
+    def save_chains_to_cache(self) -> None:
+        """Save all attempt chains using the existing cache infrastructure."""
+        from taxonopy.config import config
+        
+        for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
+            chain = self.get_group_attempt_chain(entry_group_key)
+            if not chain:
+                continue
+            
+            # Convert chain to serializable format
+            chain_data = []
+            for attempt in chain:
+                # Prepare attempt data (exclude GNVerifier response which may not serialize well)
+                attempt_data = {
+                    "key": attempt.key,
+                    "entry_group_key": attempt.entry_group_key,
+                    "query_term": attempt.query_term,
+                    "query_rank": attempt.query_rank,
+                    "data_source_id": attempt.data_source_id,
+                    "status": attempt.status.name,
+                    "is_successful": attempt.is_successful,
+                    "is_retry": attempt.is_retry,
+                    "previous_key": attempt.previous_key,
+                    "resolution_strategy_name": attempt.resolution_strategy_name,
+                    "failure_reason": attempt.failure_reason,
+                    "resolved_classification": attempt.resolved_classification,
+                    "error": attempt.error,
+                    "metadata": attempt.metadata,
+                }
+                chain_data.append(attempt_data)
+            
+            # Generate a cache key using the entry_group_key
+            cache_key = f"resolution_chain_{entry_group_key}"
+            
+            # Use a consistent checksum - we don't need to invalidate by content since
+            # we're explicitly saving the final state
+            checksum = entry_group_key  # Use the entry_group_key itself as a stable checksum
+            
+            # Add metadata
+            metadata = {
+                "creation_time": datetime.now().isoformat(),
+                "chain_length": len(chain_data),
+                "final_status": chain[-1].status.name if chain else "Unknown"
+            }
+            
+            # Save to cache
+            save_cache(cache_key, chain_data, checksum, metadata)
+            
+            self.logger.debug(f"Saved attempt chain for entry group {entry_group_key} to cache")
+
+    @staticmethod
+    def load_chain_from_cache(entry_group_key: str) -> List[Dict[str, Any]]:
+        """Load an attempt chain from the cache using the existing infrastructure."""
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Generate the same cache key used when saving
+        cache_key = f"resolution_chain_{entry_group_key}"
+        
+        # Use the entry_group_key as the checksum, same as when saving
+        checksum = entry_group_key
+        
+        # Attempt to load from cache
+        chain_data = load_cache(cache_key, checksum)
+        
+        if chain_data is not None:
+            logger.debug(f"Loaded attempt chain for entry group {entry_group_key} from cache")
+            return chain_data
+        else:
+            logger.debug(f"No cached attempt chain found for entry group {entry_group_key}")
+            return []
