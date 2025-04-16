@@ -86,6 +86,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser_trace_entry.add_argument("--uuid", required=True, help="UUID of the taxonomic entry")
     parser_trace_entry.add_argument("--from-input", required=True, help="Path to the original input dataset")
     parser_trace_entry.add_argument("--format", choices=["json", "text"], default="json", help="Output format")
+    parser_trace_entry.add_argument("--verbose", action="store_true", help="Show full details including all UUIDs in groups")
 
     # Trace entry groups
     parser_trace_group = trace_subparsers.add_parser("group", help="Trace an entry group")

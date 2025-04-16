@@ -20,7 +20,7 @@ def make_serializable(obj):
     else:
         return obj
 
-def trace_entry(uuid: str, input_path: str, output_format: str = "text") -> int:
+def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose: bool = False) -> int:    
     """
     Trace a taxonomic entry by its UUID.
 
@@ -38,6 +38,7 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text") -> int:
         uuid: The UUID of the taxonomic entry to trace.
         input_path: Path to the input dataset.
         output_format: "json" or "text" (default "text").
+        verbose: Whether to include all UUIDs in the entry group (default False).
 
     Returns:
         0 on success, or a nonzero error code.
@@ -75,13 +76,21 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text") -> int:
 
     trace_result = {
         "entry": dataclasses.asdict(matching_entry),
-        # "group": dataclasses.asdict(matching_group) if matching_group else None,
     }
 
     if matching_group:
         # Convert the group to a dict and add the computed key property
         group_dict = dataclasses.asdict(matching_group)
         group_dict["key"] = matching_group.key
+
+        if not verbose and "entry_uuids" in group_dict and len(group_dict["entry_uuids"]) > 3:
+            # Take first 3 UUIDs and add count indicator
+            full_count = len(group_dict["entry_uuids"])
+            # Convert to list first since entry_uuids is a frozenset
+            uuids_list = list(group_dict["entry_uuids"])
+            group_dict["entry_uuids"] = uuids_list[:3]
+            group_dict["entry_uuids_note"] = f"Showing 3 of {full_count} UUIDs. Use --verbose to see all."
+        
         group_dict["group_count"] = matching_group.group_count
         trace_result["group"] = group_dict
     else:
