@@ -77,6 +77,10 @@ class ResolutionStatus(Enum):
         "FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED",
         ("terminal", "success")
     )
+    EXACT_MATCH_PRIMARY_SOURCE_MULT_ACCEPTED = (
+        "EXACT_MATCH_PRIMARY_SOURCE_MULT_ACCEPTED", 
+        ("terminal", "success")
+    )
     SINGLE_FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE = (
         "SINGLE_FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE",
         ("terminal", "success")
