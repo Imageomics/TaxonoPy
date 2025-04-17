@@ -19,12 +19,13 @@ setup_profile_logging(logger, _PROFILE_DEBUG_OVERRIDE_)
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
-STRATEGY_NAME = "ExactMatchPrimarySourceSynonym"
+STRATEGY_NAME = "ExactMatchPrimarySourceSynonymSimple"
 
-class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
+class ExactMatchPrimarySourceSynonymSimpleStrategy(ResolutionStrategy):
     """
     Handles cases with a single 'Exact' match from the primary source, where the
     matched name is a 'Synonym'. Resolves to the provided accepted name.
+    Fixed to properly handle canonical name comparisons with author information.
     """
 
     def check_and_resolve(
@@ -71,11 +72,20 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
             logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result status is not 'Synonym' ({result.taxonomic_status})")
             return None
 
-        # 5. Canonical of SYNONYM matches query term?
-        if not (result.matched_canonical_simple and
-                result.matched_canonical_simple == attempt.query_term):
-            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Synonym canonical '{result.matched_canonical_simple}' doesn't match query term '{attempt.query_term}'.")
-            return None
+        # 5. Canonical comparison - FIXED to handle names with author information
+        # Check if the query term starts with the matched canonical name
+        # This works because canonical names appear at the start of the full name (before author info)
+        if not (result.matched_canonical_simple and 
+                attempt.query_term.startswith(result.matched_canonical_simple)):
+            # Also check if the query_term appears in the species field
+            species_match = False
+            if entry_group.species and result.matched_canonical_simple:
+                species_match = entry_group.species.startswith(result.matched_canonical_simple)
+            
+            if not species_match:
+                logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Query term '{attempt.query_term}' "
+                             f"doesn't start with matched canonical '{result.matched_canonical_simple}' and species field doesn't match either.")
+                return None
 
         # 6. Accepted name details provided? (currentName and classificationPath)
         #    GNVerifier usually provides the accepted name's path in classificationPath
@@ -106,7 +116,7 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
             query_term=attempt.query_term,
             query_rank=attempt.query_rank,
             data_source_id=attempt.data_source_id,
-            status=ResolutionStatus.EXACT_MATCH_PRIMARY_SOURCE_SYNONYM,
+            status=ResolutionStatus.EXACT_MATCH_PRIMARY_SOURCE_SYNONYM_SIMPLE,
             gnverifier_response=attempt.gnverifier_response,
             resolved_classification=resolved_classification,
             error=None,
@@ -122,8 +132,6 @@ class ExactMatchPrimarySourceSynonymStrategy(ResolutionStrategy):
         logger.debug(f"Applied {STRATEGY_NAME}: Created final attempt {final_attempt.key} for original {attempt.key}, resolving to accepted name '{result.current_name}'.")
         return final_attempt
 
-    # Helpers inherited from base
-
 # Expose for registration
-strategy_instance = ExactMatchPrimarySourceSynonymStrategy()
+strategy_instance = ExactMatchPrimarySourceSynonymSimpleStrategy()
 check_and_resolve = strategy_instance.check_and_resolve

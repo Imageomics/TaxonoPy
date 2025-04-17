@@ -34,7 +34,7 @@ from taxonopy.resolution.strategy.profiles import (
     partial_exact_match_primary_source_accepted_multi_result_disambiguation,
     partial_exact_match_primary_source_simple,
     # Synonym matches
-    exact_match_primary_source_synonym,
+    exact_match_primary_source_synonym_simple,
     # Retry cases
     no_match_nonempty_query,
     exact_match_primary_source_accepted_inner_rank_missing_in_result,
@@ -76,7 +76,7 @@ CLASSIFICATION_CASES = [
     partial_exact_match_primary_source_accepted_multi_result_disambiguation.check_and_resolve,
     partial_exact_match_primary_source_simple.check_and_resolve,
     # Synonym matches
-    exact_match_primary_source_synonym.check_and_resolve,
+    exact_match_primary_source_synonym_simple.check_and_resolve,
     # Retry cases
     no_match_nonempty_query.check_and_resolve,
     exact_match_primary_source_accepted_inner_rank_missing_in_result.check_and_resolve,
