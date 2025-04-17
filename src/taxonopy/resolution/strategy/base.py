@@ -351,8 +351,8 @@ class ResolutionStrategy:
         # Combine metadata correctly
         previous_metadata = attempt.metadata or {}
         profile_specific_metadata = {} # Failure reason is already a specific field
-        if profiles_checked_log:
-            profile_specific_metadata['profiles_checked'] = profiles_checked_log
+        # if profiles_checked_log:
+        #     profile_specific_metadata['profiles_checked'] = profiles_checked_log
 
         final_metadata = previous_metadata.copy()
         final_metadata.update(profile_specific_metadata)

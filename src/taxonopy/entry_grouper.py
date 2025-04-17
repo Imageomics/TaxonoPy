@@ -136,8 +136,8 @@ def create_entry_groups(input_path: str,
     entries = parse_input_list(input_path) 
     
     # Update stats if collector is provided
-    if stats_collector:
-        stats_collector.update_from_entries(entries)
+    # if stats_collector:
+    #     stats_collector.update_from_entries(entries)
     
     # Group entries by taxonomic data
     entry_group_index: Dict[str, EntryGroupRef] = group_entries(entries, total_count, stats_collector)

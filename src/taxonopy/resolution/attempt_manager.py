@@ -27,6 +27,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_accepted_result_within_query,
     exact_match_primary_source_multi_accepted,
     multi_exact_match_primary_source_synonyms_infraspecific_score,
+    multi_exact_match_primary_source_accepted_homonym,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted,
     single_fuzzy_match_primary_source_accepted_simple,
@@ -41,6 +42,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_secondary_source_accepted_pruned,
     exact_match_primary_source_accepted_result_within_query,
     # adding profiles as they are implemented
+    force_accepted_last_resort,
 )
 from taxonopy.types.gnverifier import Name as GNVerifierName
 from taxonopy.query.planner import plan_initial_queries, plan_retry_query
@@ -69,6 +71,7 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_accepted_result_within_query.check_and_resolve,
     exact_match_primary_source_multi_accepted.check_and_resolve,
     multi_exact_match_primary_source_synonyms_infraspecific_score.check_and_resolve,
+    multi_exact_match_primary_source_accepted_homonym.check_and_resolve,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted.check_and_resolve,
     single_fuzzy_match_primary_source_accepted_simple.check_and_resolve,
@@ -83,6 +86,7 @@ CLASSIFICATION_CASES = [
     exact_match_secondary_source_accepted_pruned.check_and_resolve,
     exact_match_primary_source_accepted_result_within_query.check_and_resolve,
     # add more cases
+    force_accepted_last_resort.check_and_resolve,
 ]
 
 class ResolutionAttemptManager:
@@ -154,16 +158,16 @@ class ResolutionAttemptManager:
 
         if existing_attempt:
             # Collision detected
-            self.logger.debug(f"Attempt key {attempt_key} collision detected. Existing status: {existing_attempt.status.name}, New status: {status.name}")
+            # self.logger.debug(f"Attempt key {attempt_key} collision detected. Existing status: {existing_attempt.status.name}, New status: {status.name}")
 
             # If status is identical, just update latest pointer and return existing
             if existing_attempt.status == status:
-                self.logger.debug(f"Collision with identical status ({status.name}). Re-using existing attempt {attempt_key}.")
+                # self.logger.debug(f"Collision with identical status ({status.name}). Re-using existing attempt {attempt_key}.")
                 self._entry_group_latest_attempt[entry_group_key] = attempt_key # Ensure latest pointer is correct
                 return existing_attempt
             else:
                 # Status is changing: replacethe object
-                self.logger.info(f"Collision with different status. Replacing attempt {attempt_key} object with status {status.name}.")
+                # self.logger.info(f"Collision with different status. Replacing attempt {attempt_key} object with status {status.name}.")
 
                 previous_key_for_new_obj = existing_attempt.previous_key
                 # Create the new attempt object WITH the correct previous_key
@@ -186,8 +190,8 @@ class ResolutionAttemptManager:
                 self._attempts[attempt_key] = new_attempt_obj
                 # Update the latest pointer to this key
                 self._entry_group_latest_attempt[entry_group_key] = attempt_key
-                self.logger.debug(f"Replaced attempt {attempt_key} for entry group {entry_group_key} "
-                                   f"with status {status.name}. Previous now points to: {previous_key_for_new_obj}")
+                # self.logger.debug(f"Replaced attempt {attempt_key} for entry group {entry_group_key} "
+                #                    f"with status {status.name}. Previous now points to: {previous_key_for_new_obj}")
                 return new_attempt_obj # Return the new object
 
         else:
@@ -215,8 +219,8 @@ class ResolutionAttemptManager:
 
             self._attempts[attempt_key] = new_attempt
             self._entry_group_latest_attempt[entry_group_key] = attempt_key
-            self.logger.debug(f"Created attempt {attempt_key} for entry group {entry_group_key} "
-                              f"with status {status.name}. Previous: {previous_key_for_new_obj}") # Log the actual previous key assigned
+            # self.logger.debug(f"Created attempt {attempt_key} for entry group {entry_group_key} "
+            #                   f"with status {status.name}. Previous: {previous_key_for_new_obj}") # Log the actual previous key assigned
             return new_attempt
 
     def get_attempt(self, key: str) -> Optional[ResolutionAttempt]:
@@ -278,7 +282,7 @@ class ResolutionAttemptManager:
         processed_entry_groups = set()
 
         for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
-            self.logger.debug(f"Processing entry group {entry_group_key}")
+            # self.logger.debug(f"Processing entry group {entry_group_key}")
             if entry_group_key in processed_entry_groups: continue # Should not happen with dict keys
 
             attempt = self._attempts.get(latest_attempt_key)
@@ -301,6 +305,19 @@ class ResolutionAttemptManager:
             **{f"final_status_{status.name.lower()}": count for status, count in status_counts.items()}
         }
 
+    def force_failed_attempts_to_input(self, entry_group_map: Dict[str, EntryGroupRef]) -> int:
+        """
+        Force all failed resolution attempts to use their original input taxonomy.
+        
+        Args:
+            entry_group_map: Dictionary mapping entry group keys to EntryGroupRef objects
+        
+        Returns:
+            Number of attempts that were forced to use input data
+        """
+        from taxonopy.resolution.post_processing_for_failed import force_failed_to_input
+        return force_failed_to_input(self, entry_group_map)
+        
     def resolve_all_entry_groups(
         self,
         entry_group_map: Dict[str, EntryGroupRef],
@@ -336,7 +353,7 @@ class ResolutionAttemptManager:
         self._create_initial_attempts(initial_results)
 
         # 2. Resolution Loop
-        self.logger.info("Starting resolution loop (classification & retries)...")
+        self.logger.info("Starting resolution loop (classification and retries)...")
         iteration = 0
         max_iterations = 100 # Safety break to prevent infinite loops
         while iteration < max_iterations:
@@ -386,6 +403,9 @@ class ResolutionAttemptManager:
 
         # Save attempt chains to cache
         self.save_chains_to_cache()
+
+        # Uncomment the following line to force failed attempts to use input data
+        self.force_failed_attempts_to_input(entry_group_map)
 
     def _create_initial_attempts(self, initial_results: Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]]):
         """Creates the first ResolutionAttempt (status PROCESSING) for each entry group."""
@@ -468,10 +488,10 @@ class ResolutionAttemptManager:
                             # Use the strategy name from the attempt returned by the case function
                             strategy_name_applied = newly_created_or_updated_attempt.resolution_strategy_name or getattr(case_func, 'STRATEGY_NAME', 'unknown')
                             # Log details about the outcome
-                            self.logger.debug(
-                                f"Case '{strategy_name_applied}' processed attempt {current_attempt.key}, "
-                                f"resulting in attempt {newly_created_or_updated_attempt.key} with status {newly_created_or_updated_attempt.status.name}"
-                            )
+                            # self.logger.debug(
+                            #     f"Case '{strategy_name_applied}' processed attempt {current_attempt.key}, "
+                            #     f"resulting in attempt {newly_created_or_updated_attempt.key} with status {newly_created_or_updated_attempt.status.name}"
+                            # )
                             profile_matched = True
                             # Only increment if the original status was PROCESSING
                             if current_attempt.status == ResolutionStatus.PROCESSING:
@@ -495,8 +515,8 @@ class ResolutionAttemptManager:
 
                 # If no case matched after trying all, mark as FAILED (unhandled)
                 if not profile_matched:
-                    self.logger.warning(f"Attempt {current_attempt.key} (EntryGroup: {entry_group_key}, Term: '{current_attempt.query_term}') "
-                                        f"did not match any defined resolution case. Marking as FAILED.")
+                    # self.logger.warning(f"Attempt {current_attempt.key} (EntryGroup: {entry_group_key}, Term: '{current_attempt.query_term}') "
+                    #                     f"did not match any defined resolution case. Marking as FAILED.")
                     self.create_attempt(
                         entry_group_key=entry_group_key,
                         query_term=current_attempt.query_term,
@@ -575,6 +595,8 @@ class ResolutionAttemptManager:
     def save_chains_to_cache(self) -> None:
         """Save all attempt chains using the existing cache infrastructure."""
         from taxonopy.config import config
+
+        self.logger.info("Saving attempt chains to cache...")
         
         for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
             chain = self.get_group_attempt_chain(entry_group_key)
@@ -620,7 +642,7 @@ class ResolutionAttemptManager:
             # Save to cache
             save_cache(cache_key, chain_data, checksum, metadata)
             
-            self.logger.debug(f"Saved attempt chain for entry group {entry_group_key} to cache")
+            # self.logger.debug(f"Saved attempt chain for entry group {entry_group_key} to cache")
 
     @staticmethod
     def load_chain_from_cache(entry_group_key: str) -> List[Dict[str, Any]]:

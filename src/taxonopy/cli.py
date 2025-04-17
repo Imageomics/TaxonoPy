@@ -147,7 +147,7 @@ def run_resolve(args: argparse.Namespace) -> int:
         logging.info("Counting entries...")
         total_count = count_entries_in_input(args.input)
         logging.info(f"Found {total_count:,} entries in input files.")
-        stats.entry_count = total_count
+        # stats.entry_count = total_count
 
         logging.info("Grouping entries...")
         _, entry_group_map = create_entry_groups(

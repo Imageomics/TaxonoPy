@@ -19,7 +19,8 @@ class Config:
     def __init__(self):
         """Initialize configuration with default values."""
         # Paths
-        self.cache_dir = str(Path.home() / ".cache" / "taxonopy")
+        # self.cache_dir = str(Path.home() / ".cache" / "taxonopy")
+        self.cache_dir = '/fs/scratch/PAS2136/thompsonmj/.cache/taxonopy'
         
         # GNVerifier settings
         self.gnverifier_image = "gnames/gnverifier:v1.2.5"

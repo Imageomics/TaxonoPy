@@ -79,7 +79,7 @@ class ExactMatchPrimarySourceAcceptedInnerRankDisambiguationStrategy(ResolutionS
             return None # Profile mismatch
 
         if not (result0.data_source_id == primary_source_id and result1.data_source_id == primary_source_id):
-             return None # Profile mismatch
+            return None # Profile mismatch
 
         # 5. Canonical forms match each other and the query term?
         if not (result0.matched_canonical_simple and
@@ -118,8 +118,8 @@ class ExactMatchPrimarySourceAcceptedInnerRankDisambiguationStrategy(ResolutionS
             logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Passed robust kingdom consistency check.")
 
         except Exception as e:
-             logger.error(f"[{STRATEGY_NAME}] {attempt.key}: ERROR during robust kingdom check: {e}", exc_info=True)
-             return self._create_failed_attempt(attempt, manager, reason="Kingdom check failed", error_msg=str(e))
+            logger.error(f"[{STRATEGY_NAME}] {attempt.key}: ERROR during robust kingdom check: {e}", exc_info=True)
+            return self._create_failed_attempt(attempt, manager, reason="Kingdom check failed", error_msg=str(e))
 
         # Disambiguation logic
 

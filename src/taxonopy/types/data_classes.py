@@ -93,6 +93,10 @@ class ResolutionStatus(Enum):
         "MULTI_EXACT_MATCH_PRIMARY_SOURCE_SYNONYMS_INFRASPECIFIC_SCORE",
         ("terminal", "success")
     )
+    MULTI_EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_HOMONYM = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_HOMONYM",
+        ("terminal", "success")
+    )
     EXACT_MATCH_PRIMARY_SOURCE_SYNONYM_SIMPLE = (
         "EXACT_MATCH_PRIMARY_SOURCE_SYNONYM_SIMPLE",
         ("terminal", "success")
@@ -109,6 +113,10 @@ class ResolutionStatus(Enum):
     # Forced acceptance status
     FORCE_ACCEPTED = (
         "FORCE_ACCEPTED",
+        ("terminal", "success")
+    )
+    FAILED_FORCED_INPUT = (
+        "FAILED_FORCED_INPUT",
         ("terminal", "success")
     )
 

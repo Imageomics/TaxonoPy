@@ -157,7 +157,7 @@ def plan_retry_query(
             next_combination = (term_to_try, rank_to_try, source_id_to_try)
             
             if next_combination not in attempted_combinations:
-                logger.info(f"Retry Plan for {entry_group.key}: Next query -> Term='{term_to_try}', Rank={rank_to_try}, SourceID={source_id_to_try}")
+                # logger.info(f"Retry Plan for {entry_group.key}: Next query -> Term='{term_to_try}', Rank={rank_to_try}, SourceID={source_id_to_try}")
                 return QueryParameters(term=term_to_try, rank=rank_to_try, source_id=source_id_to_try)
 
     # If we've exhausted all combinations for all available term/rank pairs

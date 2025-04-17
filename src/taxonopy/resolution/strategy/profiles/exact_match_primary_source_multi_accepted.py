@@ -38,7 +38,6 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
         attempt: ResolutionAttempt,
         entry_group: EntryGroupRef,
         manager: "ResolutionAttemptManager",
-        profiles_checked_log: Optional[List[str]] = None
     ) -> Optional[ResolutionAttempt]:
         """
         Checks profile: Multiple primary source results with multiple 'Accepted' status
@@ -122,7 +121,6 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
                     attempt, manager,
                     reason="Multiple accepted results with different classifications",
                     error_msg="Cannot disambiguate between accepted results with different classification paths",
-                    profiles_checked_log=profiles_checked_log
                 )
 
         # Profile matched - a result has been selected
@@ -138,7 +136,6 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
                     attempt, manager, 
                     reason="Classification extraction failed", 
                     error_msg="Extracted empty path from selected result", 
-                    profiles_checked_log=profiles_checked_log
                 )
         except Exception as e:
             logger.error(f"[{STRATEGY_NAME}] {attempt.key}: Error extracting classification: {e}", exc_info=True)
@@ -146,7 +143,6 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
                 attempt, manager, 
                 reason="Classification extraction failed", 
                 error_msg=str(e), 
-                profiles_checked_log=profiles_checked_log
             )
 
         # Prepare Metadata
@@ -161,8 +157,8 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
 
         final_metadata = previous_metadata.copy()
         final_metadata.update(profile_specific_metadata)
-        if profiles_checked_log:
-            final_metadata['profiles_checked'] = profiles_checked_log
+        # if profiles_checked_log:
+        #     final_metadata['profiles_checked'] = profiles_checked_log
 
         # Create final attempt
         final_attempt = manager.create_attempt(
