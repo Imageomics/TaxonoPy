@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
 )
 from taxonopy.types.gnverifier import ResultData
 from taxonopy.resolution.config import ResolutionStrategyConfig
-from taxonopy.constants import TAXONOMIC_RANKS, INVALID_VALUES
+from taxonopy.constants import TAXONOMIC_RANKS, INVALID_VALUES, KINGDOM_SYNONYMS
 
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
@@ -50,6 +50,38 @@ class ResolutionStrategy:
         """
         raise NotImplementedError("Subclasses must implement resolve")
     
+    @staticmethod
+    def get_canonical_kingdom(kingdom_name: Optional[str]) -> Optional[str]:
+        """
+        Returns the canonical kingdom name given a name or its synonym.
+        Uses the KINGDOM_SYNONYMS definition from constants.py.
+        Handles None, whitespace, and performs case-insensitive matching.
+        Returns the canonical name if found, otherwise the original (stripped)
+        name if it's valid, or None if input is None/empty/invalid.
+        """
+        if not kingdom_name:
+            return None
+
+        k_stripped = kingdom_name.strip()
+        if not k_stripped or k_stripped.lower() in INVALID_VALUES:
+            return None
+
+        k_lower = k_stripped.lower()
+
+        # Check if it's already canonical (case-insensitive)
+        for canonical_key in KINGDOM_SYNONYMS:
+            if canonical_key.lower() == k_lower:
+                return canonical_key # Return the defined canonical spelling
+
+        # Check if it's in the synonyms (case-insensitive)
+        for canonical_key, synonyms_set in KINGDOM_SYNONYMS.items():
+            if any(syn.lower() == k_lower for syn in synonyms_set):
+                return canonical_key # Return the associated canonical spelling
+
+        # If not found in synonyms or as a key, return the original stripped name
+        # (it might be a valid kingdom not explicitly listed, like "Fungi")
+        return k_stripped
+
     def _extract_classification(self, result: ResultData) -> Dict[str, str]:
         """Extract classification information from a result.
         
@@ -315,6 +347,16 @@ class ResolutionStrategy:
         Called by strategies when their specific logic fails.
         """
         final_error_string = error_msg or f"Strategy '{self.__class__.__name__}' failed: {reason}"
+
+        # Combine metadata correctly
+        previous_metadata = attempt.metadata or {}
+        profile_specific_metadata = {} # Failure reason is already a specific field
+        if profiles_checked_log:
+            profile_specific_metadata['profiles_checked'] = profiles_checked_log
+
+        final_metadata = previous_metadata.copy()
+        final_metadata.update(profile_specific_metadata)
+
         # Use the attempt_manager's create_attempt method with the new signature
         return attempt_manager.create_attempt(
             entry_group_key=attempt.entry_group_key,
@@ -327,5 +369,5 @@ class ResolutionStrategy:
             error=final_error_string,
             resolution_strategy_name=self.__class__.__name__,
             failure_reason=reason,
-            metadata={}
+            metadata=final_metadata 
         )

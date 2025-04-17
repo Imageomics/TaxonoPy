@@ -93,6 +93,49 @@ class ExactMatchPrimarySourceAcceptedStrategy(ResolutionStrategy):
                 attempt,
                 manager,
                 reason="Classification extraction failed", error_msg=str(e))
+        match = True
+        for rank_field, expected_value in expected_classification.items():
+            result_value = result_classification.get(rank_field)
+
+            if rank_field == 'kingdom':
+                logger.debug(f"  Comparing Kingdom: Input='{expected_value}' vs Result='{result_value}'")
+
+                # Direct Exact Match Check:
+                if expected_value == result_value:
+                    logger.debug(f"    Kingdoms match directly. PASS.")
+                    continue # Move to next rank
+
+                # If direct match failed, check synonyms only if input is a known synonym
+                canonical_input_kingdom = ResolutionStrategy.get_canonical_kingdom(expected_value)
+                canonical_result_kingdom = ResolutionStrategy.get_canonical_kingdom(result_value) # Still useful for logging/potential future checks
+
+                # Check if the original input value was found as a synonym key and if the canonical input matches the canonical result
+                is_input_a_synonym = False
+                if expected_value and canonical_input_kingdom != expected_value.strip(): # Check if canonicalization actually changed the input
+                     # This implies the original input value was found in a synonym set
+                     is_input_a_synonym = True
+
+                if is_input_a_synonym and canonical_input_kingdom == canonical_result_kingdom:
+                     # Input was a known synonym, and its canonical form matches the result's canonical form (or direct result value if result isn't in synonyms)
+                     logger.debug(f"    Input kingdom ('{expected_value}') is synonym for '{canonical_input_kingdom}', which matches result kingdom ('{result_value}' -> '{canonical_result_kingdom}'). PASS.")
+                     continue # Treat as a match
+
+                # 3. If none of the above passed, it's a mismatch for this profile
+                logger.debug(f"    Kingdom Mismatch: Direct match failed, and input ('{expected_value}') is not a recognized synonym matching the result ('{result_value}').")
+                match = False
+                break
+            else:
+                # Direct comparison for other ranks (same as before)
+                logger.debug(f"  Comparing Rank '{rank_field}': Input='{expected_value}' vs Result='{result_value}'")
+                if result_value != expected_value:
+                    logger.debug(f"  Rank Mismatch: Values differ.")
+                    match = False
+                    break
+
+        if not match:
+             logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Classification mismatch detected.")
+             return None # Profile mismatch
+        logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Passed classification comparison.")
 
         # Compare classifications (only ranks present in input)
         match = True

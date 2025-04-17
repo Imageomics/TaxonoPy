@@ -37,6 +37,18 @@ class ResolutionStatus(Enum):
         "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED", 
         ("terminal", "success")
     )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AMONG_SYNONYMS_SIMPLE = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AMONG_SYNONYMS_SIMPLE",
+        ("terminal", "success")
+    )
+    EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AUTHOR_DISAMBIGUATION = (
+        "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AUTHOR_DISAMBIGUATION",
+        ("terminal", "success")
+    )
     EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RETRY = (
         "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_RETRY", 
         ("terminal", "success")
@@ -63,6 +75,10 @@ class ResolutionStatus(Enum):
     )
     FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED = (
         "FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED",
+        ("terminal", "success")
+    )
+    SINGLE_FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE = (
+        "SINGLE_FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE",
         ("terminal", "success")
     )
     EXACT_MATCH_PRIMARY_SOURCE_SYNONYM = (

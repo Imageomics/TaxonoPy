@@ -90,19 +90,36 @@ class ExactMatchPrimarySourceAcceptedInnerRankDisambiguationStrategy(ResolutionS
             return None # Profile mismatch
 
         # 6. Kingdoms match?
-        expected_kingdom_val = expected_classification.get('kingdom')
+        logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Performing kingdom consistency check (robust)...")
+        try:
+            canonical_input_kingdom = ResolutionStrategy.get_canonical_kingdom(expected_classification.get('kingdom'))
+            logger.debug(f"  Input Kingdom: '{expected_classification.get('kingdom')}' -> Canonical: '{canonical_input_kingdom}'")
 
-        if not expected_kingdom_val:
-            logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Input EntryGroupRef has no valid kingdom.")
-            return None
+            # 1. Input kingdom MUST be valid for this profile to apply contextually
+            if not canonical_input_kingdom:
+                logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Mismatch - Input EntryGroupRef has no valid canonical kingdom. Returning None.")
+                return None
 
-        result0_kingdom_val = result0_classification.get('kingdom')
-        result1_kingdom_val = result1_classification.get('kingdom')
+            canonical_result0_kingdom = ResolutionStrategy.get_canonical_kingdom(result0_classification.get('kingdom'))
+            canonical_result1_kingdom = ResolutionStrategy.get_canonical_kingdom(result1_classification.get('kingdom'))
+            logger.debug(f"  Result 0 Kingdom: '{result0_classification.get('kingdom')}' -> Canonical: '{canonical_result0_kingdom}'")
+            logger.debug(f"  Result 1 Kingdom: '{result1_classification.get('kingdom')}' -> Canonical: '{canonical_result1_kingdom}'")
 
-        if not (result0_kingdom_val and result1_kingdom_val and
-                result0_kingdom_val == expected_kingdom_val and
-                result1_kingdom_val == expected_kingdom_val):
-            return None
+            # 2. Check if at least one result matches the valid input kingdom
+            #    (Handles cases where one result might lack a kingdom)
+            result0_matches = (canonical_result0_kingdom == canonical_input_kingdom)
+            result1_matches = (canonical_result1_kingdom == canonical_input_kingdom)
+
+            if not (result0_matches or result1_matches):
+                # Neither result's kingdom matches the input kingdom, OR both results lack a valid kingdom.
+                logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Mismatch - Neither valid result kingdom ('{canonical_result0_kingdom}', '{canonical_result1_kingdom}') matches the input canonical kingdom ('{canonical_input_kingdom}'). Returning None.")
+                return None
+
+            logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Passed robust kingdom consistency check.")
+
+        except Exception as e:
+             logger.error(f"[{STRATEGY_NAME}] {attempt.key}: ERROR during robust kingdom check: {e}", exc_info=True)
+             return self._create_failed_attempt(attempt, manager, reason="Kingdom check failed", error_msg=str(e))
 
         # Disambiguation logic
 

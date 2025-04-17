@@ -16,6 +16,9 @@ from taxonopy.resolution.strategy.profiles import (
     empty_input_taxonomy,
     # Exact matches
     exact_match_primary_source_accepted,
+    exact_match_primary_source_accepted_simple,
+    exact_match_primary_source_accepted_among_synonyms_simple,
+    exact_match_primary_source_accepted_author_disambiguation,
     exact_match_primary_source_accepted_retry,
     exact_match_primary_source_accepted_inner_rank_disambiguation,
     exact_match_primary_source_accepted_rank_level_disambiguation,
@@ -24,6 +27,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_accepted_result_within_query,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted,
+    single_fuzzy_match_primary_source_accepted_simple,
     # Partial matches
     partial_exact_match_primary_source_accepted_multi_result_disambiguation,
     # Synonym matches
@@ -51,6 +55,9 @@ CLASSIFICATION_CASES = [
     empty_input_taxonomy.check_and_resolve,
     # Exact matches
     exact_match_primary_source_accepted.check_and_resolve,
+    exact_match_primary_source_accepted_simple.check_and_resolve,
+    exact_match_primary_source_accepted_among_synonyms_simple.check_and_resolve,
+    exact_match_primary_source_accepted_author_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_retry.check_and_resolve,
     exact_match_primary_source_accepted_inner_rank_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_rank_level_disambiguation.check_and_resolve,
@@ -59,6 +66,7 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_accepted_result_within_query.check_and_resolve,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted.check_and_resolve,
+    single_fuzzy_match_primary_source_accepted_simple.check_and_resolve,
     # Partial matches
     partial_exact_match_primary_source_accepted_multi_result_disambiguation.check_and_resolve,
     # Synonym matches

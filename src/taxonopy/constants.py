@@ -31,3 +31,15 @@ DATA_SOURCE_PRECEDENCE = OrderedDict([
 ])
 
 INVALID_VALUES = ['unknown', 'null', 'none', '', 'n/a']
+
+KINGDOM_SYNONYMS = {
+    # Canonical (GBIF) : { Synonyms }
+    "Animalia": {"Metazoa"},
+    "Plantae": {"Viridiplantae", "Archaeplastida"},
+    "Fungi": {},
+    "Protista": {},
+    "Chromista": {},
+    "Archaea": {},
+    "Bacteria": {},
+    # furthermore as encountered or suspected
+}
