@@ -407,7 +407,7 @@ class ResolutionAttemptManager:
         self.save_chains_to_cache()
 
         # Uncomment the following line to force failed attempts to use input data
-        # self.force_failed_attempts_to_input(entry_group_map)
+        self.force_failed_attempts_to_input(entry_group_map)
 
     def _create_initial_attempts(self, initial_results: Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]]):
         """Creates the first ResolutionAttempt (status PROCESSING) for each entry group."""

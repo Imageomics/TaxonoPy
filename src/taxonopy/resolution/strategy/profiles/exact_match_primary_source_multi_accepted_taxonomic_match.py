@@ -167,7 +167,8 @@ class ExactMatchPrimarySourceMultiAcceptedTaxonomicMatchStrategy(ResolutionStrat
             
         else:
             # We have a tie - multiple results with same match count
-            logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Tie between {len(best_results)} results with {max_match_count} matches.")
+            logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Tie between {len(best_results)} results with {max_match_count} matches."
+                         f" results: {[result.record_id for result, _ in best_results]}")
             
             # Create metadata with tie details
             metadata = {
@@ -189,7 +190,7 @@ class ExactMatchPrimarySourceMultiAcceptedTaxonomicMatchStrategy(ResolutionStrat
                 resolved_classification=None,
                 error=None,
                 resolution_strategy_name=STRATEGY_NAME,
-                failure_reason="Tie between multiple results with equal taxonomic matches",
+                failure_reason=f"Tie between {len(best_results)} results with equal taxonomic matches",
                 metadata=metadata
             )
             logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Applied, created tie attempt {failed_attempt.key}")
