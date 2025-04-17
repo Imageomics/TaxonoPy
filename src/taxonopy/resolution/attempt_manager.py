@@ -25,6 +25,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_accepted_synonym_disambiguation,
     exact_match_primary_source_accepted_multi_result_disambiguation,
     exact_match_primary_source_accepted_result_within_query,
+    multi_exact_match_primary_source_synonyms_infraspecific_score,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted,
     single_fuzzy_match_primary_source_accepted_simple,
@@ -64,6 +65,7 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_accepted_synonym_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_multi_result_disambiguation.check_and_resolve,
     exact_match_primary_source_accepted_result_within_query.check_and_resolve,
+    multi_exact_match_primary_source_synonyms_infraspecific_score.check_and_resolve,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted.check_and_resolve,
     single_fuzzy_match_primary_source_accepted_simple.check_and_resolve,

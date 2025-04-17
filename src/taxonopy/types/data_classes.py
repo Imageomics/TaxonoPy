@@ -81,6 +81,10 @@ class ResolutionStatus(Enum):
         "SINGLE_FUZZY_MATCH_PRIMARY_SOURCE_ACCEPTED_SIMPLE",
         ("terminal", "success")
     )
+    MULTI_EXACT_MATCH_PRIMARY_SOURCE_SYNONYMS_INFRASPECIFIC_SCORE = (
+        "MULTI_EXACT_MATCH_PRIMARY_SOURCE_SYNONYMS_INFRASPECIFIC_SCORE",
+        ("terminal", "success")
+    )
     EXACT_MATCH_PRIMARY_SOURCE_SYNONYM = (
         "EXACT_MATCH_PRIMARY_SOURCE_SYNONYM",
         ("terminal", "success")

@@ -168,9 +168,7 @@ if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
 STRATEGY_NAME = "ExactMatchPrimarySourceAcceptedAmongSynonymsSimple"
-# Use the new status if you added it
-SUCCESS_STATUS = getattr(ResolutionStatus, "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AMONG_SYNONYMS_SIMPLE",
-                         ResolutionStatus.EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED) # Fallback if enum not updated
+SUCCESS_STATUS = getattr(ResolutionStatus, "EXACT_MATCH_PRIMARY_SOURCE_ACCEPTED_AMONG_SYNONYMS_SIMPLE")
 
 class ExactMatchPrimarySourceAcceptedAmongSynonymsSimpleStrategy(ResolutionStrategy):
     """
@@ -222,8 +220,7 @@ class ExactMatchPrimarySourceAcceptedAmongSynonymsSimpleStrategy(ResolutionStrat
                res.match_type.root == "Exact":
                 primary_results.append(res) # Keep track of all relevant primary results
                 if res.taxonomic_status == "Accepted":
-                    # Important: Only store the first accepted result found.
-                    # If multiple are found, the counts check below will fail.
+                    # If multiple are found, the counts check below will fail (on purpose)
                     if accepted_count == 0:
                         accepted_result = res
                     accepted_count += 1
