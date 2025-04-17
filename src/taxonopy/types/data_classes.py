@@ -109,6 +109,10 @@ class ResolutionStatus(Enum):
         "EXACT_MATCH_SECONDARY_SOURCE_ACCEPTED_PRUNED",
         ("terminal", "success")
     )
+    EXACT_MATCH_PRIMARY_SOURCE_MULTI_ACCEPTED_TAXONOMIC_MATCH = (
+        "EXACT_MATCH_PRIMARY_SOURCE_MULTI_ACCEPTED_TAXONOMIC_MATCH",
+        ("terminal", "success")
+    )
     
     # Forced acceptance status
     FORCE_ACCEPTED = (

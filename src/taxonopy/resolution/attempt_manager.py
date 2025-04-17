@@ -28,6 +28,7 @@ from taxonopy.resolution.strategy.profiles import (
     exact_match_primary_source_multi_accepted,
     multi_exact_match_primary_source_synonyms_infraspecific_score,
     multi_exact_match_primary_source_accepted_homonym,
+    exact_match_primary_source_multi_accepted_taxonomic_match,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted,
     single_fuzzy_match_primary_source_accepted_simple,
@@ -72,6 +73,7 @@ CLASSIFICATION_CASES = [
     exact_match_primary_source_multi_accepted.check_and_resolve,
     multi_exact_match_primary_source_synonyms_infraspecific_score.check_and_resolve,
     multi_exact_match_primary_source_accepted_homonym.check_and_resolve,
+    exact_match_primary_source_multi_accepted_taxonomic_match.check_and_resolve,
     # Fuzzy matches
     fuzzy_match_primary_source_accepted.check_and_resolve,
     single_fuzzy_match_primary_source_accepted_simple.check_and_resolve,
@@ -405,7 +407,7 @@ class ResolutionAttemptManager:
         self.save_chains_to_cache()
 
         # Uncomment the following line to force failed attempts to use input data
-        self.force_failed_attempts_to_input(entry_group_map)
+        # self.force_failed_attempts_to_input(entry_group_map)
 
     def _create_initial_attempts(self, initial_results: Dict[str, Tuple[QueryParameters, Optional[GNVerifierName]]]):
         """Creates the first ResolutionAttempt (status PROCESSING) for each entry group."""

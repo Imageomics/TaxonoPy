@@ -116,12 +116,15 @@ class ExactMatchPrimarySourceMultiAcceptedStrategy(ResolutionStrategy):
                 logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: All accepted results have identical classification paths. Selecting first result.")
             else:
                 # Classification paths differ, ambiguous situation
-                logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Classification paths differ between accepted results. Ambiguous.")
-                return self._create_failed_attempt(
-                    attempt, manager,
-                    reason="Multiple accepted results with different classifications",
-                    error_msg="Cannot disambiguate between accepted results with different classification paths",
-                )
+                # Such a case should now be handled by:
+                # exact_match_primary_source_accepted_taxonomic_match
+                return None
+                # logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Classification paths differ between accepted results. Ambiguous.")
+                # return self._create_failed_attempt(
+                #     attempt, manager,
+                #     reason="Multiple accepted results with different classifications",
+                #     error_msg="Cannot disambiguate between accepted results with different classification paths",
+                # )
 
         # Profile matched - a result has been selected
         logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Profile matched. Selected result: {selected_result.matched_name}, "
