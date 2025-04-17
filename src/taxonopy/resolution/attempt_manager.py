@@ -32,6 +32,7 @@ from taxonopy.resolution.strategy.profiles import (
     single_fuzzy_match_primary_source_accepted_simple,
     # Partial matches
     partial_exact_match_primary_source_accepted_multi_result_disambiguation,
+    partial_exact_match_primary_source_simple,
     # Synonym matches
     exact_match_primary_source_synonym,
     # Retry cases
@@ -73,6 +74,7 @@ CLASSIFICATION_CASES = [
     single_fuzzy_match_primary_source_accepted_simple.check_and_resolve,
     # Partial matches
     partial_exact_match_primary_source_accepted_multi_result_disambiguation.check_and_resolve,
+    partial_exact_match_primary_source_simple.check_and_resolve,
     # Synonym matches
     exact_match_primary_source_synonym.check_and_resolve,
     # Retry cases
