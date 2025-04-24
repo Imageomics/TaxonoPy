@@ -1,4 +1,5 @@
 import os
+import argparse
 import pandas as pd
 
 
@@ -12,6 +13,7 @@ def merge_taxon_id(anno_df, taxon_df):
     new_anno_df = anno_df.copy()
     new_anno_df = new_anno_df.replace('', None)
     new_anno_df = new_anno_df.replace(pd.NA, None)
+
     print('Start merging with taxon_df')
     for key in ['species', 'genus']:
         new_anno_df = pd.merge(
@@ -25,6 +27,7 @@ def merge_taxon_id(anno_df, taxon_df):
         new_anno_df = new_anno_df.drop(columns=['canonicalName'])
     new_anno_df.rename(columns={'taxonID': 'taxonID_species'}, inplace=True)
 
+    # Only keep the smallest taxonID for each uuid
     duplicated_uuids = new_anno_df[new_anno_df.duplicated(subset='uuid', keep=False)]
     non_duplicated_df = new_anno_df[~new_anno_df['uuid'].isin(duplicated_uuids['uuid'])]
     duplicated_uuids = duplicated_uuids.loc[duplicated_uuids.groupby('uuid')['taxonID_genus'].idxmin()]
@@ -70,22 +73,42 @@ def merge_common_name(anno_df, common_name_df):
     return new_anno_df
 
 if __name__ == "__main__":
-    common_name_df = pd.read_csv('/fs/scratch/PAS2136/jianyang/most_common_name_new.tsv', sep='\t', low_memory=False)
-    taxon_df = pd.read_csv('/fs/scratch/PAS2136/jianyang/updated_taxon.tsv', sep='\t', quoting=3, low_memory=False)
+    parser = argparse.ArgumentParser(description="Resolve common names for taxa")
+    parser.add_argument('--common_name_file', type=str, required=True, help='Path to the common name file')
+    parser.add_argument('--taxon_file', type=str, required=True, help='Path to the taxonID file')
+    parser.add_argument('--annotation_dir', type=str, required=True, help='Directory containing annotation files')
+    parser.add_argument('--output_dir', type=str, required=True, help='Directory to save the output files')
+    args = parser.parse_args()
 
-    root_dir = '/fs/ess/PAS2136/TreeOfLife_TaxonoPy/2025-04-17'
-    annotation_list = os.listdir(root_dir)
+    # Load the common name dataframes and keep the most common ones for each taxonID
+    common_name_df = pd.read_csv(args.common_name_file, sep='\t', low_memory=False)
+    common_name_df = common_name_df[common_name_df['language'] == 'en']
+    common_name_df['vernacularName'] = common_name_df['vernacularName'].str.lower()
+    common_name_df['vernacularName'] = common_name_df['vernacularName'].str.capitalize()
+    common_name_df = common_name_df.groupby('taxonID')['vernacularName'].agg(lambda x: x.values_counts().index[0]).reset_index()
+
+    # Load the taxon dataframe and keep the valid ones
+    taxon_df = pd.read_csv(args.taxon_file, sep='\t', quoting=3, low_memory=False)
+    taxon_df = taxon_df.loc[
+        (taxon_df['taxonomicStatus'] == 'accepted') &
+        (taxon_df['canonicalName'].notnull())
+    ]
+
+    # Filter the common name dataframe
+    annotation_list = os.listdir(args.annotation_dir)
     annotation_list = [f for f in annotation_list if 'resolved' in f and f.endswith('.parquet')]
-    annotation_list = annotation_list[20:]
-    output_dir = '/fs/scratch/PAS2136/TreeOfLife/resolved_taxa_with_common_name'
 
+    # Ensure the output directory exists
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    # Process each annotation file
     for file_index, annotation_file in enumerate(annotation_list):
         print(f"Processing {file_index}/{len(annotation_list)}: {annotation_file}")
         print(f"Loading {annotation_file}...")
-        anno_df = pd.read_parquet(os.path.join(root_dir, annotation_file))
+        anno_df = pd.read_parquet(os.path.join(args.annotation_dir, annotation_file))
         print(f"Loaded {annotation_file} with {len(anno_df)} rows.")
         new_anno_df = merge_taxon_id(anno_df, taxon_df)
         new_anno_df = merge_common_name(new_anno_df, common_name_df)
         new_anno_df['scientific_name'] = new_anno_df['scientific_name'].astype(str)
-        new_anno_df.to_parquet(os.path.join(output_dir, annotation_file), index=False)
-        print(f"Processed {file_index}/{len(annotation_list)}: {annotation_file} and saved to {output_dir}")
+        new_anno_df.to_parquet(os.path.join(args.output_dir, annotation_file), index=False)
+        print(f"Processed {file_index}/{len(annotation_list)}: {annotation_file} and saved to {args.output_dir}")
