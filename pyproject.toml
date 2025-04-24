@@ -13,6 +13,7 @@ dependencies = [
     "requests", 
     "tqdm",
     "polars",
+    "pandas",
     "pyarrow",
     "pydantic"
 ]
