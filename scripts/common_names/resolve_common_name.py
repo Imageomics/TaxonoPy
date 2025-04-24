@@ -85,7 +85,7 @@ if __name__ == "__main__":
     common_name_df = common_name_df[common_name_df['language'] == 'en']
     common_name_df['vernacularName'] = common_name_df['vernacularName'].str.lower()
     common_name_df['vernacularName'] = common_name_df['vernacularName'].str.capitalize()
-    common_name_df = common_name_df.groupby('taxonID')['vernacularName'].agg(lambda x: x.values_counts().index[0]).reset_index()
+    common_name_df = common_name_df.groupby('taxonID')['vernacularName'].agg(lambda x: x.value_counts().index[0]).reset_index()
 
     # Load the taxon dataframe and keep the valid ones
     taxon_df = pd.read_csv(args.taxon_file, sep='\t', quoting=3, low_memory=False)
