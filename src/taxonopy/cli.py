@@ -36,6 +36,12 @@ def create_parser() -> argparse.ArgumentParser:
     )
     # Global options
     parser.add_argument(
+        "--cache-dir", type=str, help="Directory for TaxonoPy cache (can also be set with TAXONOPY_CACHE_DIR environment variable)",
+    )
+    parser.add_argument(
+        "--show-cache-path", action="store_true", help="Display the current cache directory path and exit"
+    )
+    parser.add_argument(
         "--cache-stats", action="store_true", default=False, help="Display statistics about the cache and exit"
     )
     parser.add_argument(
@@ -106,6 +112,11 @@ def create_parser() -> argparse.ArgumentParser:
     parser_trace_cache.add_argument("--key", help="Inspect a specific cache entry key (e.g., taxonomic_entries_...)")
     parser_trace_cache.add_argument("--verbose", action="store_true", help="Show detailed cache information")
     parser_trace_cache.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+
+    # Common names
+    parser_common = subparsers.add_parser("common-names", help="Merge vernacular names (post-process) into resolved outputs")
+    parser_common.add_argument("--resolved-dir", dest="annotation_dir", required=True,help="Directory containing your *.resolved.parquet files")
+    parser_common.add_argument("--output-dir", required=True, help="Directory to write annotated .parquet files")
 
     return parser
 
@@ -226,6 +237,10 @@ def run_resolve(args: argparse.Namespace) -> int:
 
 def run_trace(args: argparse.Namespace) -> int:
     """Dispatch trace commands."""
+    # Update the configuration with the passed arguments
+    config.update_from_args(vars(args))
+    config.ensure_directories()
+
     if args.trace_command == "entry":
         # Dispatch to the trace_entry function from the trace module.
         # Ensure trace_entry is updated to reflect QueryGroupRef removal if necessary
@@ -254,7 +269,16 @@ def main(args: Optional[List[str]] = None) -> int:
     parser = create_parser()
     parsed_args = parser.parse_args(args)
 
+    # Handle global cache directory setting
+    if parsed_args.cache_dir:
+        config.cache_dir = parsed_args.cache_dir
+        # Ensure the directory exists
+        Path(config.cache_dir).mkdir(parents=True, exist_ok=True)
+
     # Handle global commands
+    if parsed_args.show_cache_path:
+        print(f"TaxonoPy cache directory: {config.cache_dir}")
+        return 0
     if parsed_args.show_config:
         print(config.get_config_summary())
         return 0
@@ -276,6 +300,12 @@ def main(args: Optional[List[str]] = None) -> int:
         return run_resolve(parsed_args)
     elif parsed_args.command == "trace":
         return run_trace(parsed_args)
+    elif parsed_args.command == "common-names":
+        from taxonopy.resolve_common_names import main as cn_main
+        # Update config before calling the function
+        config.update_from_args(vars(parsed_args))
+        config.ensure_directories()
+        return cn_main(parsed_args.annotation_dir, parsed_args.output_dir)
     elif parsed_args.command is None:
         if cache_cleared:
             return 0

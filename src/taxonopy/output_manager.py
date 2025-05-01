@@ -182,7 +182,7 @@ def generate_resolution_output(
 
     Args:
         input_path: Path to input directory or file.
-        output_dir: Directory to save output files.
+        output_dir: Directory to save output files, preserving input directory structure.
         resolution_manager: Manager holding final resolution attempt states.
         entry_group_map: Dictionary mapping entry group keys to objects.
         output_format: Output file format ('parquet' or 'csv').
@@ -207,11 +207,21 @@ def generate_resolution_output(
         logger.info(f"Generating resolution output for: {input_file}")
 
         input_file_name = os.path.basename(input_file)
-        base_name = os.path.splitext(input_file_name)[0]
+
+        # Preserve directory structure
+        rel_path = os.path.relpath(input_file, input_path if os.path.isdir(input_path) else os.path.dirname(input_path))
+        base_name = os.path.splitext(os.path.basename(input_file))[0]
+        rel_dir = os.path.dirname(rel_path)
+        
+        resolved_dir = os.path.join(output_dir, rel_dir)
+        unsolved_dir = os.path.join(output_dir, rel_dir)
+        os.makedirs(resolved_dir, exist_ok=True)
+        os.makedirs(unsolved_dir, exist_ok=True)
+        
         resolved_file_name = f"{base_name}.resolved.{output_format}"
         unsolved_file_name = f"{base_name}.unsolved.{output_format}"
-        resolved_file_path = output_dir_path / resolved_file_name
-        unsolved_file_path = output_dir_path / unsolved_file_name
+        resolved_file_path = os.path.join(resolved_dir, resolved_file_name)
+        unsolved_file_path = os.path.join(unsolved_dir, unsolved_file_name)
 
         try:
             if input_file.endswith(".parquet"):
@@ -306,7 +316,10 @@ def generate_forced_output(
     output_dir: str,
     output_format: str = "parquet"
 ) -> List[str]:
-    """Generate forced output files from input files, bypassing resolution."""
+    """Generate forced output files from input files, bypassing resolution.
+    
+    Preserves the directory structure from the input path.
+    """
     input_files = find_input_files(input_path)
     output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
@@ -363,11 +376,17 @@ def generate_forced_output(
          if output_rows:
             try:
                 output_df = pl.DataFrame(output_rows)
-                input_file_name = os.path.basename(input_file)
-                base_name = os.path.splitext(input_file_name)[0]
-                # Use specific suffix for forced output
+
+                # Preserve directory structure
+                rel_path = os.path.relpath(input_file, input_path if os.path.isdir(input_path) else os.path.dirname(input_path))
+                base_name = os.path.splitext(os.path.basename(input_file))[0]
+                rel_dir = os.path.dirname(rel_path)
+                
+                output_dir_for_file = os.path.join(output_dir, rel_dir)
+                os.makedirs(output_dir_for_file, exist_ok=True)
+                
                 output_file_name = f"{base_name}.forced.{output_format}"
-                output_file_path = output_dir_path / output_file_name
+                output_file_path = os.path.join(output_dir_for_file, output_file_name)
 
                 if output_format == "parquet":
                     output_df.write_parquet(output_file_path)

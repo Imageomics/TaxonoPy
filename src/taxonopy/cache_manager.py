@@ -30,11 +30,17 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def get_cache_file_path(key: str) -> Path:
     """Return the path for the cached pickle file for a given key."""
-    return CACHE_DIR / f"{key}.pkl"
+    # Always use the current value of config.cache_dir
+    cache_dir = Path(config.cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / f"{key}.pkl"
 
 def get_meta_file_path(key: str) -> Path:
     """Return the path for the cache metadata file for a given key."""
-    return CACHE_DIR / f"{key}.meta.json"
+    # Always use the current value of config.cache_dir
+    cache_dir = Path(config.cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return cache_dir / f"{key}.meta.json"
 
 def compute_checksum(file_paths: List[str]) -> str:
     """Compute a SHA-256 checksum for a list of file paths.
