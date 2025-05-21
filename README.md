@@ -1,5 +1,5 @@
 # TaxonoPy
-This tool is under development and is unstable.
+This tool is under development, and usage may change.
 
 `TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). 
 
