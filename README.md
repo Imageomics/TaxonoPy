@@ -24,6 +24,11 @@ A directory containing Parquet partitions of the seven-rank Linnaean taxonomic m
 - `scientific_name`: the scientific name of the organism, to the most specific rank available (optional).
 - `common_name`: the common (i.e. vernacular) name of the organism (optional).
 
+See the example data in 
+- `examples/input/sample.parquet`
+- `examples/resolved/sample.resolved.parquet` (generated with [`taxonopy resolve`](#commands-resolve))
+- `examples/resolved_with_common_names/sample.resolved.parquet` (generated with [`taxonopy common-names`](#commands-common-names))
+
 ### Challenges
 This taxonomy information is provided by each data source, but the classification is ...
 
@@ -183,7 +188,7 @@ This section assumes that you have installed the package in development mode.
 
 ### OpenAPI Specification Managment and Type Generation
 
-`TaxonoPY` uses GNVerifier to generate and integrates with its API from its OpenAPI specification.
+`TaxonoPy` uses GNVerifier to generate and integrates with its API from its OpenAPI specification.
 
 The script that handles this is `scripts/generate_gnverifier_types.py`, which saves `api_specs/gnverifier_openapi.json` and from this produces `src/taxonopy/types/gnverifier.py`.
 
