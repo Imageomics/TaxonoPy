@@ -64,7 +64,7 @@ def execute_queries(
             batch_eg_keys = [item[0] for item in batch_items]
             batch_params = [item[1] for item in batch_items]
             batch_query_terms = [param.term for param in batch_params]
-            # Get unique source ID for this batch (assuming all use same source in batch)
+            # Get unique source ID for this batch (all use same source in batch)
             source_id = batch_params[0].source_id if batch_params else None
             # Convert to string for the client
             source_id_str = str(source_id) if source_id is not None else None

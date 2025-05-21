@@ -1,3 +1,4 @@
+# Experimental approach for managing strategies ... not fully implemented or adopted
 """Manager for coordinating taxonomic resolution strategies.
 
 This module provides a manager class that coordinates the application of

@@ -36,7 +36,6 @@ class ResolutionStrategy:
         """
         raise NotImplementedError("Subclasses must implement can_handle")
     
-    # Ensure the type hint uses quotes (already correct in your code)
     def resolve(self, attempt: ResolutionAttempt, 
                attempt_manager: "ResolutionAttemptManager") -> ResolutionAttempt:
         """Apply the resolution strategy and return an updated attempt.
@@ -68,12 +67,12 @@ class ResolutionStrategy:
 
         k_lower = k_stripped.lower()
 
-        # Check if it's already canonical (case-insensitive)
+        # Check if it's already canonical
         for canonical_key in KINGDOM_SYNONYMS:
             if canonical_key.lower() == k_lower:
                 return canonical_key # Return the defined canonical spelling
 
-        # Check if it's in the synonyms (case-insensitive)
+        # Check if it's in the synonyms
         for canonical_key, synonyms_set in KINGDOM_SYNONYMS.items():
             if any(syn.lower() == k_lower for syn in synonyms_set):
                 return canonical_key # Return the associated canonical spelling
@@ -213,13 +212,13 @@ class ResolutionStrategy:
                     if rank_field == 'scientific_name': continue # Don't use scientific_name for hierarchy index
                     if rank_field == 'class_': compare_rank = 'class' # Use 'class' for index lookup
 
-                    # We need the index from TAXONOMIC_RANKS to determine 'highest'/'most specific'
+                    # Need the index from TAXONOMIC_RANKS to determine 'highest'/'most specific'
                     index = -1
                     try:
                         index = TAXONOMIC_RANKS.index(rank_field)
                     except ValueError:
                          # Handle ranks not in TAXONOMIC_RANKS (like scientific_name)
-                         # If only scientific_name matches, it's the "highest" for this purpose
+                         # If only scientific_name matches, it's the 'highest' for this purpose
                          if highest_rank_field is None:
                               highest_rank_field = rank_field # Tentatively assign
                          continue # Skip index comparison for non-standard ranks
@@ -319,7 +318,7 @@ class ResolutionStrategy:
             current_rank_field = TAXONOMIC_RANKS[i]
             expected_term = expected_path.get(current_rank_field)
             result_term = result_path.get(current_rank_field)
-            # Only compare if the input *had* a value for this rank
+            # Only compare if the input had a value for this rank
             if expected_term is not None and expected_term != result_term:
                 return False # Mismatch found where input provided data
         return True

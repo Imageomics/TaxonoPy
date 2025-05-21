@@ -95,7 +95,7 @@ class ExactMatchPrimarySourceAcceptedInnerRankDisambiguationStrategy(ResolutionS
             canonical_input_kingdom = ResolutionStrategy.get_canonical_kingdom(expected_classification.get('kingdom'))
             logger.debug(f"  Input Kingdom: '{expected_classification.get('kingdom')}' -> Canonical: '{canonical_input_kingdom}'")
 
-            # 1. Input kingdom MUST be valid for this profile to apply contextually
+            # 1. Input kingdom must be valid for this profile to apply contextually
             if not canonical_input_kingdom:
                 logger.debug(f"[{STRATEGY_NAME}] {attempt.key}: Mismatch - Input EntryGroupRef has no valid canonical kingdom. Returning None.")
                 return None

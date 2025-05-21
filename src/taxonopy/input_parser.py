@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 # Required schema for input files
 REQUIRED_COLUMNS = {
-    "uuid", "source_id", "scientific_name", "kingdom", "phylum", 
-    "class", "order", "family", "genus", "species", "common_name"
+    "uuid", "scientific_name", "kingdom", "phylum", 
+    "class", "order", "family", "genus", "species"
 }
 
 # Column types for validation (for Parquet files)

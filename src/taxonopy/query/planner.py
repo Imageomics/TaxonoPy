@@ -2,7 +2,7 @@
 
 This module provides functions for planning and organizing queries to the
 GNVerifier API based on taxonomic data. It transforms EntryGroupRef objects
-into QueryGroupRef objects that can be used for efficient API queries.
+into QueryParameters objects that can be used for efficient API queries.
 """
 
 import logging
@@ -144,7 +144,7 @@ def plan_retry_query(
         start_source_index = 0
         if i == current_pair_index and current_source_id is not None:
             try:
-                # Start checking sources *after* the one that just failed for the *current* term/rank
+                # Start checking sources after the one that just failed for the current term/rank
                 start_source_index = available_source_ids.index(current_source_id) + 1
             except ValueError:
                 logger.warning(f"Current attempt's source ID {current_source_id} not found in DATA_SOURCE_PRECEDENCE. Starting source check from index 0.")

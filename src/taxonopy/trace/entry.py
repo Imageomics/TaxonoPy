@@ -25,11 +25,11 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose
     Trace a taxonomic entry by its UUID.
 
     This function:
-      - Reads the input dataset (using the cached input parser).
-      - Searches for the TaxonomicEntry with the given UUID.
-      - Locates the associated EntryGroupRef.
-      - Computes the QueryGroupRef objects that include that entry group.
-      - (Optionally) includes the corresponding ResolutionAttempt if available.
+    - Reads the input dataset (using the cached input parser).
+    - Searches for the TaxonomicEntry with the given UUID.
+    - Locates the associated EntryGroupRef.
+    - Retrieves the initial query plan for the entry group
+    - (Optionally) includes the corresponding ResolutionAttempt if available.
       
     The resulting trace shows the provenance from the raw entry through its grouping,
     query planning, and (if present) resolution.
@@ -93,14 +93,7 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose
         
         group_dict["group_count"] = matching_group.group_count
         trace_result["group"] = group_dict
-    else:
-        trace_result["group"] = None
-        trace_result["trace_note"] = "Entry group not found. Trace stops at the raw entry level."
-
-
-    if not matching_group:
-        trace_result["trace_note"] = "Entry group not found. Trace stops at the raw entry level."
-    else:
+        
         # Get the initial query plan for this entry group
         from taxonopy.query.planner import plan_initial_queries
         entry_group_map = {matching_group.key: matching_group}
@@ -115,7 +108,12 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose
         if resolution_attempts:
             trace_result["resolution_attempts"] = resolution_attempts
         else:
-            trace_result["trace_note"] = "No cached resolution attempts found for this entry group."
+            trace_result["trace_note"] = "No resolution attempts found for this entry group."
+    else:
+        # No matching group found
+        trace_result["group"] = None
+        trace_result["trace_note"] = "Entry group not found. Trace stops at the raw entry level."
+            
 
 
     if output_format == "json":
@@ -127,15 +125,48 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose
             print(f"{key}: {value}")
         print("\n--- GROUP ---")
         if matching_group:
-            for key, value in dataclasses.asdict(matching_group).items():
-                print(f"{key}: {value}")
+            # Convert to dict for easier handling
+            group_dict = dataclasses.asdict(matching_group)
+            
+            # Special handling for entry_uuids based on verbose flag
+            uuids = list(group_dict.get("entry_uuids", []))
+            total_uuids = len(uuids)
+            
+            # Handle most fields
+            for key, value in group_dict.items():
+                if key != "entry_uuids":  # Handle separately
+                    print(f"{key}: {value}")
+            
+            # Now handle UUIDs with verbose flag consideration
+            print(f"\nGroup UUIDs ({total_uuids} total):")
+            if not verbose and total_uuids > 3:
+                # Limited display for non-verbose mode
+                for uuid_val in sorted(uuids)[:3]:
+                    print(f"  {uuid_val}")
+                print(f"  ... and {total_uuids - 3} more. Use --verbose to see all.")
+            else:
+                # Full display for verbose mode
+                for uuid_val in sorted(uuids):
+                    print(f"  {uuid_val}")
         else:
             print("No group found for this entry.")
-        if matching_group:
-            print("\n--- QUERY GROUPS ---")
-            for qg in matching_query_groups:
-                for key, value in dataclasses.asdict(qg).items():
-                    print(f"{key}: {value}")
+        
+        # Query Plan section
+        if 'query_plan' in trace_result:
+            print("\n--- QUERY PLAN ---")
+            for key, value in trace_result['query_plan'].items():
+                print(f"{key}: {value}")
+                
+        # Resolution Attempts section
+        if 'resolution_attempts' in trace_result and trace_result['resolution_attempts']:
+            print("\n--- RESOLUTION ATTEMPTS ---")
+            for attempt in trace_result['resolution_attempts']:
+                print(f"Status: {attempt['status']}")
+                print(f"Strategy: {attempt['resolution_strategy_name'] or 'N/A'}")
+                if attempt.get('resolved_classification'):
+                    print("Resolved Classification:")
+                    for rank, value in attempt['resolved_classification'].items():
+                        print(f"  {rank}: {value}")
                 print("------")
         print()
 

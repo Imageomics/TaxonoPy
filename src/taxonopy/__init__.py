@@ -5,7 +5,7 @@ consistent taxonomic hierarchy from a variety of inputs, primarily designed for
 the TreeOfLife (TOL) dataset.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.0-beta"
 
 from taxonopy.types.data_classes import (
     ResolutionStatus,

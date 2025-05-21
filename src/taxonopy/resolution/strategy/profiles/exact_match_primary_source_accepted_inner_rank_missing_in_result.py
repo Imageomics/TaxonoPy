@@ -92,7 +92,7 @@ class ExactMatchPrimarySourceAcceptedInnerRankMissingInResultStrategy(Resolution
         try:
             expected_classification = self._get_expected_classification(entry_group)
             result_classification = self._extract_classification(result)
-            # Determine the highest rank of the query term *in the input*
+            # Determine the highest rank of the query term in the input
             input_term_highest_rank = self._get_rank_of_term(attempt.query_term, entry_group)
         except Exception as e:
             logger.error(f"Attempt {attempt.key}: Error during classification/rank extraction for {STRATEGY_NAME}: {e}")
@@ -155,7 +155,7 @@ class ExactMatchPrimarySourceAcceptedInnerRankMissingInResultStrategy(Resolution
                 metadata={'reason_for_retry': 'Missing inner rank in primary source result'}
             )
             logger.debug(f"Applied {STRATEGY_NAME}: Created RETRY_SCHEDULED attempt {retry_scheduled_attempt.key} for original {attempt.key}. Next query: {next_query_params}")
-            logger.debug(f"DEBUGG {STRATEGY_NAME} next attempt: {retry_scheduled_attempt}")
+            logger.debug(f"DEBUG {STRATEGY_NAME} next attempt: {retry_scheduled_attempt}")
             return retry_scheduled_attempt
         else:
             # Retries exhausted

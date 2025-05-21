@@ -97,7 +97,7 @@ class ExactMatchPrimarySourceAcceptedSynonymDisambiguationStrategy(ResolutionStr
             logger.error(f"Attempt {attempt.key}: Error extracting classification for {STRATEGY_NAME}: {e}")
             return self._create_failed_attempt(attempt, manager, reason="Classification extraction failed", error_msg=str(e))
 
-        # 6. Determine the highest rank of the query term *in the input*
+        # 6. Determine the highest rank of the query term in the input
         input_term_highest_rank = self._get_rank_of_term(attempt.query_term, entry_group)
         if input_term_highest_rank is None:
              # This case is unlikely if the query term came from the entry group, but handle defensively

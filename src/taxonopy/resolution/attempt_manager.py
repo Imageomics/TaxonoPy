@@ -329,7 +329,6 @@ class ResolutionAttemptManager:
         Orchestrates the entire resolution process for all entry groups.
         Follows the workflow described in PRD Section 2.4.
         """
-        self.logger.info("Starting resolution process...")
         if not entry_group_map:
             self.logger.warning("No entry groups provided to resolve.")
             return
@@ -402,6 +401,8 @@ class ResolutionAttemptManager:
 
         final_stats = self.get_statistics()
         self.logger.info(f"Resolution process complete. Final Stats: {final_stats}")
+        # Write final stats to file in output directory
+        
 
         # Save attempt chains to cache
         self.save_chains_to_cache()

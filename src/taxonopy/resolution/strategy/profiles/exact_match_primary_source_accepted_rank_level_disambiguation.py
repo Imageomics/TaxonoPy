@@ -108,7 +108,7 @@ class ExactMatchPrimarySourceAcceptedRankLevelDisambiguationStrategy(ResolutionS
         match1_up_to_input_rank = self._compare_paths_up_to_rank(expected_classification, result1_classification, input_term_highest_rank)
 
         if not (match0_up_to_input_rank and match1_up_to_input_rank):
-            # If one or both results diverge from the input *before* the relevant rank, this profile doesn't apply
+            # If one or both results diverge from the input before the relevant rank, this profile doesn't apply
             logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: One or both result paths diverge from input before rank '{input_term_highest_rank}'.")
             return None
 

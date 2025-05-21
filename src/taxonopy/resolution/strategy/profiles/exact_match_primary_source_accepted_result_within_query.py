@@ -92,7 +92,7 @@ class ExactMatchPrimarySourceAcceptedResultWithinQueryStrategy(ResolutionStrateg
                 logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Query term '{query_term}' does not start with (or is identical to) matched term '{matched_term}'.")
                 return None
 
-            # 8. Find the rank of the *matched term* in the *result's* classification
+            # 8. Find the rank of the matched term in the result's classification
             result_match_rank_field = self._get_rank_of_term(matched_term, result_classification)
             if result_match_rank_field is None:
                 logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Matched term '{matched_term}' not found in result classification ranks: {result_classification}.")
@@ -104,7 +104,7 @@ class ExactMatchPrimarySourceAcceptedResultWithinQueryStrategy(ResolutionStrateg
                 logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Result path does not match input path up to rank '{result_match_rank_field}'.")
                 return None
 
-            # 10. Does the result classification *terminate* at the matched rank?
+            # 10. Does the result classification terminate at the matched rank?
             #     (i.e., no ranks below the matched rank are present in the result)
             highest_rank_in_result = self._get_highest_rank_in_classification(result_classification)
             if highest_rank_in_result != result_match_rank_field:

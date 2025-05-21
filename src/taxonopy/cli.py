@@ -10,6 +10,7 @@ import time
 import logging
 from pathlib import Path
 from typing import List, Optional, Dict
+import json
 
 from taxonopy import __version__
 from taxonopy.config import config
@@ -67,7 +68,6 @@ def create_parser() -> argparse.ArgumentParser:
 
     # GNVerifier settings group for resolve
     gnverifier_group = parser_resolve.add_argument_group("GNVerifier Settings")
-    # Keep batch-size as it's now used by the executor
     gnverifier_group.add_argument(
         "--batch-size", type=int, default=config.batch_size,
         help="Max number of name queries per GNVerifier API/subprocess call"
@@ -94,24 +94,25 @@ def create_parser() -> argparse.ArgumentParser:
     parser_trace_entry.add_argument("--format", choices=["json", "text"], default="json", help="Output format")
     parser_trace_entry.add_argument("--verbose", action="store_true", help="Show full details including all UUIDs in groups")
 
-    # Trace entry groups
-    parser_trace_group = trace_subparsers.add_parser("group", help="Trace an entry group")
-    parser_trace_group.add_argument("--key", required=True, help="Key (SHA256 hash) of the EntryGroupRef")
-    parser_trace_group.add_argument("--verbose", action="store_true", help="Show detailed information")
-    parser_trace_group.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+# Not yet implemented
+    # # Trace entry groups
+    # parser_trace_group = trace_subparsers.add_parser("group", help="Trace an entry group")
+    # parser_trace_group.add_argument("--key", required=True, help="Key (SHA256 hash) of the EntryGroupRef")
+    # parser_trace_group.add_argument("--verbose", action="store_true", help="Show detailed information")
+    # parser_trace_group.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
-    # Trace resolution attempt chain
-    parser_trace_resolution = trace_subparsers.add_parser("resolution", help="Trace resolution attempts for an Entry Group")
-    parser_trace_resolution.add_argument("--key", required=True, help="Key (SHA256 hash) of the *EntryGroupRef* to trace")
-    parser_trace_resolution.add_argument("--detailed", action="store_true", help="Show full metadata for each attempt")
-    parser_trace_resolution.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    # # Trace resolution attempt chain
+    # parser_trace_resolution = trace_subparsers.add_parser("resolution", help="Trace resolution attempts for an Entry Group")
+    # parser_trace_resolution.add_argument("--key", required=True, help="Key (SHA256 hash) of the EntryGroupRef to trace")
+    # parser_trace_resolution.add_argument("--detailed", action="store_true", help="Show full metadata for each attempt")
+    # parser_trace_resolution.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
-    # Trace cache
-    parser_trace_cache = trace_subparsers.add_parser("cache", help="Inspect cached objects")
-    parser_trace_cache.add_argument("--list", action="store_true", help="List all cache entries")
-    parser_trace_cache.add_argument("--key", help="Inspect a specific cache entry key (e.g., taxonomic_entries_...)")
-    parser_trace_cache.add_argument("--verbose", action="store_true", help="Show detailed cache information")
-    parser_trace_cache.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
+    # # Trace cache
+    # parser_trace_cache = trace_subparsers.add_parser("cache", help="Inspect cached objects")
+    # parser_trace_cache.add_argument("--list", action="store_true", help="List all cache entries")
+    # parser_trace_cache.add_argument("--key", help="Inspect a specific cache entry key (e.g., taxonomic_entries_...)")
+    # parser_trace_cache.add_argument("--verbose", action="store_true", help="Show detailed cache information")
+    # parser_trace_cache.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
 
     # Common names
     parser_common = subparsers.add_parser("common-names", help="Merge vernacular names (post-process) into resolved outputs")
@@ -154,11 +155,10 @@ def run_resolve(args: argparse.Namespace) -> int:
             return 0
 
 
-        # 1. count and group entries
+        # 1. Count and group entries
         logging.info("Counting entries...")
         total_count = count_entries_in_input(args.input)
         logging.info(f"Found {total_count:,} entries in input files.")
-        # stats.entry_count = total_count
 
         logging.info("Grouping entries...")
         _, entry_group_map = create_entry_groups(
@@ -171,10 +171,9 @@ def run_resolve(args: argparse.Namespace) -> int:
         stats.update_from_entry_groups(list(entry_group_map.values()))
         logging.info(f"Created {len(entry_group_map):,} unique entry groups.")
 
-        # 2. initialize client and manager
+        # 2. Initialize client and manager
         try:
-            # Client initialization needs updated config access if necessary
-            # Client __init__ now pulls from global config by default
+            # Client pulls from global config by default
             client = GNVerifierClient()
             logging.info("GNVerifier client initialized successfully.")
         except RuntimeError as e:
@@ -186,13 +185,13 @@ def run_resolve(args: argparse.Namespace) -> int:
         resolution_manager = ResolutionAttemptManager()
         logging.info("Resolution Attempt Manager initialized.")
 
-        # 3. run resolution workflow
-        # The manager now handles planning, execution, classification, retries
+        # 3. Run resolution workflow
+        # The manager handles planning, execution, classification, retries
         print(stats.generate_report()) # Report stats after preprocessing
         logging.info("Starting main resolution workflow...")
         try:
             # Pass the necessary map and the client
-            # Batch size is now implicitly handled by the client/executor based on config
+            # Batch size is implicitly handled by the client/executor based on config
             resolution_manager.resolve_all_entry_groups(entry_group_map, client)
             logging.debug("Resolution workflow completed successfully.")
         except RuntimeError as e:
@@ -204,9 +203,9 @@ def run_resolve(args: argparse.Namespace) -> int:
              return 1 # Indicate failure
 
 
-        # 4. generate output
+        # 4. Generate output
         logging.info("Generating output files...")
-        # Pass only the manager and the entry_group_map
+        # Pass only the manager and entry group map
         resolved_files, unsolved_files = generate_resolution_output(
             args.input,
             args.output_dir,
@@ -215,17 +214,17 @@ def run_resolve(args: argparse.Namespace) -> int:
             args.output_format
         )
         logging.info(f"Generated {len(resolved_files)} resolved output files.")
-        # for file_path in resolved_files: logging.info(f"  - {file_path}") # Optional verbose listing
         logging.info(f"Generated {len(unsolved_files)} unsolved output files.")
-        # for file_path in unsolved_files: logging.info(f"  - {file_path}") # Optional verbose listing
-
 
         # Final stats and timing
         final_stats = resolution_manager.get_statistics()
         logging.info("Final resolution statistics:")
         for key, value in final_stats.items():
             logging.info(f"  {key}: {value}")
-        # logging.info(f"Final resolution statistics: {final_stats}")
+        # Save final stats to a file at the root of the output directory
+        stats_file_path = output_dir / "resolution_stats.json"
+        stats_file_path.write_text(json.dumps(final_stats, indent=4))
+        logging.info(f"Statistics saved to {stats_file_path}")
         elapsed_time = time.time() - start_time
         logging.info(f"Processing completed in {elapsed_time:.2f} seconds.")
         return 0
@@ -243,23 +242,23 @@ def run_trace(args: argparse.Namespace) -> int:
 
     if args.trace_command == "entry":
         # Dispatch to the trace_entry function from the trace module.
-        # Ensure trace_entry is updated to reflect QueryGroupRef removal if necessary
-        return trace_entry.trace_entry(args.uuid, args.from_input, args.format)
-    elif args.trace_command == "group":
-         # Implement trace_group using entry_group_key and manager
-         print(f"Trace group (EntryGroupRef Key: {args.key}) - Not fully implemented")
-         # TODO: Load manager state (if possible) or relevant cache to trace group
-         return 1
-    elif args.trace_command == "resolution":
-         # Implement trace_resolution using entry_group_key and manager
-         print(f"Trace resolution (EntryGroupRef Key: {args.key}) - Not fully implemented")
-         # TODO: Load manager state (if possible) or relevant cache to trace resolution chain
-         return 1
-    elif args.trace_command == "cache":
-         # Implement trace_cache (likely remains similar)
-         print("Trace cache - Not fully implemented")
-         # TODO: Implement cache inspection logic
-         return 1
+        return trace_entry.trace_entry(args.uuid, args.from_input, args.format, args.verbose)
+# Not yet implemented
+    # elif args.trace_command == "group":
+    #      # Implement trace_group using entry_group_key and manager
+    #      print(f"Trace group (EntryGroupRef Key: {args.key}) - Not fully implemented")
+    #      # TODO: Load manager state (if possible) or relevant cache to trace group
+    #      return 1
+    # elif args.trace_command == "resolution":
+    #      # Implement trace_resolution using entry_group_key and manager
+    #      print(f"Trace resolution (EntryGroupRef Key: {args.key}) - Not fully implemented")
+    #      # TODO: Load manager state (if possible) or relevant cache to trace resolution chain
+    #      return 1
+    # elif args.trace_command == "cache":
+    #      # Implement trace_cache (likely remains similar)
+    #      print("Trace cache - Not fully implemented")
+    #      # TODO: Implement cache inspection logic
+    #      return 1
     else:
         print(f"Unknown trace subcommand: {args.trace_command}")
         return 1

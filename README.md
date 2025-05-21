@@ -10,13 +10,11 @@ This dataset contains over 200 million samples of organisms from sources includi
 
 - The GLobal Biodiversity Information Facility (GBIF)
 - BIOSCAN-5M
-- Labeled Information Library of Alexandria: Biology and Conservation (LILA-BC)
 - FathomNet
 - The Encyclopedia of Life (EOL)
 
 
-Notably, this package is not a taxonomic authority, and it does not provide a definitive classification for any organism. It is a tool for creating an internally consistent classification set for a list of organisms, which may contain entries with inconsistent naming compared to other well-regarded taxonomic authorities. 
-It is up to the user to determine the appropriateness of the classification for their use case, which may differ from their preferred taxonomic authority.
+This package is a tool for creating an internally consistent classification set for a list of organisms whose entries have inconsistent naming. 
 
 ### Input
 
@@ -40,7 +38,7 @@ Taxonomic authorities exist to standardize classification, but ...
 - A given organism may be missing from some.
 
 ### Solution
-`TaxonoPy` uses the taxonomic hierarchies provided by the TOL sources to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the GBIF backbone taxonomy, since this represents the largest part of the TOL dataset. Where GBIF misses, the Open Tree of Life (OTOL) taxonomy is used.[^1]
+`TaxonoPy` uses the taxonomic hierarchies provided by the TOL sources to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the GBIF backbone taxonomy, since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the Catalogue of Life and Open Tree of Life (OTOL) taxonomy are used.
 
 ## Installation
 
@@ -48,13 +46,9 @@ Taxonomic authorities exist to standardize classification, but ...
 
 ### User Installation with `pip`
 
-To install the latest version of `TaxonoPy` directly from GitHub, run:
+To install the latest version of `TaxonoPy`, run:
 ```console
-pip install git+ssh://git@github.com/Imageomics/TaxonoPy.git
-```
-or
-```console
-pip install git+https://github.com/Imageomics/TaxonoPy.git
+pip install taxonopy
 ```
 
 ### Development Installation with `pip`
@@ -70,32 +64,118 @@ Install the package in development mode:
 ```console
 pip install -e .[dev]
 ```
-> [!WARNING]
-> This section is deprecated, some options will be changed
-> ### Usage
-> ```console
-> usage: taxonopy [-h] [--version] -i INPUT -o OUTPUT_DIR [--batch-size > BATCH_SIZE] [--output-format {csv,parquet}] [--force-input] [--print-raw-output]
->                 [--gnverifier-image GNVERIFIER_IMAGE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
-> 
-> TaxonoPy: Resolve taxonomic names using GNVerifier
-> 
-> options:
->   -h, --help            show this help message and exit
->   --version             Show version number and exit
->   -i INPUT, --input INPUT
->                         Path to input Parquet file or directory containing Parquet files
->   -o OUTPUT_DIR, --output-dir OUTPUT_DIR
->                         Directory to save resolved and investigation output files
->   --batch-size BATCH_SIZE
->                         Number of name queries to process in each GNVerifier batch (default: 10000)
->   --output-format {csv,parquet}
->                         Output file format (default: parquet)
->   --force-input         Force use of input metadata without resolution
->   --gnverifier-image GNVERIFIER_IMAGE
->                         Docker image for GNVerifier (default: gnames/gnverifier:v1.2.2)
->   --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
->                         Set logging level (default: INFO)
-> ```
+
+### Usage
+You may view the help for the command line interface by running:
+```console
+taxonopy --help
+```
+This will show you the available commands and options:
+```console
+usage: taxonopy [-h] [--cache-dir CACHE_DIR] [--show-cache-path] [--cache-stats] [--clear-cache] [--show-config] [--version] {resolve,trace,common-names} ...
+
+TaxonoPy: Resolve taxonomic names using GNVerifier and trace data provenance.
+
+positional arguments:
+  {resolve,trace,common-names}
+    resolve             Run the taxonomic resolution workflow
+    trace               Trace data provenance of TaxonoPy objects
+    common-names        Merge vernacular names (post-process) into resolved outputs
+
+options:
+  -h, --help            show this help message and exit
+  --cache-dir CACHE_DIR
+                        Directory for TaxonoPy cache (can also be set with TAXONOPY_CACHE_DIR environment variable) (default: None)
+  --show-cache-path     Display the current cache directory path and exit (default: False)
+  --cache-stats         Display statistics about the cache and exit (default: False)
+  --clear-cache         Clear the TaxonoPy object cache. May be used in isolation. (default: False)
+  --show-config         Show current configuration and exit (default: False)
+  --version             Show version number and exit
+```
+#### Commands: `resolve`
+The `resolve` command is used to perform taxonomic resolution on a dataset. It takes a directory of Parquet partitions as input and outputs a directory of resolved Parquet partitions.
+```
+usage: taxonopy resolve [-h] -i INPUT -o OUTPUT_DIR [--output-format {csv,parquet}] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log-file LOG_FILE] [--force-input] [--batch-size BATCH_SIZE] [--all-matches]
+                        [--capitalize] [--fuzzy-uninomial] [--fuzzy-relaxed] [--species-group] [--refresh-cache]
+
+options:
+  -h, --help            show this help message and exit
+  -i, --input INPUT     Path to input Parquet or CSV file/directory
+  -o, --output-dir OUTPUT_DIR
+                        Directory to save resolved and unsolved output files
+  --output-format {csv,parquet}
+                        Output file format
+  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Set logging level
+  --log-file LOG_FILE   Optional file to write logs to
+  --force-input         Force use of input metadata without resolution
+
+GNVerifier Settings:
+  --batch-size BATCH_SIZE
+                        Max number of name queries per GNVerifier API/subprocess call
+  --all-matches         Return all matches instead of just the best one
+  --capitalize          Capitalize the first letter of each name
+  --fuzzy-uninomial     Enable fuzzy matching for uninomial names
+  --fuzzy-relaxed       Relax fuzzy matching criteria
+  --species-group       Enable group species matching
+
+Cache Management:
+  --refresh-cache       Force refresh of cached objects (input parsing, grouping) before running.
+  ```
+It is recommended to keep GNVerifier settings at their defaults.
+
+#### Commands: `trace`
+The `trace` command is used to trace the provenance of a taxonomic entry. It takes a UUID and an input path as arguments and outputs the full path of the entry through TaxonoPy.
+```console
+usage: taxonopy trace [-h] {entry} ...
+
+positional arguments:
+  {entry}
+    entry     Trace an individual taxonomic entry by UUID
+
+options:
+  -h, --help  show this help message and exit
+
+usage: taxonopy trace entry [-h] --uuid UUID --from-input FROM_INPUT [--format {json,text}] [--verbose]
+
+options:
+  -h, --help            show this help message and exit
+  --uuid UUID           UUID of the taxonomic entry
+  --from-input FROM_INPUT
+                        Path to the original input dataset
+  --format {json,text}  Output format
+  --verbose             Show full details including all UUIDs in group
+```
+
+#### Commands: `common-names`
+The `common-names` command is used to merge vernacular names into the resolved output. It takes a directory of resolved Parquet partitions as input and outputs a directory of resolved Parquet partitions with common names.
+```console
+usage: taxonopy common-names [-h] --resolved-dir ANNOTATION_DIR --output-dir OUTPUT_DIR
+
+options:
+  -h, --help            show this help message and exit
+  --resolved-dir ANNOTATION_DIR
+                        Directory containing your *.resolved.parquet files
+  --output-dir OUTPUT_DIR
+                        Directory to write annotated .parquet files
+```
+Note that the `common-names` command is a post-processing step and should be run after the `resolve` command.
+
+### Example Usage
+
+To perform taxonomic resolution on a dataset with subsequent common name annotation, run:
+```console
+taxonopy resolve \
+    --input /path/to/formatted/input \
+    --output-dir /path/to/resolved/output
+```
+```console
+taxonopy common-names \
+    --resolved-dir /path/to/resolved/output \
+    --output-dir /path/to/resolved_with_common-names/output
+```
+
+TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory. You 
 
 ## Development
 
@@ -116,4 +196,3 @@ If the OpenAPI specification has changed, you will need to decide whether to upd
 
 The script will save `api_specs/gnverifier_openapi.json.new` and `src/taxonopy/types/gnverifier.py.new` for you to compare with the existing files and decide whether to overwrite them and make any necessary changes to the rest of the codebase.
 
-[^1]: Second priority and lower data sources have not been firmly established or implemented yet.

@@ -73,7 +73,7 @@ class ExactMatchPrimarySourceAcceptedStrategy(ResolutionStrategy):
             logger.debug(f"Attempt {attempt.key} taxonomic status: {result.taxonomic_status}")
             return None # Profile mismatch
 
-        # 4. Uses data from the primary data source (GBIF)?
+        # 4. Uses data from the primary data source?
         primary_source_key = list(DATA_SOURCE_PRECEDENCE.keys())[0]
         primary_source_id = DATA_SOURCE_PRECEDENCE[primary_source_key]
         if result.data_source_id != primary_source_id:

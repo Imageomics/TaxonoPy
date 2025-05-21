@@ -308,7 +308,7 @@ def generate_resolution_output(
             except Exception as e:
                  logger.error(f"Error writing unsolved output to {unsolved_file_path}: {e}")
 
-    logger.info(f"Completed output generation. Produced {len(resolved_files)} resolved file(s) and {len(unsolved_files)} unsolved file(s).")
+    logger.info("Completed output generation.")
     return resolved_files, unsolved_files
 
 def generate_forced_output(
