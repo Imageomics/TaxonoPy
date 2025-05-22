@@ -179,7 +179,7 @@ taxonopy common-names \
     --output-dir /path/to/resolved_with_common-names/output
 ```
 
-TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory. You 
+TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory.
 
 ## Development
 
