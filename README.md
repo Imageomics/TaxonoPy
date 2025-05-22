@@ -29,7 +29,7 @@ See the example data in
 - `examples/resolved_with_common_names/sample.resolved.parquet` (generated with [`taxonopy common-names`](#commands-common-names))
 
 ### Challenges
-This taxonomy information is provided by each data source, but the classification is ...
+This taxonomy information is provided by each data provider and the original sources, but the classification can be...
 
 - **Inconsistent**: both between and within sources (e.g. kingdom Metazoa vs. Animalia).
 - **Incomplete**: many samples are missing one or more ranks. Some have 'holes' where higher and lower ranks are present, but intermediate ranks are missing.
