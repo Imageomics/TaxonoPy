@@ -4,24 +4,33 @@ build-backend = "hatchling.build"
 
 [project]
 name = "taxonopy"
-version = "0.1.0"
-description = "A Python package for resolving taxonomic hierarchies using the Global Names Resolver API."
+description = "A Python package for resolving taxonomic hierarchies using the Global Names Verifier API."
 authors = [{name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 dependencies = [
-    "opentree",
     "requests", 
-    "docopt-ng >= 0.9.0",
-    "tqdm"
+    "tqdm",
+    "polars",
+    "pandas",
+    "pyarrow",
+    "pydantic"
 ]
+
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
     "ruff",
     "pytest",
-    "uncoil @ git+ssh://git@github.com/thompsonmj/uncoil.git@v1.0.1"
+    "datamodel-code-generator",
+    "pre-commit"
+    ]
+nb = [
+    "ipykernel",
+    "jupyterlab",
+    "marimo[recommended]"
 ]
 
 [project.scripts]
@@ -30,5 +39,5 @@ taxonopy = "taxonopy.__main__:main"
 [tool.hatch.metadata]
 allow-direct-references = true
 
-# [tool.hatch.version]
-# enabled = true
+[tool.hatch.version]
+path = "src/taxonopy/__init__.py"
