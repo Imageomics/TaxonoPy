@@ -3,7 +3,7 @@
 `TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). 
 
 ## Purpose
-The motivation for this package is to create an internally consistent and standardized classification set for organisms in the TreeOfLife (TOL) dataset.
+The motivation for this package is to create an internally consistent and standardized classification set for organisms in the TreeOfLife-200M (TOL) dataset.
 
 This dataset contains over 200 million samples of organisms from sources including ...
 
