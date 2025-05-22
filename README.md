@@ -5,7 +5,7 @@
 ## Purpose
 The motivation for this package is to create an internally consistent and standardized classification set for organisms in the TreeOfLife-200M (TOL) dataset.
 
-This dataset contains over 200 million samples of organisms from sources including ...
+This dataset contains over 200 million samples of organisms from four core data providers:
 
 - The GLobal Biodiversity Information Facility (GBIF)
 - BIOSCAN-5M
