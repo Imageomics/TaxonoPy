@@ -42,7 +42,7 @@ Taxonomic authorities exist to standardize classification, but ...
 - A given organism may be missing from some.
 
 ### Solution
-`TaxonoPy` uses the taxonomic hierarchies provided by the TOL sources to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the GBIF backbone taxonomy, since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the Catalogue of Life and Open Tree of Life (OTOL) taxonomy are used.
+`TaxonoPy` uses the taxonomic hierarchies provided by the TOL core data providers to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the GBIF backbone taxonomy, since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the Catalogue of Life and Open Tree of Life (OTOL) taxonomy are used.
 
 ## Installation
 
