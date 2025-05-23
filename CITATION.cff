@@ -14,7 +14,7 @@ identifiers:
     value: "https://github.com/Imageomics/TaxonoPy/releases/tag/v0.1.0-beta"
   - description: "The GitHub URL of the commit tagged with v0.1.0-beta"
     type: url
-    value: "https://github.com/Imageomics/TaxonoPy/tree/<update-after-release>"
+    value: "https://github.com/Imageomics/TaxonoPy/tree/b3ddeb8eb05d09c15c417ce2d2a4354a2a6fa49d"
 keywords:
   - imageomics
   - taxonomy
@@ -39,5 +39,5 @@ message: "If you use this software, please cite it using the metadata from this 
 repository-code: "https://github.com/Imageomics/TaxonoPy"
 title: "TaxonoPy"
 version: "0.1.0-beta"
-doi: "<update-after-doi>"
+doi: "10.5281/zenodo.15499454"
 type: software
