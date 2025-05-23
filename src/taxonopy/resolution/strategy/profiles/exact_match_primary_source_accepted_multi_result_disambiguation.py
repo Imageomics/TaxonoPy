@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
 from .profile_logging import setup_profile_logging
 # Set to True in the specific file(s) you want to debug
@@ -105,7 +105,8 @@ class ExactMatchPrimarySourceAcceptedMultiResultDisambiguationStrategy(Resolutio
         rank_level_candidates: List[ResultData] = []
         for cand in path_matching_candidates:
             cand_class = candidate_classifications.get(cand.record_id) # Get cached path
-            if not cand_class: continue # Should not happen if cached correctly
+            if not cand_class:
+                continue # Should not happen if cached correctly
 
             cand_term_highest_rank = self._get_rank_of_term(attempt.query_term, cand_class)
             if cand_term_highest_rank == input_term_highest_rank:

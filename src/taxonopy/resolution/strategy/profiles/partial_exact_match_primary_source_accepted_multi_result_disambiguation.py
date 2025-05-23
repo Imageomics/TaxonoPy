@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
 from .profile_logging import setup_profile_logging
 # Set to True in the specific file(s) you want to debug
@@ -90,7 +90,8 @@ class PartialExactMatchPrimarySourceAcceptedMultiResultDisambiguationStrategy(Re
         for cand in candidates:
              # Ensure matched_canonical_simple exists (already checked, but belts and suspenders)
              matched_term = cand.matched_canonical_simple
-             if not matched_term: continue
+             if not matched_term:
+                continue
 
              try:
                   cand_class = self._extract_classification(cand)

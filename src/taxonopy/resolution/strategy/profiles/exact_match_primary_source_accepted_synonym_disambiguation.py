@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict
+from typing import Optional, TYPE_CHECKING
 
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 from taxonopy.types.data_classes import (
@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
 from .profile_logging import setup_profile_logging
 # Set to True in the specific file(s) you want to debug

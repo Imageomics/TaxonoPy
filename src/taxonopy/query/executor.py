@@ -6,9 +6,7 @@ ResolutionAttempt objects.
 """
 
 import logging
-from typing import List, Dict, Optional, Tuple, Iterator
-from datetime import datetime
-import itertools
+from typing import List, Dict, Optional, Tuple
 
 from tqdm import tqdm
 from pydantic import ValidationError

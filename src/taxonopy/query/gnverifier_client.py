@@ -8,10 +8,8 @@ import logging
 import shutil
 import subprocess
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Any
 
-from taxonopy.types.gnverifier import VerificationOutput, Name
 from taxonopy.config import config
 
 @dataclass
@@ -146,12 +144,11 @@ class GNVerifierClient:
         """
         try:
             self.logger.info(f"Pulling Docker image: {image}")
-            result = subprocess.run(
+            subprocess.run(
                 ["docker", "pull", image],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                # timeout=300
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             error_msg = f"Failed to pull Docker image '{image}': {str(e)}"
@@ -398,9 +395,9 @@ class GNVerifierClient:
             return False
         
         required_fields = ["name", "matchType"]
-        for field in required_fields:
-            if field not in response:
-                self.logger.warning(f"Response missing required field: {field}")
+        for required_field in required_fields:
+            if required_field not in response:
+                self.logger.warning(f"Response missing required field: {required_field}")
                 return False
         
         return True

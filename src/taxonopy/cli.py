@@ -9,7 +9,7 @@ import sys
 import time
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional
 import json
 
 from taxonopy import __version__
@@ -26,7 +26,7 @@ from taxonopy.output_manager import generate_forced_output, generate_resolution_
 
 from taxonopy.trace import entry as trace_entry
 
-from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef
+# from taxonopy.types.data_classes import EntryGroupRef # For future use with trace
 
 # Parser Setup
 def create_parser() -> argparse.ArgumentParser:
@@ -132,12 +132,14 @@ def run_resolve(args: argparse.Namespace) -> int:
     if args.cache_stats:
         stats = get_cache_stats()
         print("\nTaxonoPy Cache Statistics:")
-        for key, value in stats.items(): print(f"  {key}: {value}")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
         return 0
     if args.clear_cache:
         count = clear_cache()
         print(f"\nCleared {count} cache files")
-        if not args.input or not args.output_dir: return 0
+        if not args.input or not args.output_dir:
+            return 0
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -284,7 +286,8 @@ def main(args: Optional[List[str]] = None) -> int:
     if parsed_args.cache_stats:
         stats = get_cache_stats()
         print("\nTaxonoPy Cache Statistics:")
-        for key, value in stats.items(): print(f"  {key}: {value}")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
         return 0
 
     cache_cleared = False

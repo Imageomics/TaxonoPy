@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Dict, Optional, List, TYPE_CHECKING, Union
+from typing import Dict, Optional, TYPE_CHECKING, Union
 
 from taxonopy.types.data_classes import (
     EntryGroupRef,
@@ -12,6 +11,10 @@ from taxonopy.constants import TAXONOMIC_RANKS, INVALID_VALUES, KINGDOM_SYNONYMS
 
 if TYPE_CHECKING:
     from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ResolutionStrategy:
@@ -206,11 +209,9 @@ class ResolutionStrategy:
                 # Found the term at this rank
                 try:
                     # Use TAXONOMIC_RANKS for hierarchical comparison index
-                    # Map scientific_name/class_ to standard rank names if needed for index lookup,
-                    # but return the actual field name.
-                    compare_rank = rank_field
-                    if rank_field == 'scientific_name': continue # Don't use scientific_name for hierarchy index
-                    if rank_field == 'class_': compare_rank = 'class' # Use 'class' for index lookup
+
+                    if rank_field == 'scientific_name':
+                        continue # Don't use scientific_name for hierarchy index
 
                     # Need the index from TAXONOMIC_RANKS to determine 'highest'/'most specific'
                     index = -1
@@ -222,7 +223,6 @@ class ResolutionStrategy:
                          if highest_rank_field is None:
                               highest_rank_field = rank_field # Tentatively assign
                          continue # Skip index comparison for non-standard ranks
-
 
                     if index > max_index:
                         max_index = index

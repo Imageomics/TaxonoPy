@@ -6,7 +6,7 @@ that can be overridden by command-line arguments.
 """
 
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
+from typing import Dict, Any
 import os
 
 class Config:

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Union, Any
 import logging
 from datetime import datetime
 import json
@@ -10,7 +10,7 @@ from taxonopy.types.data_classes import (
     ResolutionAttempt,
 )
 
-from taxonopy.cache_manager import save_cache, load_cache, compute_checksum
+from taxonopy.cache_manager import save_cache, load_cache
 
 from taxonopy.resolution.strategy.profiles import (
     empty_input_taxonomy,
@@ -41,12 +41,11 @@ from taxonopy.resolution.strategy.profiles import (
     no_match_nonempty_query,
     exact_match_primary_source_accepted_inner_rank_missing_in_result,
     exact_match_secondary_source_accepted_pruned,
-    exact_match_primary_source_accepted_result_within_query,
     # adding profiles as they are implemented
     force_accepted_last_resort,
 )
 from taxonopy.types.gnverifier import Name as GNVerifierName
-from taxonopy.query.planner import plan_initial_queries, plan_retry_query
+from taxonopy.query.planner import plan_initial_queries
 from taxonopy.query.executor import execute_queries
 from taxonopy.query.gnverifier_client import GNVerifierClient
 
@@ -285,7 +284,8 @@ class ResolutionAttemptManager:
 
         for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
             # self.logger.debug(f"Processing entry group {entry_group_key}")
-            if entry_group_key in processed_entry_groups: continue # Should not happen with dict keys
+            if entry_group_key in processed_entry_groups:
+                continue # Should not happen with dict keys
 
             attempt = self._attempts.get(latest_attempt_key)
             if attempt:
@@ -482,14 +482,17 @@ class ResolutionAttemptManager:
                 # Apply cases
                 profile_matched = False
                 for case_func in CLASSIFICATION_CASES:
-                    strategy_name_to_log = getattr(case_func, '__module__', 'unknown_module') # Get module name
+                    # strategy_name_to_log = getattr(case_func, '__module__', 'unknown_module')
+                    # ^ Left here as a reference: can be used to log the module each classification strategy comes from
                     try:
                         # This call might replace the object in self._attempts via create_attempt
                         newly_created_or_updated_attempt = case_func(current_attempt, entry_group, self)
 
                         if newly_created_or_updated_attempt is not None:
                             # Use the strategy name from the attempt returned by the case function
-                            strategy_name_applied = newly_created_or_updated_attempt.resolution_strategy_name or getattr(case_func, 'STRATEGY_NAME', 'unknown')
+
+                            # strategy_name_applied = newly_created_or_updated_attempt.resolution_strategy_name or getattr(case_func, 'STRATEGY_NAME', 'unknown')
+                            # ^ Can be used for logging which classification strategy was applied
                             # Log details about the outcome
                             # self.logger.debug(
                             #     f"Case '{strategy_name_applied}' processed attempt {current_attempt.key}, "
@@ -592,12 +595,11 @@ class ResolutionAttemptManager:
     def load_state(cls, path: str) -> "ResolutionAttemptManager":
         """Load state from a file."""
         # TODO: Implement deserialization
-        self.logger.warning("load_state is not yet implemented.")
+        raise NotImplementedError("load_state is not yet implemented.")
         return cls()
 
     def save_chains_to_cache(self) -> None:
         """Save all attempt chains using the existing cache infrastructure."""
-        from taxonopy.config import config
 
         self.logger.info("Saving attempt chains to cache...")
         

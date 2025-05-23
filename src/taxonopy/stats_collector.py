@@ -4,7 +4,7 @@ This module provides functions for collecting and reporting statistics
 about taxonomic data during processing.
 """
 
-from typing import Dict, List, Set, Counter as CounterType
+from typing import Dict, List, Counter as CounterType
 from collections import Counter
 
 from taxonopy.types.data_classes import TaxonomicEntry, EntryGroupRef

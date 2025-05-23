@@ -19,7 +19,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from taxonopy.config import config
 
 logger = logging.getLogger(__name__)

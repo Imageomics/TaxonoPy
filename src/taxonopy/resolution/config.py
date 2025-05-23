@@ -4,9 +4,7 @@ This module provides a centralized configuration class for controlling the
 behavior of resolution strategies.
 """
 
-from typing import Dict, Any, List
-from taxonopy.constants import TAXONOMIC_RANKS
-
+from typing import Dict, Any
 
 class ResolutionStrategyConfig:
     """Configuration for resolution strategies.

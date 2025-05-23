@@ -5,13 +5,15 @@ such as forcing failed resolutions to use their original input data.
 """
 
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, TYPE_CHECKING
 
 from taxonopy.types.data_classes import (
     EntryGroupRef,
-    ResolutionStatus,
-    ResolutionAttempt
+    ResolutionStatus
 )
+
+if TYPE_CHECKING:
+    from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ def force_failed_to_input(
                 resolved_classification[field] = value
         
         # Create a new attempt with FAILED_FORCED_INPUT status
-        forced_attempt = manager.create_attempt(
+        manager.create_attempt(
             entry_group_key=entry_group_key,
             query_term=latest_attempt.query_term,
             query_rank=latest_attempt.query_rank,

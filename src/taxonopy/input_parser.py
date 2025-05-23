@@ -7,8 +7,7 @@ from Parquet and CSV files, converting rows to TaxonomicEntry objects.
 import os
 import glob
 from pathlib import Path
-from typing import List, Iterator, Dict, Set, Optional, Tuple, Any
-from dataclasses import asdict
+from typing import List, Iterator, Optional, Tuple
 
 import polars as pl
 from tqdm import tqdm

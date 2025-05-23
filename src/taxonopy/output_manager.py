@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Any
 import polars as pl
 from tqdm import tqdm
 
@@ -13,7 +13,6 @@ from taxonopy.types.data_classes import (
 )
 from taxonopy.constants import TAXONOMIC_RANKS
 from taxonopy.input_parser import find_input_files, extract_source_from_path, REQUIRED_COLUMNS
-from taxonopy.config import config
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
 logger = logging.getLogger(__name__)
@@ -41,10 +40,14 @@ def map_entry_to_output_format(
         if final_attempt.is_successful:
             resolved_classification = final_attempt.resolved_classification
         # Populate resolution_info from the attempt
-        if final_attempt.error: resolution_info['error'] = final_attempt.error
-        if final_attempt.failure_reason: resolution_info['failure_reason'] = final_attempt.failure_reason
-        if final_attempt.resolution_strategy_name: resolution_info['resolution_strategy_name'] = final_attempt.resolution_strategy_name
-        if final_attempt.metadata: resolution_info['metadata'] = final_attempt.metadata
+        if final_attempt.error:
+            resolution_info['error'] = final_attempt.error
+        if final_attempt.failure_reason:
+            resolution_info['failure_reason'] = final_attempt.failure_reason
+        if final_attempt.resolution_strategy_name:
+            resolution_info['resolution_strategy_name'] = final_attempt.resolution_strategy_name
+        if final_attempt.metadata:
+            resolution_info['metadata'] = final_attempt.metadata
         # Add query info used for the final successful/failed step (optional but useful)
         resolution_info['final_query_term'] = final_attempt.query_term
         resolution_info['final_query_rank'] = final_attempt.query_rank
@@ -107,9 +110,12 @@ def map_entry_to_output_format(
     if 'resolution_strategy_name' in resolution_info:
          result['resolution_strategy'] = str(resolution_info['resolution_strategy_name'])
     # Add optional final query info
-    if 'final_query_term' in resolution_info: result['final_query_term'] = resolution_info['final_query_term']
-    if 'final_query_rank' in resolution_info: result['final_query_rank'] = resolution_info['final_query_rank']
-    if 'final_data_source_id' in resolution_info: result['final_data_source_id'] = resolution_info['final_data_source_id']
+    if 'final_query_term' in resolution_info:
+        result['final_query_term'] = resolution_info['final_query_term']
+    if 'final_query_rank' in resolution_info:
+        result['final_query_rank'] = resolution_info['final_query_rank']
+    if 'final_data_source_id' in resolution_info:
+        result['final_data_source_id'] = resolution_info['final_data_source_id']
 
     # Add generic metadata fields if needed (prefixing)
     if 'metadata' in resolution_info and isinstance(resolution_info['metadata'], dict):
@@ -345,7 +351,8 @@ def generate_forced_output(
                  row_dict["class_"] = row_dict.pop("class")
 
             uuid = row_dict.get("uuid")
-            if not uuid: continue
+            if not uuid:
+                continue
 
             try:
                  entry = TaxonomicEntry(
