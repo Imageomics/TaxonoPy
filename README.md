@@ -7,10 +7,10 @@ The motivation for this package is to create an internally consistent and standa
 
 Its development has been driven by its application in the TreeOfLife-200M (TOL) dataset. This dataset contains over 200 million samples of organisms from four core data providers:
 
-- The GLobal Biodiversity Information Facility (GBIF)
-- BIOSCAN-5M
-- FathomNet
-- The Encyclopedia of Life (EOL)
+- [The GLobal Biodiversity Information Facility (GBIF)](https://www.gbif.org/)
+- [BIOSCAN-5M](https://biodiversitygenomics.net/projects/5m-insects/)
+- [FathomNet](https://www.fathomnet.org/)
+- [The Encyclopedia of Life (EOL)](https://eol.org/)
 
 The names (and classification) of taxa may be (and often are) inconsistent across these resources. This package addresses this problem by creating an internally consistent classification set for such taxa. 
 
@@ -41,7 +41,7 @@ Taxonomic authorities exist to standardize classification, but ...
 - A given organism may be missing from some.
 
 ### Solution
-`TaxonoPy` uses the taxonomic hierarchies provided by the TOL core data providers to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the GBIF backbone taxonomy, since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the Catalogue of Life and Open Tree of Life (OTOL) taxonomy are used.
+`TaxonoPy` uses the taxonomic hierarchies provided by the TOL core data providers to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the [GBIF Backbone Taxonomy](https://verifier.globalnames.org/data_sources/11), since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the [Catalogue of Life](https://verifier.globalnames.org/data_sources/1) and [Open Tree of Life (OTOL) Reference Taxonomy](https://verifier.globalnames.org/data_sources/179) are used.
 
 ## Installation
 
