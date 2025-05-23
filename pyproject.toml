@@ -5,7 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "taxonopy"
 description = "A Python package for resolving taxonomic hierarchies using the Global Names Verifier API."
-authors = [{name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}]
+authors = [
+    {name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
 license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
