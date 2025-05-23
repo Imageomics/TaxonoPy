@@ -24,8 +24,8 @@ A directory containing Parquet partitions of the seven-rank Linnaean taxonomic m
 
 See the example data in 
 - `examples/input/sample.parquet`
-- `examples/resolved/sample.resolved.parquet` (generated with [`taxonopy resolve`](#commands-resolve))
-- `examples/resolved_with_common_names/sample.resolved.parquet` (generated with [`taxonopy common-names`](#commands-common-names))
+- `examples/resolved/sample.resolved.parquet` (generated with [`taxonopy resolve`](#command-resolve))
+- `examples/resolved_with_common_names/sample.resolved.parquet` (generated with [`taxonopy common-names`](#command-common-names))
 
 ### Challenges
 This taxonomy information is provided by each data provider and the original sources, but the classification can be...
