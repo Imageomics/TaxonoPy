@@ -45,6 +45,11 @@ nb = [
     "marimo[recommended]"
 ]
 
+[project.urls]
+Documentation = "https://github.com/Imageomics/TaxonoPy"
+Issues = "https://github.com/Imageomics/TaxonoPy/issues"
+Source = "https://github.com/Imageomics/TaxonoPy"
+
 [project.scripts]
 taxonopy = "taxonopy.__main__:main"
 
