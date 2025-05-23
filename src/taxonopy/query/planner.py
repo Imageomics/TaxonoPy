@@ -6,7 +6,7 @@ into QueryParameters objects that can be used for efficient API queries.
 """
 
 import logging
-from typing import Dict, List, Optional, Set, Tuple, Iterator, TYPE_CHECKING
+from typing import Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 from taxonopy.types.data_classes import EntryGroupRef, QueryParameters, ResolutionAttempt
 from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_QUERY_PRECEDENCE, INVALID_VALUES

@@ -5,8 +5,28 @@ build-backend = "hatchling.build"
 [project]
 name = "taxonopy"
 description = "A Python package for resolving taxonomic hierarchies using the Global Names Verifier API."
-authors = [{name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}]
+authors = [
+    {name = "Matthew J. Thompson", email = "thompson.m.j@outlook.com"}
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
 license = {file = "LICENSE"}
+keywords = [
+    "imageomics",
+    "taxonomy",
+    "taxonomic-resolution",
+    "alignment",
+    "hierarchy",
+    "tree-of-life",
+]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -32,6 +52,11 @@ nb = [
     "jupyterlab",
     "marimo[recommended]"
 ]
+
+[project.urls]
+Documentation = "https://github.com/Imageomics/TaxonoPy"
+Issues = "https://github.com/Imageomics/TaxonoPy/issues"
+Source = "https://github.com/Imageomics/TaxonoPy"
 
 [project.scripts]
 taxonopy = "taxonopy.__main__:main"

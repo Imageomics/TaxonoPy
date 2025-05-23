@@ -4,8 +4,7 @@ This module provides functions for grouping TaxonomicEntry objects
 into EntryGroupRef objects based on identical taxonomic data.
 """
 
-import hashlib
-from typing import Dict, Set, List, Iterator, Tuple, Optional
+from typing import Dict, Set, List, Tuple, Optional
 
 from tqdm import tqdm
 import logging

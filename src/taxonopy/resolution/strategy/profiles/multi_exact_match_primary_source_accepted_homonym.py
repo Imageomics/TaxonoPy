@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, List, Dict
+from typing import Optional, TYPE_CHECKING, List
 
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 from taxonopy.types.data_classes import (
@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import DATA_SOURCE_PRECEDENCE, KINGDOM_SYNONYMS
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
 from .profile_logging import setup_profile_logging
 _PROFILE_DEBUG_OVERRIDE_ = False  # Set to True for debugging

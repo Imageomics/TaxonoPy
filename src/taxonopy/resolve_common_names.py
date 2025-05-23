@@ -5,7 +5,6 @@ import glob
 import zipfile
 import requests
 from pathlib import Path
-from typing import Optional
 import shutil
 
 def download_and_extract_backbone(cache_dir: Path):

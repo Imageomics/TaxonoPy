@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Set
+from typing import Optional, TYPE_CHECKING
 
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 from taxonopy.types.data_classes import (

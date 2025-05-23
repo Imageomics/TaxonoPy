@@ -1,7 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict
-
-from taxonopy.resolution.strategy.base import ResolutionStrategy
+from typing import Optional, TYPE_CHECKING
 
 from taxonopy.types.data_classes import (
     EntryGroupRef,
@@ -9,7 +7,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import INVALID_VALUES, TAXONOMIC_RANKS, DATA_SOURCE_PRECEDENCE
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 
 from .profile_logging import setup_profile_logging
@@ -102,7 +100,7 @@ class ExactMatchPrimarySourceAcceptedStrategy(ResolutionStrategy):
 
                 # Direct Exact Match Check:
                 if expected_value == result_value:
-                    logger.debug(f"    Kingdoms match directly. PASS.")
+                    logger.debug("    Kingdoms match directly. PASS.")
                     continue # Move to next rank
 
                 # If direct match failed, check synonyms only if input is a known synonym
@@ -128,7 +126,7 @@ class ExactMatchPrimarySourceAcceptedStrategy(ResolutionStrategy):
                 # Direct comparison for other ranks (same as before)
                 logger.debug(f"  Comparing Rank '{rank_field}': Input='{expected_value}' vs Result='{result_value}'")
                 if result_value != expected_value:
-                    logger.debug(f"  Rank Mismatch: Values differ.")
+                    logger.debug("  Rank Mismatch: Values differ.")
                     match = False
                     break
 

@@ -1,4 +1,3 @@
-import sys
 
 import logging
 from typing import Optional, TYPE_CHECKING

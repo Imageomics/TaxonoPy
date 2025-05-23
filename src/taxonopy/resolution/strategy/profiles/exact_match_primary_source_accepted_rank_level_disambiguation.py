@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, List
+from typing import Optional, TYPE_CHECKING
 
 from taxonopy.resolution.strategy.base import ResolutionStrategy
 from taxonopy.types.data_classes import (
@@ -8,7 +8,7 @@ from taxonopy.types.data_classes import (
     ResolutionStatus
 )
 from taxonopy.types.gnverifier import ResultData, MatchType
-from taxonopy.constants import DATA_SOURCE_PRECEDENCE, TAXONOMIC_RANKS
+from taxonopy.constants import DATA_SOURCE_PRECEDENCE
 
 from .profile_logging import setup_profile_logging
 # Set to True in the specific file(s) you want to debug
@@ -79,14 +79,21 @@ class ExactMatchPrimarySourceAcceptedRankLevelDisambiguationStrategy(ResolutionS
             logger.debug(f"Profile {STRATEGY_NAME} mismatch on attempt {attempt.key}: Canonical forms do not match each other or the query term.")
             return None
         # Ensure these checks pass before proceeding
-        if not (attempt.gnverifier_response and attempt.gnverifier_response.results and len(attempt.gnverifier_response.results) == 2): return None
+        if not (attempt.gnverifier_response and attempt.gnverifier_response.results and len(attempt.gnverifier_response.results) == 2):
+            return None
         result0, result1 = attempt.gnverifier_response.results[0], attempt.gnverifier_response.results[1]
-        if not (result0.match_type and isinstance(result0.match_type, MatchType) and result0.match_type.root == "Exact" and result1.match_type and isinstance(result1.match_type, MatchType) and result1.match_type.root == "Exact"): return None
-        if not (result0.taxonomic_status == "Accepted" and result1.taxonomic_status == "Accepted"): return None
-        try: primary_source_id = next(iter(DATA_SOURCE_PRECEDENCE.values()))
-        except StopIteration: return self._create_failed_attempt(attempt, manager, reason="Config Error", error_msg="No primary source")
-        if not (result0.data_source_id == primary_source_id and result1.data_source_id == primary_source_id): return None
-        if not (result0.matched_canonical_simple and result0.matched_canonical_simple == result1.matched_canonical_simple and result0.matched_canonical_simple == attempt.query_term): return None
+        if not (result0.match_type and isinstance(result0.match_type, MatchType) and result0.match_type.root == "Exact" and result1.match_type and isinstance(result1.match_type, MatchType) and result1.match_type.root == "Exact"):
+            return None
+        if not (result0.taxonomic_status == "Accepted" and result1.taxonomic_status == "Accepted"):
+            return None
+        try:
+            primary_source_id = next(iter(DATA_SOURCE_PRECEDENCE.values()))
+        except StopIteration:
+            return self._create_failed_attempt(attempt, manager, reason="Config Error", error_msg="No primary source")
+        if not (result0.data_source_id == primary_source_id and result1.data_source_id == primary_source_id):
+            return None
+        if not (result0.matched_canonical_simple and result0.matched_canonical_simple == result1.matched_canonical_simple and result0.matched_canonical_simple == attempt.query_term):
+            return None
 
         # Disambiguation logic
         try:

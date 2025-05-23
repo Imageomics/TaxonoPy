@@ -3,7 +3,6 @@ import json
 import logging
 from taxonopy.input_parser import parse_input_list
 from taxonopy.entry_grouper import create_entry_groups
-from taxonopy.query.planner import plan_initial_queries
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +61,9 @@ def trace_entry(uuid: str, input_path: str, output_format: str = "text", verbose
 
     # Retrieve the entry groups.
     try:
-        entry_groups, entry_group_map = create_entry_groups(input_path)
+        _, entry_group_map = create_entry_groups(input_path)
     except Exception as e:
         logger.error(f"Error grouping entries: {e}")
-        entry_groups = []
         entry_group_map = {}
 
     matching_group = None

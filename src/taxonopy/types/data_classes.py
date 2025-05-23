@@ -12,10 +12,8 @@ Design Principles:
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum, auto
-from typing import Dict, List, Optional, Set, Union, Tuple, Callable, FrozenSet
-from uuid import UUID
+from enum import Enum
+from typing import Dict, List, Optional, Set, Union, Tuple, Callable
 import hashlib
 import json
 
@@ -216,8 +214,8 @@ class TaxonomicEntry:
     @property
     def most_specific_rank(self) -> Optional[str]:
         """Return the most specific taxonomic rank that has valid data."""
-        for field, rank in TAXONOMIC_QUERY_PRECEDENCE:
-            value = getattr(self, field)
+        for field_name, rank in TAXONOMIC_QUERY_PRECEDENCE:
+            value = getattr(self, field_name)
             if value and value.strip().lower() not in INVALID_VALUES:
                 return rank
         return None
@@ -225,8 +223,8 @@ class TaxonomicEntry:
     @property
     def most_specific_term(self) -> Optional[str]:
         """Return the term corresponding to the most specific rank."""
-        for field, rank in TAXONOMIC_QUERY_PRECEDENCE:
-            value = getattr(self, field)
+        for field_name, rank in TAXONOMIC_QUERY_PRECEDENCE:
+            value = getattr(self, field_name)
             if value and value.strip().lower() not in INVALID_VALUES:
                 return value.strip()
         return None
@@ -290,8 +288,8 @@ class EntryGroupRef:
         Return the most specific taxonomic rank that has valid data. 
         If taxonomic data is empty, return None.
         """
-        for field, rank in TAXONOMIC_QUERY_PRECEDENCE:
-            value = getattr(self, field)
+        for field_name, rank in TAXONOMIC_QUERY_PRECEDENCE:
+            value = getattr(self, field_name)
             if value and value.strip().lower() not in INVALID_VALUES:
                 return rank
         return None
@@ -313,8 +311,8 @@ class EntryGroupRef:
     def key(self) -> str:
         """Unique, deterministic key based on hash of shared taxonomic data."""
         terms = []
-        for field, _ in TAXONOMIC_QUERY_PRECEDENCE:
-            term = getattr(self, field, "") or ""
+        for field_name, _ in TAXONOMIC_QUERY_PRECEDENCE:
+            term = getattr(self, field_name, "") or ""
             terms.append(term.strip().lower())
         taxa_data = "|".join(terms)
 
