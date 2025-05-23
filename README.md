@@ -179,23 +179,3 @@ taxonopy common-names \
 ```
 
 TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory.
-
-## Development
-
-This section assumes that you have installed the package in development mode.
-
-### OpenAPI Specification Managment and Type Generation
-
-`TaxonoPy` uses GNVerifier to generate and integrates with its API from its OpenAPI specification.
-
-The script that handles this is `scripts/generate_gnverifier_types.py`, which saves `api_specs/gnverifier_openapi.json` and from this produces `src/taxonopy/types/gnverifier.py`.
-
-To check for changes in the OpenAPI specification, run:
-```console
-python scripts/generate_gnverifier_types.py
-```
-
-If the OpenAPI specification has changed, you will need to decide whether to update the generated types. 
-
-The script will save `api_specs/gnverifier_openapi.json.new` and `src/taxonopy/types/gnverifier.py.new` for you to compare with the existing files and decide whether to overwrite them and make any necessary changes to the rest of the codebase.
-
