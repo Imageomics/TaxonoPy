@@ -19,6 +19,14 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 license = {file = "LICENSE"}
+keywords = [
+    "imageomics",
+    "taxonomy",
+    "taxonomic-resolution",
+    "alignment",
+    "hierarchy",
+    "tree-of-life",
+]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
