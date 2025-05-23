@@ -54,20 +54,6 @@ To install the latest version of `TaxonoPy`, run:
 pip install taxonopy
 ```
 
-### Development Installation with `pip`
-
-Clone the repository and install the package in development mode with an activated virtual environment:
-```console
-git clone git@github.com:Imageomics/TaxonoPy.git
-cd TaxonoPy
-```
-Set up and activate a virtual environment.
-
-Install the package in development mode:
-```console
-pip install -e .[dev]
-```
-
 ### Usage
 You may view the help for the command line interface by running:
 ```console
@@ -179,3 +165,6 @@ taxonopy common-names \
 ```
 
 TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory.
+
+## Development
+See the [Wiki Development Page](https://github.com/Imageomics/TaxonoPy/wiki/Development) for development instructions.
