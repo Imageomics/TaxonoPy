@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/789041700.svg)](https://doi.org/10.5281/zenodo.15499454)
 
+[![PyPI - Version](https://img.shields.io/pypi/v/taxonopy.svg)](https://pypi.org/project/taxonopy)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/taxonopy.svg)](https://pypi.org/project/taxonopy)
 
 `TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). See below for the structure of inputs and outputs.
 
