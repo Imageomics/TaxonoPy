@@ -1,19 +1,18 @@
 # TaxonoPy
 
-`TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). 
+`TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). See below for the structure of inputs and outputs.
 
 ## Purpose
-The motivation for this package is to create an internally consistent and standardized classification set for organisms in the TreeOfLife-200M (TOL) dataset.
+The motivation for this package is to create an internally consistent and standardized classification set for organisms in a large biodiversity dataset composed from different data providers that may use very similar and overlapping but not identical taxonomic hierarchies.
 
-This dataset contains over 200 million samples of organisms from four core data providers:
+Its development has been driven by its application in the TreeOfLife-200M (TOL) dataset. This dataset contains over 200 million samples of organisms from four core data providers:
 
 - The GLobal Biodiversity Information Facility (GBIF)
 - BIOSCAN-5M
 - FathomNet
 - The Encyclopedia of Life (EOL)
 
-
-This package is a tool for creating an internally consistent classification set for a list of organisms whose entries have inconsistent naming. 
+The names (and classification) of taxa may be (and often are) inconsistent across these resources. This package addresses this problem by creating an internally consistent classification set for such taxa. 
 
 ### Input
 
@@ -96,7 +95,7 @@ options:
   --show-config         Show current configuration and exit (default: False)
   --version             Show version number and exit
 ```
-#### Commands: `resolve`
+#### Command: `resolve`
 The `resolve` command is used to perform taxonomic resolution on a dataset. It takes a directory of Parquet partitions as input and outputs a directory of resolved Parquet partitions.
 ```
 usage: taxonopy resolve [-h] -i INPUT -o OUTPUT_DIR [--output-format {csv,parquet}] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log-file LOG_FILE] [--force-input] [--batch-size BATCH_SIZE] [--all-matches]
@@ -128,7 +127,7 @@ Cache Management:
   ```
 It is recommended to keep GNVerifier settings at their defaults.
 
-#### Commands: `trace`
+#### Command: `trace`
 The `trace` command is used to trace the provenance of a taxonomic entry. It takes a UUID and an input path as arguments and outputs the full path of the entry through TaxonoPy.
 ```console
 usage: taxonopy trace [-h] {entry} ...
@@ -151,7 +150,7 @@ options:
   --verbose             Show full details including all UUIDs in group
 ```
 
-#### Commands: `common-names`
+#### Command: `common-names`
 The `common-names` command is used to merge vernacular names into the resolved output. It takes a directory of resolved Parquet partitions as input and outputs a directory of resolved Parquet partitions with common names.
 ```console
 usage: taxonopy common-names [-h] --resolved-dir ANNOTATION_DIR --output-dir OUTPUT_DIR
