@@ -1,0 +1,43 @@
+abstract: "A Python package for efficiently aligning organismal taxonomic hierarchies using the Global Names Verifier."
+authors:
+- family-names: "Thompson"
+  given-names: "Matthew J."
+  orcid: "https://orcid.org/0000-0003-0583-8585"
+- family-names: "Campolongo"
+  given-names: "Elizabeth G."
+  orcid: "https://orcid.org/0000-0003-0846-2413"
+cff-version: 1.2.0
+date-released: "2025-05-23"
+identifiers:
+  - description: "The GitHub release URL of tag v0.1.0-beta."
+    type: url
+    value: "https://github.com/Imageomics/TaxonoPy/releases/tag/v0.1.0-beta"
+  - description: "The GitHub URL of the commit tagged with v0.1.0-beta"
+    type: url
+    value: "https://github.com/Imageomics/TaxonoPy/tree/<update-after-release>"
+keywords:
+  - imageomics
+  - taxonomy
+  - "taxonomic resolution"
+  - "tree of life"
+  - alignment
+  - hierarchy
+references:
+  - type: software
+    title: "GNverifier -- a reconciler and resolver of scientific names against more than 100 data sources."
+    version: "v1.2.2"
+    authors:
+      - family-names: "Mozzherin"
+        given-names: "Dmitry"
+        orcid: "https://orcid.org/0000-0003-1593-1417"
+    repository-code: "https://github.com/gnames/gnverifier"
+    date-released: "2024-11-04"
+    doi: 10.5281/zenodo.10070488
+    license: MIT
+license: MIT
+message: "If you use this software, please cite it using the metadata from this file."
+repository-code: "https://github.com/Imageomics/TaxonoPy"
+title: "TaxonoPy"
+version: "0.1.0-beta"
+doi: "<update-after-doi>"
+type: software
