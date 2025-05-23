@@ -1,5 +1,10 @@
 # TaxonoPy
 
+[![DOI](https://zenodo.org/badge/789041700.svg)](https://doi.org/10.5281/zenodo.15499454)
+
+[![PyPI - Version](https://img.shields.io/pypi/v/taxonopy.svg)](https://pypi.org/project/taxonopy)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/taxonopy.svg)](https://pypi.org/project/taxonopy)
+
 `TaxonoPy` (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier). See below for the structure of inputs and outputs.
 
 ## Purpose
@@ -7,7 +12,7 @@ The motivation for this package is to create an internally consistent and standa
 
 Its development has been driven by its application in the TreeOfLife-200M (TOL) dataset. This dataset contains over 200 million samples of organisms from four core data providers:
 
-- [The GLobal Biodiversity Information Facility (GBIF)](https://www.gbif.org/)
+- [The Global Biodiversity Information Facility (GBIF)](https://www.gbif.org/)
 - [BIOSCAN-5M](https://biodiversitygenomics.net/projects/5m-insects/)
 - [FathomNet](https://www.fathomnet.org/)
 - [The Encyclopedia of Life (EOL)](https://eol.org/)
