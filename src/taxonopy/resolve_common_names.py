@@ -105,6 +105,71 @@ def download_and_extract_backbone(cache_dir: Path):
     
     return taxon_file, vernacular_file
 
+def _normalize_one_column(col: str) -> pl.Expr:
+    """Build the Utf8‐cast + empty→null expression for a single column."""
+    # Cast to string
+    casted = pl.col(col).cast(pl.Utf8)
+    # Turn "" into None
+    cleaned = casted.map_elements(lambda x: None if x == "" else x, return_dtype=pl.Utf8)
+    # Give it back its original name
+    return cleaned.alias(col)
+
+def normalize_taxonomic_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Normalize taxonomic columns by casting to Utf8 and converting empty strings to null.
+    
+    :param df: DataFrame with taxonomic columns
+    :return: DataFrame with normalized taxonomic columns
+    """
+    taxonomic_cols = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+    existing = [c for c in taxonomic_cols if c in df.columns]
+
+    # Build a list of clean‐up expressions, one per column
+    exprs = [_normalize_one_column(c) for c in existing]
+
+    # Apply them all at once
+    return df.with_columns(exprs)
+
+# Module-level constant for join columns to avoid duplication
+TAXONOMIC_HIERARCHY = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus']
+
+
+def join_single_rank(anno_df: pl.DataFrame, taxon_df: pl.DataFrame, rank: str) -> pl.DataFrame:
+    """
+    Join annotation dataframe with taxon dataframe for a single taxonomic rank.
+    
+    :param anno_df: Annotation dataframe (should have normalized taxonomic columns)
+    :param taxon_df: Taxon dataframe  
+    :param rank: Taxonomic rank to join on ('species' or 'genus')
+    :return: DataFrame with taxonID_{rank} column added
+    """
+    if rank not in anno_df.columns:
+        return anno_df
+        
+    # Select and rename taxonID to avoid conflicts
+    backbone_subset = taxon_df.select([
+        'canonicalName', 
+        pl.col('taxonID').alias(f'taxonID_{rank}'),
+        *TAXONOMIC_HIERARCHY
+    ])
+    
+    # Get columns that exist in both dataframes for joining
+    join_cols = [col for col in TAXONOMIC_HIERARCHY if col in anno_df.columns]
+    
+    result = anno_df.join(
+        backbone_subset,
+        left_on=[rank] + join_cols,
+        right_on=['canonicalName'] + join_cols,
+        how='left'
+    )
+    
+    # Drop canonicalName if it exists
+    if 'canonicalName' in result.columns:
+        result = result.drop('canonicalName')
+        
+    return result
+
+
 def merge_taxon_id(anno_df, taxon_df):
     """
     This function is used to retrieve taxon_id from taxon_df
@@ -112,43 +177,11 @@ def merge_taxon_id(anno_df, taxon_df):
     :param taxon_df: taxon dataframe
     :return: merged dataframe
     """
-    new_anno_df = anno_df.clone()
-    
-    # Cast join key columns to Utf8 and convert empty strings to null
-    taxonomic_cols = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
-    existing_cols = [col for col in taxonomic_cols if col in new_anno_df.columns]
-    
-    new_anno_df = new_anno_df.with_columns([
-        pl.col(col).cast(pl.Utf8).map_elements(lambda x: None if x == '' else x, return_dtype=pl.Utf8)
-        for col in existing_cols
-    ])
+    new_anno_df = normalize_taxonomic_columns(anno_df.clone())
 
     print('Start merging with taxon_df')
-    for key in ['species', 'genus']:
-        if key not in new_anno_df.columns:
-            continue
-            
-        # Select and rename taxonID to avoid conflicts
-        backbone_subset = taxon_df.select([
-            'canonicalName', 
-            pl.col('taxonID').alias(f'taxonID_{key}'),
-            'kingdom', 'phylum', 'class', 'order', 'family', 'genus'
-        ])
-        
-        # Get columns that exist in both dataframes for joining
-        join_cols = [col for col in ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'] 
-                     if col in new_anno_df.columns]
-        
-        new_anno_df = new_anno_df.join(
-            backbone_subset,
-            left_on=[key] + join_cols,
-            right_on=['canonicalName'] + join_cols,
-            how='left'
-        )
-        
-        # Drop canonicalName if it exists
-        if 'canonicalName' in new_anno_df.columns:
-            new_anno_df = new_anno_df.drop('canonicalName')
+    for rank in ['species', 'genus']:
+        new_anno_df = join_single_rank(new_anno_df, taxon_df, rank)
 
     # Only keep the smallest taxonID for each uuid (handle duplicates)
     if 'uuid' in new_anno_df.columns and 'taxonID_genus' in new_anno_df.columns:
@@ -163,6 +196,118 @@ def merge_taxon_id(anno_df, taxon_df):
     assert len(new_anno_df) == len(anno_df), f"Length mismatch: {len(new_anno_df)} != {len(anno_df)}"
 
     return new_anno_df
+
+
+def prioritize_vernacular(vernacular_df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Prioritize vernacular names with English preference.
+    
+    :param vernacular_df: Raw GBIF vernacular DataFrame with taxonID, vernacularName, language columns
+    :return: DataFrame with columns (taxonID, vernacularName) prioritizing English, then any other language
+    """
+    # Tag English vs. other
+    english = (
+        vernacular_df
+        .filter(pl.col("language") == "en")
+        .with_columns([
+            pl.col("vernacularName")
+              .str.to_lowercase()
+              .str.to_titlecase()
+              .alias("vernacularName"),
+            pl.lit(1).alias("priority")
+        ])
+        .group_by("taxonID")
+        .agg([
+            pl.col("vernacularName").first(),
+            pl.col("priority").first()
+        ])
+    )
+
+    other = (
+        vernacular_df
+        .filter(pl.col("language") != "en")
+        .with_columns([
+            pl.col("vernacularName")
+              .str.to_lowercase()
+              .str.to_titlecase()
+              .alias("vernacularName"),
+            pl.lit(2).alias("priority")
+        ])
+        .group_by("taxonID")
+        .agg([
+            pl.col("vernacularName").first(),
+            pl.col("priority").first()
+        ])
+    )
+
+    # Merge and pick the top‐priority name, then drop the priority column
+    result = (
+        pl.concat([english, other])
+          .group_by("taxonID")
+          .agg(
+            pl.col("vernacularName")
+              .sort_by("priority")
+              .first()
+              .alias("vernacularName")
+          )
+    )
+
+    # Just in case, ensure we only have the two columns
+    return result.select(["taxonID", "vernacularName"])
+
+
+def apply_hierarchical_common_name_lookup(anno_df: pl.DataFrame, common_lookup: pl.DataFrame) -> pl.DataFrame:
+    """
+    Apply hierarchical common name lookup from most specific to least specific rank.
+    
+    :param anno_df: Annotation dataframe with taxonID_* columns
+    :param common_lookup: Common name lookup table with (taxonID, common_name) columns
+    :return: DataFrame with common_name column populated using hierarchical fallback
+    """
+    rank_columns = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+    
+    # Initialize common_name column
+    result_df = anno_df.with_columns(pl.lit(None).cast(pl.Utf8).alias("common_name"))
+    
+    # Apply hierarchical lookup - check each rank in priority order
+    for rank in rank_columns:
+        taxonid_col = f"taxonID_{rank}"
+        if taxonid_col not in result_df.columns:
+            continue
+            
+        # Join common names for this rank
+        temp_df = result_df.join(
+            common_lookup.select([
+                "taxonID", 
+                pl.col("common_name").alias(f"temp_common_{rank}")
+            ]),
+            left_on=taxonid_col,
+            right_on="taxonID",
+            how="left"
+        )
+        
+        # Update common_name where it's null and this rank has a name
+        result_df = temp_df.with_columns([
+            pl.coalesce([
+                pl.col("common_name"), 
+                pl.col(f"temp_common_{rank}")
+            ]).alias("common_name")
+        ]).drop(f"temp_common_{rank}")
+    
+    return result_df
+
+
+def override_input_common_name(df: pl.DataFrame, common_lookup: pl.DataFrame) -> pl.DataFrame:
+    """
+    Override any existing common_name column with backbone-derived common names.
+    
+    :param df: DataFrame that may have a pre-existing common_name column
+    :param common_lookup: Common name lookup table with hierarchical fallback applied
+    :return: DataFrame with backbone-derived common_name (input common_name completely replaced)
+    """
+    # Drop any existing common_name column and apply the backbone lookup
+    df_clean = df.drop("common_name") if "common_name" in df.columns else df
+    return apply_hierarchical_common_name_lookup(df_clean, common_lookup)
 
 
 def merge_common_name(anno_df, common_name_df, taxon_df):
@@ -189,10 +334,6 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
     
     # Define hierarchical order of taxonomic ranks
     rank_columns = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
-    
-    # Find which taxonomic ranks we actually have taxonIDs for
-    available_taxonid_cols = [f"taxonID_{rank}" for rank in rank_columns 
-                              if f"taxonID_{rank}" in new_anno_df.columns]
     
     # Find which taxonomic classification columns we have 
     available_rank_cols = [rank for rank in rank_columns 
@@ -224,33 +365,8 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
         else:
             new_anno_df = new_anno_df.rename({temp_taxonid_col: taxonid_col})
     
-    # Initialize common_name column
-    new_anno_df = new_anno_df.with_columns(pl.lit(None).cast(pl.Utf8).alias("common_name"))
-    
-    # Apply hierarchical lookup - check each rank in priority order
-    for rank in rank_columns:
-        taxonid_col = f"taxonID_{rank}"
-        if taxonid_col not in new_anno_df.columns:
-            continue
-            
-        # Join common names for this rank
-        temp_df = new_anno_df.join(
-            common_lookup.select([
-                "taxonID", 
-                pl.col("common_name").alias(f"temp_common_{rank}")
-            ]),
-            left_on=taxonid_col,
-            right_on="taxonID",
-            how="left"
-        )
-        
-        # Update common_name where it's null and this rank has a name
-        new_anno_df = temp_df.with_columns([
-            pl.coalesce([
-                pl.col("common_name"), 
-                pl.col(f"temp_common_{rank}")
-            ]).alias("common_name")
-        ]).drop(f"temp_common_{rank}")
+    # Override any input common_name with backbone data
+    new_anno_df = override_input_common_name(new_anno_df, common_lookup)
     
     # Clean up temporary taxonID columns (keep original taxonomic classification columns)
     cleanup_cols = [f"taxonID_{rank}" for rank in rank_columns]
@@ -306,42 +422,7 @@ def main(annotation_dir=None, output_dir=None):
     vernacular_df = pl.read_csv(common_name_file, separator="\t", infer_schema_length=0, quote_char=None)
     
     # Create prioritized vernacular names: prefer English, fallback to any language
-    english_names = (
-        vernacular_df
-        .filter(pl.col("language") == "en")
-        .with_columns([
-            pl.col("vernacularName").str.to_lowercase().str.to_titlecase().alias("vernacularName"),
-            pl.lit(1).alias("priority")
-        ])
-        .group_by("taxonID")
-        .agg([
-            pl.col("vernacularName").first().alias("vernacularName"),
-            pl.col("priority").first().alias("priority")
-        ])
-    )
-    
-    other_names = (
-        vernacular_df
-        .filter(pl.col("language") != "en")
-        .with_columns([
-            pl.col("vernacularName").str.to_lowercase().str.to_titlecase().alias("vernacularName"),
-            pl.lit(2).alias("priority")
-        ])
-        .group_by("taxonID")
-        .agg([
-            pl.col("vernacularName").first().alias("vernacularName"),
-            pl.col("priority").first().alias("priority")
-        ])
-    )
-    
-    # Combine with English preference
-    common_name_df = (
-        pl.concat([english_names, other_names])
-        .group_by("taxonID")
-        .agg([
-            pl.col("vernacularName").sort_by("priority").first().alias("vernacularName")
-        ])
-    )
+    common_name_df = prioritize_vernacular(vernacular_df)
 
     print(f"Loading taxon data from {taxon_file}")
     taxon_df = (
