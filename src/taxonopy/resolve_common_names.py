@@ -146,15 +146,20 @@ def join_single_rank(anno_df: pl.DataFrame, taxon_df: pl.DataFrame, rank: str) -
     if rank not in anno_df.columns:
         return anno_df
         
-    # Select and rename taxonID to avoid conflicts
-    backbone_subset = taxon_df.select([
-        'canonicalName', 
-        pl.col('taxonID').alias(f'taxonID_{rank}'),
-        *TAXONOMIC_HIERARCHY
-    ])
-    
-    # Get columns that exist in both dataframes for joining
+    # Figure out which higher-rank cols we actually have in the anno_df
     join_cols = [col for col in TAXONOMIC_HIERARCHY if col in anno_df.columns]
+    
+    # Select, rename, *and* drop duplicate backbone rows on the full key
+    backbone_subset = (
+        taxon_df
+        .select([
+            'canonicalName',
+            pl.col('taxonID').alias(f'taxonID_{rank}'),
+            *join_cols
+        ])
+        # ensure (canonicalName + all join_cols) is unique
+        .unique(subset=['canonicalName'] + join_cols)
+    )
     
     result = anno_df.join(
         backbone_subset,
@@ -183,17 +188,11 @@ def merge_taxon_id(anno_df, taxon_df):
     for rank in ['species', 'genus']:
         new_anno_df = join_single_rank(new_anno_df, taxon_df, rank)
 
-    # Only keep the smallest taxonID for each uuid (handle duplicates)
-    if 'uuid' in new_anno_df.columns and 'taxonID_genus' in new_anno_df.columns:
-        duplicated_uuids = new_anno_df.filter(pl.col('uuid').is_duplicated())
-        if len(duplicated_uuids) > 0:
-            non_duplicated_df = new_anno_df.filter(~pl.col('uuid').is_in(duplicated_uuids['uuid']))
-            duplicated_uuids = duplicated_uuids.group_by('uuid').agg(pl.col('taxonID_genus').min()).join(
-                duplicated_uuids, on=['uuid', 'taxonID_genus'], how='inner'
-            )
-            new_anno_df = pl.concat([non_duplicated_df, duplicated_uuids])
-
-    assert len(new_anno_df) == len(anno_df), f"Length mismatch: {len(new_anno_df)} != {len(anno_df)}"
+    # With the backbone_subset de-duped above, joins are one-to-one, so
+    # the row count will always match.
+    assert len(new_anno_df) == len(anno_df), (
+        f"Length mismatch after taxon joins: {len(new_anno_df)} != {len(anno_df)}"
+    )
 
     return new_anno_df
 
@@ -287,12 +286,21 @@ def apply_hierarchical_common_name_lookup(anno_df: pl.DataFrame, common_lookup: 
         )
         
         # Update common_name where it's null and this rank has a name
-        result_df = temp_df.with_columns([
-            pl.coalesce([
-                pl.col("common_name"), 
-                pl.col(f"temp_common_{rank}")
-            ]).alias("common_name")
-        ]).drop(f"temp_common_{rank}")
+        result_df = (
+            temp_df
+            # pick up the new common_name, drop the temp join field
+            .with_columns([
+                pl.coalesce([
+                    pl.col("common_name"), 
+                    pl.col(f"temp_common_{rank}")
+                ]).alias("common_name")
+            ])
+            .drop(f"temp_common_{rank}")
+        )
+        
+        # Drop taxonID column if it exists (may not exist if no matches)
+        if "taxonID" in result_df.columns:
+            result_df = result_df.drop("taxonID")
     
     return result_df
 
@@ -345,10 +353,15 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
         temp_taxonid_col = f"temp_taxonID_{rank}"
         
         # Always look up the authoritative taxonID from taxon_df
+        # Only one row per canonicalName at this rank
         rank_taxa = (
             taxon_df
             .filter(pl.col("taxonRank") == rank)
-            .select([pl.col("taxonID").alias(temp_taxonid_col), pl.col("canonicalName").alias(rank)])
+            .select([
+                pl.col("taxonID").alias(temp_taxonid_col),
+                pl.col("canonicalName").alias(rank)
+            ])
+            .unique(subset=[rank])
         )
         
         new_anno_df = new_anno_df.join(
@@ -374,7 +387,10 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
     if existing_cleanup_cols:
         new_anno_df = new_anno_df.drop(existing_cleanup_cols)
 
-    assert len(new_anno_df) == len(anno_df), f"Length mismatch: {len(new_anno_df)} != {len(anno_df)}"
+    # With all of our backbone joins de-duplicated, we should never change row count:
+    assert len(new_anno_df) == len(anno_df), (
+        f"Length mismatch after common-name merge: {len(new_anno_df)} != {len(anno_df)}"
+    )
 
     return new_anno_df
 
@@ -415,8 +431,8 @@ def main(annotation_dir=None, output_dir=None):
     taxon_file, common_name_file = download_and_extract_backbone(cache_dir)
     
     # Load the two TSVs
-    print(f"Loading taxonomy data from {taxon_file}")
-    
+    print(f"Loading vernacular names from {common_name_file}")
+
     # Load all vernacular names, prioritizing English but keeping others as fallback
     # Turn off schema inference to handle improperly escaped quotes in GBIF data
     vernacular_df = pl.read_csv(common_name_file, separator="\t", infer_schema_length=0, quote_char=None)
@@ -424,7 +440,7 @@ def main(annotation_dir=None, output_dir=None):
     # Create prioritized vernacular names: prefer English, fallback to any language
     common_name_df = prioritize_vernacular(vernacular_df)
 
-    print(f"Loading taxon data from {taxon_file}")
+    print(f"Loading backbone taxa from {taxon_file}")
     taxon_df = (
         pl.read_csv(taxon_file, separator="\t", infer_schema_length=0, quote_char=None)
         .filter(
