@@ -224,7 +224,7 @@ def prioritize_vernacular(vernacular_df: pl.DataFrame) -> pl.DataFrame:
         ])
     )
 
-    # Mon‑English vernaculars, priority 2
+    # Non-English vernaculars, priority 2
     other = (
         vernacular_df
         .filter(pl.col("language") != "en")
