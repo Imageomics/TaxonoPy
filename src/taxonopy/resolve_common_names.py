@@ -7,6 +7,11 @@ import requests
 from pathlib import Path
 import shutil
 
+from taxonopy.constants import TAXONOMIC_RANKS_BY_SPECIFICITY, INVALID_VALUES, TAXONOMIC_RANKS
+
+# Module-level constant for join columns to avoid duplication
+PARENT_RANKS = TAXONOMIC_RANKS[:-1]
+
 def download_and_extract_backbone(cache_dir: Path):
     """Download and extract the GBIF backbone taxonomy files."""
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -110,7 +115,7 @@ def _normalize_one_column(col: str) -> pl.Expr:
     # Cast to string
     casted = pl.col(col).cast(pl.Utf8)
     # Turn "" into None
-    cleaned = casted.map_elements(lambda x: None if x == "" else x, return_dtype=pl.Utf8)
+    cleaned = casted.map_elements(lambda x: None if str(x).lower() in INVALID_VALUES else x, return_dtype=pl.Utf8)
     # Give it back its original name
     return cleaned.alias(col)
 
@@ -130,10 +135,6 @@ def normalize_taxonomic_columns(df: pl.DataFrame) -> pl.DataFrame:
     # Apply them all at once
     return df.with_columns(exprs)
 
-# Module-level constant for join columns to avoid duplication
-TAXONOMIC_HIERARCHY = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus']
-
-
 def join_single_rank(anno_df: pl.DataFrame, taxon_df: pl.DataFrame, rank: str) -> pl.DataFrame:
     """
     Join annotation dataframe with taxon dataframe for a single taxonomic rank.
@@ -147,18 +148,25 @@ def join_single_rank(anno_df: pl.DataFrame, taxon_df: pl.DataFrame, rank: str) -
         return anno_df
         
     # Figure out which higher-rank cols we actually have in the anno_df
-    join_cols = [col for col in TAXONOMIC_HIERARCHY if col in anno_df.columns]
-    
-    # Select, rename, *and* drop duplicate backbone rows on the full key
+    join_cols = [c for c in PARENT_RANKS 
+                if c in anno_df.columns and c != rank]
+
+    # Select, rename, and drop duplicate backbone rows on the full key
+    # - if the taxon_df actually has a taxonRank column, filter by it;
+    # - otherwise just use the whole table
+    if "taxonRank" in taxon_df.columns:
+        candidate = taxon_df.filter(pl.col("taxonRank") == rank)
+    else:
+        candidate = taxon_df
+
     backbone_subset = (
-        taxon_df
-        .select([
-            'canonicalName',
-            pl.col('taxonID').alias(f'taxonID_{rank}'),
+        candidate
+        .select(
+            pl.col("canonicalName"),
+            pl.col("taxonID").alias(f"taxonID_{rank}"),
             *join_cols
-        ])
-        # ensure (canonicalName + all join_cols) is unique
-        .unique(subset=['canonicalName'] + join_cols)
+        )
+        .unique(subset=["canonicalName"] + join_cols)
     )
     
     result = anno_df.join(
@@ -263,8 +271,9 @@ def apply_hierarchical_common_name_lookup(anno_df: pl.DataFrame, common_lookup: 
     :param common_lookup: Common name lookup table with (taxonID, common_name) columns
     :return: DataFrame with common_name column populated using hierarchical fallback
     """
-    rank_columns = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
-    
+    # Define hierarchical order of taxonomic ranks (map class_ to class)
+    rank_columns = [r.rstrip('_') for r in TAXONOMIC_RANKS_BY_SPECIFICITY]
+        
     # Initialize common_name column
     result_df = anno_df.with_columns(pl.lit(None).cast(pl.Utf8).alias("common_name"))
     
@@ -340,9 +349,9 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
         .agg(pl.col("vernacularName").first().alias("common_name"))
     )
     
-    # Define hierarchical order of taxonomic ranks
-    rank_columns = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
-    
+    # Define hierarchical order of taxonomic ranks (map class_ to class)
+    rank_columns = [r.rstrip('_') for r in TAXONOMIC_RANKS_BY_SPECIFICITY]    
+
     # Find which taxonomic classification columns we have 
     available_rank_cols = [rank for rank in rank_columns 
                           if rank in new_anno_df.columns]
