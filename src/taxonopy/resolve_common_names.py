@@ -111,7 +111,7 @@ def download_and_extract_backbone(cache_dir: Path):
     return taxon_file, vernacular_file
 
 def _normalize_one_column(col: str) -> pl.Expr:
-    """Build the Utf8‐cast + empty→null expression for a single column."""
+    """Build the Utf8-cast + empty->null expression for a single column."""
     # Cast to string
     casted = pl.col(col).cast(pl.Utf8)
     # Turn "" into None
