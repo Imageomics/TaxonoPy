@@ -236,7 +236,7 @@ def prioritize_vernacular(vernacular_df: pl.DataFrame) -> pl.DataFrame:
         ])
     )
 
-    # Merge and pick the top‐priority name, then drop the priority column
+    # Merge and pick the top-priority name, then drop the priority column
     result = (
         pl.concat([english, other])
           .group_by("taxonID")
