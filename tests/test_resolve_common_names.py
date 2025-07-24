@@ -500,9 +500,9 @@ class TestEnglishPreference:
         cat_name = result.filter(pl.col("taxonID") == 200)["vernacularName"].to_list()[0] 
         assert cat_name == "House Cat", "Should use English name when only English available"
         
-        # When only non-English available, should use that
+        # When only non-English available, should use the exact source casing
         spanish_name = result.filter(pl.col("taxonID") == 300)["vernacularName"].to_list()[0]
-        assert spanish_name == "Roble Blanco", "Should use non-English when English unavailable"
+        assert spanish_name == "Roble blanco", "Should use non‑English name exactly as in GBIF"
 
 
 class TestDataIntegrity:

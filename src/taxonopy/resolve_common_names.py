@@ -212,38 +212,27 @@ def prioritize_vernacular(vernacular_df: pl.DataFrame) -> pl.DataFrame:
     :param vernacular_df: Raw GBIF vernacular DataFrame with taxonID, vernacularName, language columns
     :return: DataFrame with columns (taxonID, vernacularName) prioritizing English, then any other language
     """
-    # Tag English vs. other
+    # English vernaculars, priority 1
     english = (
         vernacular_df
         .filter(pl.col("language") == "en")
-        .with_columns([
-            pl.col("vernacularName")
-              .str.to_lowercase()
-              .str.to_titlecase()
-              .alias("vernacularName"),
-            pl.lit(1).alias("priority")
-        ])
+        .with_columns([pl.lit(1).alias("priority")])
         .group_by("taxonID")
         .agg([
             pl.col("vernacularName").first(),
-            pl.col("priority").first()
+            pl.col("priority").first(),
         ])
     )
 
+    # Mon‑English vernaculars, priority 2
     other = (
         vernacular_df
         .filter(pl.col("language") != "en")
-        .with_columns([
-            pl.col("vernacularName")
-              .str.to_lowercase()
-              .str.to_titlecase()
-              .alias("vernacularName"),
-            pl.lit(2).alias("priority")
-        ])
+        .with_columns([pl.lit(2).alias("priority")])
         .group_by("taxonID")
         .agg([
             pl.col("vernacularName").first(),
-            pl.col("priority").first()
+            pl.col("priority").first(),
         ])
     )
 
@@ -273,7 +262,7 @@ def apply_hierarchical_common_name_lookup(anno_df: pl.DataFrame, common_lookup: 
     """
     # Define hierarchical order of taxonomic ranks (map class_ to class)
     rank_columns = [r.rstrip('_') for r in TAXONOMIC_RANKS_BY_SPECIFICITY]
-        
+
     # Initialize common_name column
     result_df = anno_df.with_columns(pl.lit(None).cast(pl.Utf8).alias("common_name"))
     
