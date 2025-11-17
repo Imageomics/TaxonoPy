@@ -1,0 +1,11 @@
+site_name: TaxonoPy
+site_description: Documentation for the TaxonoPy package
+
+repo_url: https://github.com/Imageomics/taxonopy
+repo_name: Imageomics/taxonopy
+
+theme:
+  name: material
+
+nav:
+  - Home: index.md
