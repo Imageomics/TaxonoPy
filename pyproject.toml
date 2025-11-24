@@ -52,6 +52,12 @@ nb = [
     "jupyterlab",
     "marimo[recommended]"
 ]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-material-extensions",
+    "mkdocstrings-python"
+]
 
 [project.urls]
 Documentation = "https://github.com/Imageomics/TaxonoPy"
