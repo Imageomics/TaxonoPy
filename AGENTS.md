@@ -12,8 +12,7 @@ Use this file primarily when operating as a coding agent. Its intent is to captu
 resolved & unsolved outputs → optional common-name enrichment.
 - Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`),
 resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), tracing (`trace/entry.py`).
-- Dependencies (see `pyproject.toml`): Python ≥ 3.10, Polars, Pandas/PyArrow, Pydantic v2, tqdm, requests; dev extras provide Ruff, pytest scaffolding, datamodel-code-generator, pre-
-commit.
+- Dependencies (see `pyproject.toml`): Python ≥ 3.10, Polars, Pandas/PyArrow, Pydantic v2, tqdm, requests; dev extras provide Ruff, pytest scaffolding, datamodel-code-generator, pre-commit.
 
 ## Environment Setup
 1. Create / activate a Python 3.10–3.13 virtual environment. Examples:
