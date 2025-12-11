@@ -35,7 +35,7 @@ resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_man
 ## Core CLI Workflows
 ### Resolve Taxonomy
 - Primary command: `taxonopy resolve -i <input_dir_or_file> -o <output_dir> [--output-format parquet|csv]`.
-- Defaults query Catalogue of Life first (`DATA_SOURCE_PRECEDENCE` in `constants.py`); keep COL as the authoritative source unless directed otherwise.
+- Defaults to querying Catalogue of Life first (`DATA_SOURCE_PRECEDENCE` in `constants.py`); keep COL as the authoritative source unless directed otherwise.
 - Example using bundled sample:
 ```bash
 taxonopy resolve \
