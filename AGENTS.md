@@ -75,8 +75,7 @@ taxonopy common-names \
 ## Validation & QA
 - Run `ruff check .` after modifying Python files (requires the `dev` extra).
 - Run `pytest` even though the suite is sparse today; it protects future additions and should pass cleanly.
-- Validate functional changes by running `taxonopy resolve` against `examples/input` (or issue-specific datasets) and reviewing outputs/logs, plus `taxonopy trace
-entry ...` when touching parsing/grouping logic.
+- Validate functional changes by running `taxonopy resolve` against `examples/input` (or issue-specific datasets) and reviewing outputs/logs, plus `taxonopy trace entry ...` when touching parsing/grouping logic.
 
 ## Coding Conventions
 - Prefer frozen dataclasses (`types/data_classes.py`) for shared structures; mutate via new objects rather than in-place edits.
