@@ -91,8 +91,7 @@ taxonopy common-names \
 - To debug or extend a profile, run `taxonopy resolve` on a minimal repro dataset, review the `resolution_strategy` column in the output, and/or trace impacted UUIDs with `taxonopy trace entry ... --format json` to inspect attempt chains.
 
 ## Generated Artifacts & Large Assets
-- `scripts/generate_gnverifier_types.py` fetches the GNVerifier OpenAPI spec and regenerates Pydantic models. Run it when the API changes; avoid manual edits to `src/taxonopy/types/
-gnverifier.py`.
+- `scripts/generate_gnverifier_types.py` fetches the GNVerifier OpenAPI spec and regenerates Pydantic models. Run it when the API changes; avoid manual edits to `src/taxonopy/types/gnverifier.py`.
 - The `common-names` flow downloads `backbone.zip` into the cache; ensure enough disk space and don’t commit extracted TSVs.
 
 ## Contribution Habits
