@@ -19,10 +19,11 @@ class Config:
     def __init__(self):
         """Initialize configuration with default values."""
         # Paths - read from environment variable or use default
-        self.cache_dir = os.environ.get(
+        self.cache_base_dir = os.environ.get(
             "TAXONOPY_CACHE_DIR",  
             str(Path.home() / ".cache" / "taxonopy")
         )
+        self.cache_dir = self.cache_base_dir
         
         # GNVerifier settings
         self.gnverifier_image = "gnames/gnverifier:v1.2.5"
@@ -51,6 +52,7 @@ class Config:
         """
         # Update configuration with command-line arguments
         if 'cache_dir' in args and args['cache_dir'] is not None:
+            self.cache_base_dir = args['cache_dir']
             self.cache_dir = args['cache_dir']
 
         if 'output_dir' in args and args['output_dir'] is not None:

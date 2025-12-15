@@ -10,8 +10,6 @@ formats planned for the future.
 """
 
 import os
-import json
-import pickle
 import hashlib
 import functools
 import inspect
@@ -20,27 +18,52 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from diskcache import Cache
+
 from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
-# Define cache directory
-CACHE_DIR = Path(config.cache_dir)
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+_cache_instance: Optional[Cache] = None
+_cache_path: Optional[Path] = None
+META_SUFFIX = "::meta"
+META_VERSION = 1
 
-def get_cache_file_path(key: str) -> Path:
-    """Return the path for the cached pickle file for a given key."""
-    # Always use the current value of config.cache_dir
+def _close_cache() -> None:
+    """Close the active diskcache instance."""
+    global _cache_instance, _cache_path
+    if _cache_instance is not None:
+        _cache_instance.close()
+        _cache_instance = None
+        _cache_path = None
+
+def _get_cache() -> Cache:
+    """Return a diskcache instance rooted at the current config cache dir."""
+    global _cache_instance, _cache_path
     cache_dir = Path(config.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir / f"{key}.pkl"
+    if _cache_instance is None or _cache_path != cache_dir:
+        if _cache_instance is not None:
+            _cache_instance.close()
+        _cache_instance = Cache(directory=str(cache_dir))
+        _cache_path = cache_dir
+    return _cache_instance
 
-def get_meta_file_path(key: str) -> Path:
-    """Return the path for the cache metadata file for a given key."""
-    # Always use the current value of config.cache_dir
+def set_cache_namespace(namespace: str) -> Path:
+    """Set the effective cache directory to a namespace under the base dir."""
+    base_dir = Path(config.cache_base_dir)
+    target_dir = base_dir / namespace
+    config.cache_dir = str(target_dir)
+    _close_cache()
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
+
+def get_cache_directory() -> Path:
+    """Return the current cache directory as a Path."""
     cache_dir = Path(config.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir / f"{key}.meta.json"
+    return cache_dir
 
 def compute_checksum(file_paths: List[str]) -> str:
     """Compute a SHA-256 checksum for a list of file paths.
@@ -68,6 +91,30 @@ def compute_checksum(file_paths: List[str]) -> str:
             
     return hash_obj.hexdigest()
 
+def compute_file_metadata_hash(file_paths: List[str]) -> str:
+    """Compute a hash using file paths and metadata (size + mtime).
+    
+    Args:
+        file_paths: List of file paths to include in the fingerprint
+
+    Returns:
+        Hex digest summarizing the file metadata
+    """
+    if not file_paths:
+        return ""
+
+    hash_obj = hashlib.sha256()
+    for file_path in sorted(file_paths):
+        try:
+            stat_info = os.stat(file_path)
+        except (FileNotFoundError, PermissionError) as exc:
+            logger.warning(f"Could not stat file for fingerprint: {file_path}, {exc}")
+            continue
+        hash_obj.update(file_path.encode("utf-8"))
+        hash_obj.update(str(stat_info.st_size).encode("utf-8"))
+        hash_obj.update(str(int(stat_info.st_mtime_ns)).encode("utf-8"))
+    return hash_obj.hexdigest()
+
 def save_cache(key: str, obj: Any, checksum: str, 
               metadata: Optional[Dict[str, Any]] = None) -> None:
     """Save an object to the cache.
@@ -78,37 +125,33 @@ def save_cache(key: str, obj: Any, checksum: str,
         checksum: Checksum value for validation
         metadata: Additional metadata to store with the cache entry
     """
-    meta_path = get_meta_file_path(key)
-    data_path = get_cache_file_path(key)
-    
-    # Prepare metadata
+    cache = _get_cache()
+    value_key = key
+    meta_key = f"{key}{META_SUFFIX}"
+
     meta = {
         "checksum": checksum,
         "timestamp": datetime.now().isoformat(),
-        "serializer": "pickle"  # For future extensibility
+        "serializer": "diskcache",
+        "version": META_VERSION,
     }
-    
-    # Add any additional metadata
     if metadata:
         meta.update(metadata)
-    
+
     try:
-        # Save metadata first
-        with open(meta_path, "w") as f:
-            json.dump(meta, f)
-        
-        # Then save the object
-        with open(data_path, "wb") as f:
-            pickle.dump(obj, f)
-            
+        cache.set(value_key, obj)
+        cache.set(meta_key, meta)
         logger.debug(f"Saved object to cache: {key}")
-    except Exception as e:
-        logger.error(f"Failed to save to cache: {key}, {str(e)}")
-        # Clean up partial writes
-        if meta_path.exists():
-            os.unlink(meta_path)
-        if data_path.exists():
-            os.unlink(data_path)
+    except Exception as exc:
+        logger.error(f"Failed to save to cache: {key}, {exc}")
+        try:
+            cache.delete(value_key)
+        except Exception:
+            pass
+        try:
+            cache.delete(meta_key)
+        except Exception:
+            pass
 
 def load_cache(key: str, expected_checksum: str, 
               max_age: Optional[int] = None) -> Optional[Any]:
@@ -122,29 +165,20 @@ def load_cache(key: str, expected_checksum: str,
     Returns:
         The cached object if valid, otherwise None
     """
-    meta_path = get_meta_file_path(key)
-    data_path = get_cache_file_path(key)
+    cache = _get_cache()
+    value_key = key
+    meta_key = f"{key}{META_SUFFIX}"
     
-    # Check if cache files exist
-    if not (meta_path.exists() and data_path.exists()):
-        logger.debug(f"Cache miss (files not found): {key}")
+    meta = cache.get(meta_key, default=None)
+    if meta is None:
+        logger.debug(f"Cache miss (metadata not found): {key}")
         return None
     
     try:
-        # Load metadata
-        with open(meta_path, "r") as f:
-            try:
-                meta = json.load(f)
-            except json.JSONDecodeError:
-                logger.warning(f"Invalid metadata format for cache key: {key}")
-                return None
-        
-        # Check checksum
         if meta.get("checksum") != expected_checksum:
             logger.debug(f"Cache miss (checksum mismatch): {key}")
             return None
         
-        # Check age if specified
         # Use configured max_age if not provided
         if max_age is None:
             max_age = config.cache_max_age
@@ -157,18 +191,19 @@ def load_cache(key: str, expected_checksum: str,
                 logger.debug(f"Cache miss (expired after {age:.1f}s): {key}")
                 return None
         
-        # Load the object
-        with open(data_path, "rb") as f:
-            try:
-                obj = pickle.load(f)
-                logger.debug(f"Cache hit: {key}")
-                return obj
-            except (pickle.PickleError, EOFError, AttributeError) as e:
-                logger.warning(f"Failed to load cached object: {key}, {str(e)}")
+        try:
+            obj = cache.get(value_key, default=None)
+            if obj is None:
+                logger.debug(f"Cache miss (value not found): {key}")
                 return None
+            logger.debug(f"Cache hit: {key}")
+            return obj
+        except Exception as exc:
+            logger.warning(f"Failed to load cached object: {key}, {exc}")
+            return None
                 
-    except Exception as e:
-        logger.warning(f"Unexpected error loading cache: {key}, {str(e)}")
+    except Exception as exc:
+        logger.warning(f"Unexpected error loading cache: {key}, {exc}")
         return None
 
 def clear_cache(pattern: Optional[str] = None) -> int:
@@ -180,19 +215,21 @@ def clear_cache(pattern: Optional[str] = None) -> int:
     Returns:
         Number of files removed
     """
-    count = 0
-    
-    try:
-        for item in os.scandir(CACHE_DIR):
-            if item.is_file():
-                if pattern is None or pattern in item.name:
-                    os.unlink(item.path)
-                    count += 1
-    except Exception as e:
-        logger.error(f"Error clearing cache: {str(e)}")
-    
-    logger.info(f"Cleared {count} cache files")
-    return count
+    cache = _get_cache()
+    if pattern is None:
+        count = len(cache)
+        cache.clear()
+        logger.info(f"Cleared {count} cache entries")
+        return count
+
+    keys_to_delete = [key for key in cache if pattern in str(key)]
+    for key in keys_to_delete:
+        try:
+            del cache[key]
+        except KeyError:
+            continue
+    logger.info(f"Cleared {len(keys_to_delete)} cache entries matching '{pattern}'")
+    return len(keys_to_delete)
 
 def get_cache_stats() -> Dict[str, Any]:
     """Get statistics about the cache.
@@ -208,27 +245,39 @@ def get_cache_stats() -> Dict[str, Any]:
         "newest_cache_age": None,
     }
     
+    cache_dir = get_cache_directory()
     try:
-        timestamps = []
-        
-        for item in os.scandir(CACHE_DIR):
-            if item.is_file():
+        for root, _, files in os.walk(cache_dir):
+            for file_name in files:
                 stats["file_count"] += 1
-                stats["total_size_bytes"] += item.stat().st_size
-                
-                if item.name.endswith('.pkl'):
-                    stats["object_count"] += 1
-                    timestamps.append(item.stat().st_mtime)
-        
+                file_path = Path(root) / file_name
+                try:
+                    stats["total_size_bytes"] += file_path.stat().st_size
+                except OSError:
+                    continue
+
+        cache = _get_cache()
+        timestamps: List[datetime] = []
+        for key in cache:
+            key_str = str(key)
+            if key_str.endswith(META_SUFFIX):
+                meta = cache.get(key, default=None)
+                if meta and meta.get("timestamp"):
+                    try:
+                        timestamps.append(datetime.fromisoformat(meta["timestamp"]))
+                    except ValueError:
+                        continue
+            else:
+                stats["object_count"] += 1
+
         if timestamps:
-            oldest = datetime.fromtimestamp(min(timestamps))
-            newest = datetime.fromtimestamp(max(timestamps))
             now = datetime.now()
-            
+            oldest = min(timestamps)
+            newest = max(timestamps)
             stats["oldest_cache_age"] = str(now - oldest)
             stats["newest_cache_age"] = str(now - newest)
-    except Exception as e:
-        logger.error(f"Error getting cache stats: {str(e)}")
+    except Exception as exc:
+        logger.error(f"Error getting cache stats: {exc}")
     
     return stats
 

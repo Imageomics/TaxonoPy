@@ -5,6 +5,7 @@ Use this file primarily when operating as a coding agent. Its intent is to captu
 ## Gather Context First
 - Before editing, skim `README.md`, the GitHub wiki/issue thread tied to your task, and recent commits or PRs so you understand the current goals and accepted solutions. Many open bugs already describe reproduction datasets or GNVerifier nuances—start there instead of rediscovering them.
 - Use `git log -20 --oneline` (or more if PRs include multiple commits) plus `gh issue list`, `gh pr list --state open`, and `gh pr list --state closed --limit 5` to catch both in-progress and freshly merged work.
+- Identify what branch is currently active and other existing branches locally and remotely.
 - When instructions here conflict with new information, trust the current codebase and update AGENTS.md alongside your change. If critical context is still missing, pause and ask the maintainer rather than guessing.
 
 ## Project Snapshot
@@ -65,7 +66,8 @@ taxonopy common-names \
 - Runs `resolve_common_names.py`; expect long runtimes and large temporary files under the configured cache directory.
 
 ### Cache Management
-- Cache default: `~/.cache/taxonopy`. Use CLI flags to inspect/clear:
+- Cache default root: `~/.cache/taxonopy`, with command/version/input fingerprints stored as subdirectories (e.g., `resolve_v0.1.0b0_ab12cd34ef56`). `diskcache` manages the store; point `TAXONOPY_CACHE_DIR` (or `--cache-dir`) at the root and let the CLI derive namespaces via `set_cache_namespace`.
+- Use CLI flags to inspect/clear:
 - `--show-cache-path`
 - `--cache-stats`
 - `--clear-cache`
@@ -95,7 +97,9 @@ taxonopy common-names \
 - The `common-names` flow downloads `backbone.zip` into the cache; ensure enough disk space and don’t commit extracted TSVs.
 
 ## Contribution Habits
-- Make commit messages imperative, one line, and descriptive of the change's "what" and "why" (not "how"). Any needed description beyond this can go in the extended body.
+- Follow best version control practices including, but not limited to, the following:
+  - At the start of a session, ensure that work is done on a relevant branch (not `main`), and pull the latest changes from `main` before starting.
+  - Make commit messages imperative, one line, and descriptive of the change's "what" and "why" (not "how"). Any needed description beyond this can go in the extended body.
 - For every commit you produce, append "[AI-assisted session]" as a final line in the extended commit message body.
 - Do not use Git or the GitHub CLI for any destructive actions like `git reset --hard`, `git rebase`, `git push --force`, `git branch -D`, `gh repo delete`, `gh issue delete`, and so on, nor commands like `rm -rf` that delete files or directories. If you consider a destructive command to be necessary, stop and discuss the situation with a maintainer.
 - When modifying CLI behavior, resolution strategies, or caching semantics, update this AGENTS file so future agents follow the latest contract.
