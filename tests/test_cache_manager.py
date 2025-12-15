@@ -3,9 +3,9 @@ from pathlib import Path
 from taxonopy.cache_manager import (
     clear_cache,
     compute_file_metadata_hash,
+    configure_cache_namespace,
     load_cache,
     save_cache,
-    set_cache_namespace,
 )
 from taxonopy.config import config
 
@@ -28,7 +28,9 @@ def test_diskcache_round_trip(tmp_path):
     try:
         config.cache_base_dir = str(tmp_path)
         config.cache_dir = str(tmp_path)
-        namespace = set_cache_namespace("pytest_cache")
+        cache_file = tmp_path / "dataset.csv"
+        cache_file.write_text("uuid,kingdom\n1,animalia\n")
+        namespace = configure_cache_namespace("resolve", "test", [str(cache_file)])
         assert Path(namespace).exists()
 
         payload = {"value": 42}

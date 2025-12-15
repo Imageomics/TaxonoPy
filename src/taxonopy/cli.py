@@ -17,9 +17,8 @@ from taxonopy.config import config
 from taxonopy.logging_config import setup_logging
 from taxonopy.cache_manager import (
     clear_cache,
-    compute_file_metadata_hash,
+    configure_cache_namespace,
     get_cache_stats,
-    set_cache_namespace,
 )
 from taxonopy.stats_collector import DatasetStats
 from taxonopy.entry_grouper import create_entry_groups, count_entries_in_input
@@ -140,10 +139,7 @@ def run_resolve(args: argparse.Namespace) -> int:
         logging.error(f"Unable to prepare cache namespace: {exc}")
         return 1
 
-    fingerprint = compute_file_metadata_hash(input_files)
-    fingerprint_suffix = fingerprint[:16] if fingerprint else "default"
-    namespace = f"resolve_v{__version__}_{fingerprint_suffix}"
-    cache_path = set_cache_namespace(namespace)
+    cache_path = configure_cache_namespace("resolve", __version__, input_files)
     logging.info(f"Using cache namespace: {cache_path}")
 
     if args.show_cache_path:
@@ -266,9 +262,18 @@ def run_trace(args: argparse.Namespace) -> int:
     config.update_from_args(vars(args))
     config.ensure_directories()
 
+    try:
+        input_files = find_input_files(args.from_input)
+    except ValueError as exc:
+        logging.error(f"Unable to prepare cache namespace: {exc}")
+        return 1
+
+    cache_path = configure_cache_namespace("resolve", __version__, input_files)
+    logging.info(f"Using cache namespace: {cache_path}")
+
     # Reuse global flags within trace context
     if args.show_cache_path:
-        print(f"TaxonoPy cache directory: {config.cache_dir}")
+        print(f"TaxonoPy cache directory: {cache_path}")
         return 0
     if args.show_config:
         print(config.get_config_summary())

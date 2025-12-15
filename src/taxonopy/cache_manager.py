@@ -115,6 +115,29 @@ def compute_file_metadata_hash(file_paths: List[str]) -> str:
         hash_obj.update(str(int(stat_info.st_mtime_ns)).encode("utf-8"))
     return hash_obj.hexdigest()
 
+def configure_cache_namespace(
+    command: str,
+    version: str,
+    file_paths: List[str],
+    fingerprint: Optional[str] = None,
+) -> Path:
+    """Set cache namespace derived from command/version/input fingerprint.
+    
+    Args:
+        command: Name of the command owning the cache (e.g., "resolve")
+        version: TaxonoPy version string
+        file_paths: List of files describing the input dataset
+        fingerprint: Optional precomputed fingerprint override
+    
+    Returns:
+        Path to the configured namespace directory
+    """
+    if fingerprint is None:
+        fingerprint = compute_file_metadata_hash(file_paths)
+    suffix = fingerprint[:16] if fingerprint else "default"
+    namespace = f"{command}_v{version}_{suffix}"
+    return set_cache_namespace(namespace)
+
 def save_cache(key: str, obj: Any, checksum: str, 
               metadata: Optional[Dict[str, Any]] = None) -> None:
     """Save an object to the cache.
