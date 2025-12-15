@@ -15,6 +15,7 @@ import functools
 import inspect
 import logging
 import time
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -254,25 +255,36 @@ def clear_cache(pattern: Optional[str] = None) -> int:
     logger.info(f"Cleared {len(keys_to_delete)} cache entries matching '{pattern}'")
     return len(keys_to_delete)
 
+def _classify_cache_key(key: str) -> str:
+    """Return the cache object category based on the key prefix."""
+    if key.startswith("resolution_chain_"):
+        return "resolution_chain"
+    if key.startswith("taxonomic_entries"):
+        return "taxonomic_entries"
+    if key.startswith("entry_groups"):
+        return "entry_groups"
+    return "other"
+
 def get_cache_stats() -> Dict[str, Any]:
     """Get statistics about the cache.
     
     Returns:
         Dictionary with cache statistics
     """
-    stats = {
+    cache_dir = get_cache_directory()
+    stats: Dict[str, Any] = {
+        "namespace": str(cache_dir),
         "total_size_bytes": 0,
-        "object_count": 0,
-        "file_count": 0,
-        "oldest_cache_age": None,
-        "newest_cache_age": None,
+        "db_file_count": 0,
+        "entry_count": 0,
+        "meta_count": 0,
+        "prefix_counts": {},
     }
     
-    cache_dir = get_cache_directory()
     try:
         for root, _, files in os.walk(cache_dir):
             for file_name in files:
-                stats["file_count"] += 1
+                stats["db_file_count"] += 1
                 file_path = Path(root) / file_name
                 try:
                     stats["total_size_bytes"] += file_path.stat().st_size
@@ -280,25 +292,17 @@ def get_cache_stats() -> Dict[str, Any]:
                     continue
 
         cache = _get_cache()
-        timestamps: List[datetime] = []
+        prefix_counts: Dict[str, int] = defaultdict(int)
         for key in cache:
             key_str = str(key)
             if key_str.endswith(META_SUFFIX):
-                meta = cache.get(key, default=None)
-                if meta and meta.get("timestamp"):
-                    try:
-                        timestamps.append(datetime.fromisoformat(meta["timestamp"]))
-                    except ValueError:
-                        continue
-            else:
-                stats["object_count"] += 1
+                stats["meta_count"] += 1
+                continue
+            stats["entry_count"] += 1
+            prefix = _classify_cache_key(key_str)
+            prefix_counts[prefix] += 1
 
-        if timestamps:
-            now = datetime.now()
-            oldest = min(timestamps)
-            newest = max(timestamps)
-            stats["oldest_cache_age"] = str(now - oldest)
-            stats["newest_cache_age"] = str(now - newest)
+        stats["prefix_counts"] = dict(prefix_counts)
     except Exception as exc:
         logger.error(f"Error getting cache stats: {exc}")
     

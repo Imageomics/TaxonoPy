@@ -45,6 +45,9 @@ def create_parser() -> argparse.ArgumentParser:
         "--cache-dir", type=str, help="Directory for TaxonoPy cache (can also be set with TAXONOPY_CACHE_DIR environment variable)",
     )
     parser.add_argument(
+        "--cache-input", type=str, help="Input dataset path to compute cache stats for when no command is provided",
+    )
+    parser.add_argument(
         "--show-cache-path", action="store_true", help="Display the current cache directory path and exit"
     )
     parser.add_argument(
@@ -87,9 +90,11 @@ def create_parser() -> argparse.ArgumentParser:
     # Cache and metadata options
     cache_group = parser_resolve.add_argument_group("Cache Management")
     cache_group.add_argument("--refresh-cache", action="store_true", default=False, help="Force refresh of cached objects (input parsing, grouping) before running.")
+    cache_group.add_argument("--cache-stats", action="store_true", default=False, help="Display cache statistics for this input and exit.")
 
     # Trace command
     parser_trace = subparsers.add_parser("trace", help="Trace data provenance of TaxonoPy objects")
+    parser_trace.add_argument("--cache-stats", action="store_true", default=False, help="Display cache statistics for the provided input and exit.")
     trace_subparsers = parser_trace.add_subparsers(dest="trace_command", required=True)
 
     # Trace entry
@@ -331,6 +336,13 @@ def main(args: Optional[List[str]] = None) -> int:
             print(config.get_config_summary())
             return 0
         if parsed_args.cache_stats:
+            if parsed_args.cache_input:
+                try:
+                    input_files = find_input_files(parsed_args.cache_input)
+                except ValueError as exc:
+                    logging.error(f"Unable to compute cache stats for input: {exc}")
+                    return 1
+                configure_cache_namespace("resolve", __version__, input_files)
             stats = get_cache_stats()
             print("\nTaxonoPy Cache Statistics:")
             for key, value in stats.items():
