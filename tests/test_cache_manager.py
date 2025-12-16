@@ -44,3 +44,5 @@ def test_diskcache_round_trip(tmp_path):
         config.cache_base_dir = original_base
         config.cache_dir = original_dir
         config.ensure_directories()
+        assert Path(config.cache_base_dir).exists()
+        assert Path(config.cache_dir).exists()
