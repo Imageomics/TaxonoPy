@@ -30,6 +30,7 @@ _cache_instance: Optional[Cache] = None
 _cache_path: Optional[Path] = None
 META_SUFFIX = "::meta"
 META_VERSION = 1
+FINGERPRINT_SUFFIX_LENGTH = 16
 
 def _close_cache() -> None:
     """Close the active diskcache instance."""
@@ -135,7 +136,7 @@ def configure_cache_namespace(
     """
     if fingerprint is None:
         fingerprint = compute_file_metadata_hash(file_paths)
-    suffix = fingerprint[:16] if fingerprint else "default"
+    suffix = fingerprint[:FINGERPRINT_SUFFIX_LENGTH] if fingerprint else "default"
     namespace = f"{command}_v{version}_{suffix}"
     return set_cache_namespace(namespace)
 
