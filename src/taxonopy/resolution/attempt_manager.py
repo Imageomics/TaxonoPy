@@ -10,7 +10,7 @@ from taxonopy.types.data_classes import (
     ResolutionAttempt,
 )
 
-from taxonopy.cache_manager import save_cache, load_cache, _get_cache
+import taxonopy.cache_manager as cache_manager
 
 from taxonopy.resolution.strategy.profiles import (
     empty_input_taxonomy,
@@ -603,7 +603,7 @@ class ResolutionAttemptManager:
 
         self.logger.info("Saving attempt chains to cache...")
         
-        cache = _get_cache()
+        cache = cache_manager.get_cache()
         with cache.transact():
             for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
                 chain = self.get_group_attempt_chain(entry_group_key)
@@ -647,7 +647,7 @@ class ResolutionAttemptManager:
                 }
                 
                 # Save to cache
-                save_cache(cache_key, chain_data, checksum, metadata)
+                cache_manager.save_cache(cache_key, chain_data, checksum, metadata)
         
             # self.logger.debug(f"Saved attempt chain for entry group {entry_group_key} to cache")
 
@@ -665,7 +665,7 @@ class ResolutionAttemptManager:
         checksum = entry_group_key
         
         # Attempt to load from cache
-        chain_data = load_cache(cache_key, checksum)
+        chain_data = cache_manager.load_cache(cache_key, checksum)
         
         if chain_data is not None:
             logger.debug(f"Loaded attempt chain for entry group {entry_group_key} from cache")

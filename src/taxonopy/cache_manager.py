@@ -26,6 +26,9 @@ from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
+# Global cache instance: Use a module-level singleton so all callers share the same diskcache.Cache handle for a given directory, avoiding repeated SQLite-backed initialization overhead. 
+# DiskCache documents Cache objects as thread-safe and  shareable between threads. If the configured cache directory changes, this module closes the prior handle and opens a new Cache for the new directory.
+
 _cache_instance: Optional[Cache] = None
 _cache_path: Optional[Path] = None
 META_SUFFIX = "::meta"
@@ -40,7 +43,7 @@ def _close_cache() -> None:
         _cache_instance = None
         _cache_path = None
 
-def _get_cache() -> Cache:
+def get_cache() -> Cache:
     """Return a diskcache instance rooted at the current config cache dir."""
     global _cache_instance, _cache_path
     cache_dir = Path(config.cache_dir)
@@ -150,7 +153,7 @@ def save_cache(key: str, obj: Any, checksum: str,
         checksum: Checksum value for validation
         metadata: Additional metadata to store with the cache entry
     """
-    cache = _get_cache()
+    cache = get_cache()
     value_key = key
     meta_key = f"{key}{META_SUFFIX}"
 
@@ -190,7 +193,7 @@ def load_cache(key: str, expected_checksum: str,
     Returns:
         The cached object if valid, otherwise None
     """
-    cache = _get_cache()
+    cache = get_cache()
     value_key = key
     meta_key = f"{key}{META_SUFFIX}"
     
@@ -240,7 +243,7 @@ def clear_cache(pattern: Optional[str] = None) -> int:
     Returns:
         Number of files removed
     """
-    cache = _get_cache()
+    cache = get_cache()
     if pattern is None:
         count = len(cache)
         cache.clear()
@@ -292,7 +295,7 @@ def get_cache_stats() -> Dict[str, Any]:
                 except OSError:
                     continue
 
-        cache = _get_cache()
+        cache = get_cache()
         prefix_counts: Dict[str, int] = defaultdict(int)
         for key in cache:
             key_str = str(key)
