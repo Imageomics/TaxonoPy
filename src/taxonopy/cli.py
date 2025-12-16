@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 import json
+import shutil
 
 from taxonopy import __version__
 from taxonopy.config import config
@@ -73,6 +74,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser_resolve.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO", help="Set logging level")
     parser_resolve.add_argument("--log-file", type=str, help="Optional file to write logs to")
     parser_resolve.add_argument("--force-input", action="store_true", help="Force use of input metadata without resolution")
+    parser_resolve.add_argument("--full-rerun", action="store_true", default=False, help="Replace existing cache/output if detected for this input")
 
     # GNVerifier settings group for resolve
     gnverifier_group = parser_resolve.add_argument_group("GNVerifier Settings")
@@ -146,6 +148,13 @@ def run_resolve(args: argparse.Namespace) -> int:
 
     cache_path = configure_cache_namespace("resolve", __version__, input_files)
     logging.info(f"Using cache namespace: {cache_path}")
+    logging.info("Resolve arguments:")
+    logging.info("  --input: %s", args.input)
+    logging.info("  --output-dir: %s", args.output_dir)
+    logging.info("  --output-format: %s", args.output_format)
+    logging.info("  --force-input: %s", args.force_input)
+    logging.info("  --refresh-cache: %s", args.refresh_cache)
+    logging.info("  --full-rerun: %s", args.full_rerun)
 
     if args.show_cache_path:
         print(f"TaxonoPy cache directory: {cache_path}")
@@ -168,6 +177,23 @@ def run_resolve(args: argparse.Namespace) -> int:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    namespace_stats = get_cache_stats()
+    existing_namespace = namespace_stats["entry_count"] > 0
+    existing_output = any(output_dir.glob("*.resolved.*"))
+    if (existing_namespace or existing_output) and not args.full_rerun:
+        logging.warning(
+            "Existing cache (%s) and/or output (%s) detected for this input. Rerun with --full-rerun to replace them.",
+            cache_path,
+            output_dir,
+        )
+        return 0
+    if args.full_rerun:
+        logging.info("--full-rerun set: clearing cache and output directory before proceeding.")
+        clear_cache()
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         start_time = time.time()
