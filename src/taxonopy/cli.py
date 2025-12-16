@@ -171,15 +171,17 @@ def run_resolve(args: argparse.Namespace) -> int:
         for key, value in stats.items():
             print(f"  {key}: {value}")
         return 0
+    cache_cleared_via_flag = False
     if args.clear_cache:
         count = clear_cache()
         print(f"\nCleared {count} cache entries")
+        cache_cleared_via_flag = True
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     namespace_stats = get_cache_stats()
-    existing_namespace = namespace_stats["entry_count"] > 0
+    existing_namespace = namespace_stats["entry_count"] > 0 and not cache_cleared_via_flag
     existing_output = any(output_dir.glob("*.resolved.*"))
     if (existing_namespace or existing_output) and not args.full_rerun:
         logging.warning(
