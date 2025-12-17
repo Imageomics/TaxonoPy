@@ -26,7 +26,7 @@ from taxonopy.config import config
 
 logger = logging.getLogger(__name__)
 
-# Global cache instance: Use a module-level singleton so all callers share the same diskcache.Cache handle for a given directory, avoiding repeated SQLite-backed initialization overhead. 
+# Global cache instance: Use a module-level singleton so all callers share the same diskcache. Cache handle for a given directory, avoiding repeated SQLite-backed initialization overhead. 
 # DiskCache documents Cache objects as thread-safe and  shareable between threads. If the configured cache directory changes, this module closes the prior handle and opens a new Cache for the new directory.
 
 _cache_instance: Optional[Cache] = None
