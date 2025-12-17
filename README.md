@@ -66,7 +66,10 @@ taxonopy --help
 ```
 This will show you the available commands and options:
 ```console
-usage: taxonopy [-h] [--cache-dir CACHE_DIR] [--show-cache-path] [--cache-stats] [--clear-cache] [--show-config] [--version] {resolve,trace,common-names} ...
+usage: taxonopy [-h] [--cache-dir CACHE_DIR] [--cache-input CACHE_INPUT]
+                [--show-cache-path] [--cache-stats] [--clear-cache]
+                [--show-config] [--version]
+                {resolve,trace,common-names} ...
 
 TaxonoPy: Resolve taxonomic names using GNVerifier and trace data provenance.
 
@@ -80,17 +83,33 @@ options:
   -h, --help            show this help message and exit
   --cache-dir CACHE_DIR
                         Directory for TaxonoPy cache (can also be set with TAXONOPY_CACHE_DIR environment variable) (default: None)
+  --cache-input CACHE_INPUT
+                        Input dataset path to compute cache stats for when no command is provided (default: None)
   --show-cache-path     Display the current cache directory path and exit (default: False)
   --cache-stats         Display statistics about the cache and exit (default: False)
   --clear-cache         Clear the TaxonoPy object cache. May be used in isolation. (default: False)
   --show-config         Show current configuration and exit (default: False)
   --version             Show version number and exit
 ```
+
+### Cache behavior
+
+`taxonopy resolve` caches parsed entries, entry groups, and every resolution attempt chain using [`diskcache`](https://grantjenks.com/docs/diskcache/) as a stable provenance artifact tied to the TaxonoPy version and input dataset. By default the cache root is `~/.cache/taxonopy`, but you can override it by setting the environment variable `TAXONOPY_CACHE_DIR` or specifying `--cache-dir`. Its primary purpose is to support the `trace` command, which allows you to trace the provenance of any taxonomic entry resolved by TaxonoPy.
+
+- Each resolve run writes into `resolve_v<version>_<fingerprint>` where the fingerprint is a SHA-256 hash of the input files’ metadata, so namespaces stay stable per combination of dataset and package version.
+- Inspect a namespace without rerunning by invoking `taxonopy --cache-dir <root> --cache-input <input> --cache-stats`, which reports total size, entry counts, and key-prefix breakdowns. Passing `--cache-stats` after `resolve` or `trace` performs the same check and exits.
+- If both the namespace and the output directory already contain data, `taxonopy resolve` warns and exits unless you pass `--full-rerun`, which clears the cache namespace and output before proceeding. Use `--clear-cache` to wipe only the namespace.
+
 #### Command: `resolve`
 The `resolve` command is used to perform taxonomic resolution on a dataset. It takes a directory of Parquet partitions as input and outputs a directory of resolved Parquet partitions.
 ```
-usage: taxonopy resolve [-h] -i INPUT -o OUTPUT_DIR [--output-format {csv,parquet}] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--log-file LOG_FILE] [--force-input] [--batch-size BATCH_SIZE] [--all-matches]
-                        [--capitalize] [--fuzzy-uninomial] [--fuzzy-relaxed] [--species-group] [--refresh-cache]
+usage: taxonopy resolve [-h] -i INPUT -o OUTPUT_DIR
+                        [--output-format {csv,parquet}]
+                        [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
+                        [--log-file LOG_FILE] [--force-input] [--full-rerun]
+                        [--batch-size BATCH_SIZE] [--all-matches]
+                        [--capitalize] [--fuzzy-uninomial] [--fuzzy-relaxed]
+                        [--species-group] [--refresh-cache] [--cache-stats]
 
 options:
   -h, --help            show this help message and exit
@@ -103,6 +122,7 @@ options:
                         Set logging level
   --log-file LOG_FILE   Optional file to write logs to
   --force-input         Force use of input metadata without resolution
+  --full-rerun          Replace existing cache/output if detected for this input
 
 GNVerifier Settings:
   --batch-size BATCH_SIZE
@@ -115,6 +135,7 @@ GNVerifier Settings:
 
 Cache Management:
   --refresh-cache       Force refresh of cached objects (input parsing, grouping) before running.
+  --cache-stats         Display cache statistics for this input and exit.
   ```
 It is recommended to keep GNVerifier settings at their defaults.
 
@@ -168,8 +189,6 @@ taxonopy common-names \
     --resolved-dir /path/to/resolved/output \
     --output-dir /path/to/resolved_with_common-names/output
 ```
-
-TaxonoPy creates a cache of the objects associated with input entries for use with the `trace` command. By default, this cache is stored in the `~/.cache/taxonopy` directory.
 
 ## Development
 See the [Wiki Development Page](https://github.com/Imageomics/TaxonoPy/wiki/Development) for development instructions.

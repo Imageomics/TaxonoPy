@@ -35,7 +35,8 @@ dependencies = [
     "polars",
     "pandas",
     "pyarrow",
-    "pydantic"
+    "pydantic",
+    "diskcache"
 ]
 
 dynamic = ["version"]
