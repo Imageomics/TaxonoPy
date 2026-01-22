@@ -10,7 +10,7 @@ from taxonopy.types.data_classes import (
     ResolutionAttempt,
 )
 
-from taxonopy.cache_manager import save_cache, load_cache
+import taxonopy.cache_manager as cache_manager
 
 from taxonopy.resolution.strategy.profiles import (
     empty_input_taxonomy,
@@ -603,50 +603,52 @@ class ResolutionAttemptManager:
 
         self.logger.info("Saving attempt chains to cache...")
         
-        for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
-            chain = self.get_group_attempt_chain(entry_group_key)
-            if not chain:
-                continue
-            
-            # Convert chain to serializable format
-            chain_data = []
-            for attempt in chain:
-                # Prepare attempt data (exclude GNVerifier response which may not serialize well)
-                attempt_data = {
-                    "key": attempt.key,
-                    "entry_group_key": attempt.entry_group_key,
-                    "query_term": attempt.query_term,
-                    "query_rank": attempt.query_rank,
-                    "data_source_id": attempt.data_source_id,
-                    "status": attempt.status.name,
-                    "is_successful": attempt.is_successful,
-                    "is_retry": attempt.is_retry,
-                    "previous_key": attempt.previous_key,
-                    "resolution_strategy_name": attempt.resolution_strategy_name,
-                    "failure_reason": attempt.failure_reason,
-                    "resolved_classification": attempt.resolved_classification,
-                    "error": attempt.error,
-                    "metadata": attempt.metadata,
+        cache = cache_manager.get_cache()
+        with cache.transact():
+            for entry_group_key, latest_attempt_key in self._entry_group_latest_attempt.items():
+                chain = self.get_group_attempt_chain(entry_group_key)
+                if not chain:
+                    continue
+                
+                # Convert chain to serializable format
+                chain_data = []
+                for attempt in chain:
+                    # Prepare attempt data (exclude GNVerifier response which may not serialize well)
+                    attempt_data = {
+                        "key": attempt.key,
+                        "entry_group_key": attempt.entry_group_key,
+                        "query_term": attempt.query_term,
+                        "query_rank": attempt.query_rank,
+                        "data_source_id": attempt.data_source_id,
+                        "status": attempt.status.name,
+                        "is_successful": attempt.is_successful,
+                        "is_retry": attempt.is_retry,
+                        "previous_key": attempt.previous_key,
+                        "resolution_strategy_name": attempt.resolution_strategy_name,
+                        "failure_reason": attempt.failure_reason,
+                        "resolved_classification": attempt.resolved_classification,
+                        "error": attempt.error,
+                        "metadata": attempt.metadata,
+                    }
+                    chain_data.append(attempt_data)
+                
+                # Generate a cache key using the entry_group_key
+                cache_key = f"resolution_chain_{entry_group_key}"
+                
+                # Use a consistent checksum - we don't need to invalidate by content since
+                # we're explicitly saving the final state
+                checksum = entry_group_key  # Use the entry_group_key itself as a stable checksum
+                
+                # Add metadata
+                metadata = {
+                    "creation_time": datetime.now().isoformat(),
+                    "chain_length": len(chain_data),
+                    "final_status": chain[-1].status.name if chain else "Unknown"
                 }
-                chain_data.append(attempt_data)
-            
-            # Generate a cache key using the entry_group_key
-            cache_key = f"resolution_chain_{entry_group_key}"
-            
-            # Use a consistent checksum - we don't need to invalidate by content since
-            # we're explicitly saving the final state
-            checksum = entry_group_key  # Use the entry_group_key itself as a stable checksum
-            
-            # Add metadata
-            metadata = {
-                "creation_time": datetime.now().isoformat(),
-                "chain_length": len(chain_data),
-                "final_status": chain[-1].status.name if chain else "Unknown"
-            }
-            
-            # Save to cache
-            save_cache(cache_key, chain_data, checksum, metadata)
-            
+                
+                # Save to cache
+                cache_manager.save_cache(cache_key, chain_data, checksum, metadata)
+        
             # self.logger.debug(f"Saved attempt chain for entry group {entry_group_key} to cache")
 
     @staticmethod
@@ -663,7 +665,7 @@ class ResolutionAttemptManager:
         checksum = entry_group_key
         
         # Attempt to load from cache
-        chain_data = load_cache(cache_key, checksum)
+        chain_data = cache_manager.load_cache(cache_key, checksum)
         
         if chain_data is not None:
             logger.debug(f"Loaded attempt chain for entry group {entry_group_key} from cache")

@@ -11,13 +11,19 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 import json
+import shutil
 
 from taxonopy import __version__
 from taxonopy.config import config
 from taxonopy.logging_config import setup_logging
-from taxonopy.cache_manager import clear_cache, get_cache_stats
+from taxonopy.cache_manager import (
+    clear_cache,
+    configure_cache_namespace,
+    get_cache_stats,
+)
 from taxonopy.stats_collector import DatasetStats
 from taxonopy.entry_grouper import create_entry_groups, count_entries_in_input
+from taxonopy.input_parser import find_input_files
 
 from taxonopy.query.gnverifier_client import GNVerifierClient
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
@@ -38,6 +44,9 @@ def create_parser() -> argparse.ArgumentParser:
     # Global options
     parser.add_argument(
         "--cache-dir", type=str, help="Directory for TaxonoPy cache (can also be set with TAXONOPY_CACHE_DIR environment variable)",
+    )
+    parser.add_argument(
+        "--cache-input", type=str, help="Input dataset path to compute cache stats for when no command is provided",
     )
     parser.add_argument(
         "--show-cache-path", action="store_true", help="Display the current cache directory path and exit"
@@ -65,6 +74,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser_resolve.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default="INFO", help="Set logging level")
     parser_resolve.add_argument("--log-file", type=str, help="Optional file to write logs to")
     parser_resolve.add_argument("--force-input", action="store_true", help="Force use of input metadata without resolution")
+    parser_resolve.add_argument("--full-rerun", action="store_true", default=False, help="Replace existing cache/output if detected for this input")
 
     # GNVerifier settings group for resolve
     gnverifier_group = parser_resolve.add_argument_group("GNVerifier Settings")
@@ -82,9 +92,11 @@ def create_parser() -> argparse.ArgumentParser:
     # Cache and metadata options
     cache_group = parser_resolve.add_argument_group("Cache Management")
     cache_group.add_argument("--refresh-cache", action="store_true", default=False, help="Force refresh of cached objects (input parsing, grouping) before running.")
+    cache_group.add_argument("--cache-stats", action="store_true", default=False, help="Display cache statistics for this input and exit.")
 
     # Trace command
     parser_trace = subparsers.add_parser("trace", help="Trace data provenance of TaxonoPy objects")
+    parser_trace.add_argument("--cache-stats", action="store_true", default=False, help="Display cache statistics for the provided input and exit.")
     trace_subparsers = parser_trace.add_subparsers(dest="trace_command", required=True)
 
     # Trace entry
@@ -128,6 +140,30 @@ def run_resolve(args: argparse.Namespace) -> int:
     config.ensure_directories()
     setup_logging(args.log_level, args.log_file)
 
+    try:
+        input_files = find_input_files(args.input)
+    except ValueError as exc:
+        logging.error(f"Unable to prepare cache namespace: {exc}")
+        return 1
+
+    cache_path = configure_cache_namespace("resolve", __version__, input_files)
+    logging.info(f"Using cache namespace: {cache_path}")
+    logging.info("Resolve arguments:")
+    logging.info("  --input: %s", args.input)
+    logging.info("  --output-dir: %s", args.output_dir)
+    logging.info("  --output-format: %s", args.output_format)
+    logging.info("  --force-input: %s", args.force_input)
+    logging.info("  --refresh-cache: %s", args.refresh_cache)
+    logging.info("  --full-rerun: %s", args.full_rerun)
+
+    if args.show_cache_path:
+        print(f"TaxonoPy cache directory: {cache_path}")
+        return 0
+
+    if args.show_config:
+        print(config.get_config_summary())
+        return 0
+
     # Handle global flags first
     if args.cache_stats:
         stats = get_cache_stats()
@@ -135,14 +171,31 @@ def run_resolve(args: argparse.Namespace) -> int:
         for key, value in stats.items():
             print(f"  {key}: {value}")
         return 0
+    cache_cleared_via_flag = False
     if args.clear_cache:
         count = clear_cache()
-        print(f"\nCleared {count} cache files")
-        if not args.input or not args.output_dir:
-            return 0
+        print(f"\nCleared {count} cache entries")
+        cache_cleared_via_flag = True
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    namespace_stats = get_cache_stats()
+    existing_namespace = namespace_stats["entry_count"] > 0 and not cache_cleared_via_flag
+    existing_output = any(output_dir.glob("*.resolved.*"))
+    if (existing_namespace or existing_output) and not args.full_rerun:
+        logging.warning(
+            "Existing cache (%s) and/or output (%s) detected for this input. Rerun with --full-rerun to replace them.",
+            cache_path,
+            output_dir,
+        )
+        return 0
+    if args.full_rerun:
+        logging.info("--full-rerun set: clearing cache and output directory before proceeding.")
+        clear_cache()
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         start_time = time.time()
@@ -242,6 +295,33 @@ def run_trace(args: argparse.Namespace) -> int:
     config.update_from_args(vars(args))
     config.ensure_directories()
 
+    try:
+        input_files = find_input_files(args.from_input)
+    except ValueError as exc:
+        logging.error(f"Unable to prepare cache namespace: {exc}")
+        return 1
+
+    cache_path = configure_cache_namespace("resolve", __version__, input_files)
+    logging.info(f"Using cache namespace: {cache_path}")
+
+    # Reuse global flags within trace context
+    if args.show_cache_path:
+        print(f"TaxonoPy cache directory: {cache_path}")
+        return 0
+    if args.show_config:
+        print(config.get_config_summary())
+        return 0
+    if args.cache_stats:
+        stats = get_cache_stats()
+        print("\nTaxonoPy Cache Statistics:")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+        return 0
+    if args.clear_cache:
+        count = clear_cache()
+        print(f"\nCleared {count} cache entries")
+        return 0
+
     if args.trace_command == "entry":
         # Dispatch to the trace_entry function from the trace module.
         return trace_entry.trace_entry(args.uuid, args.from_input, args.format, args.verbose)
@@ -272,48 +352,64 @@ def main(args: Optional[List[str]] = None) -> int:
 
     # Handle global cache directory setting
     if parsed_args.cache_dir:
-        config.cache_dir = parsed_args.cache_dir
-        # Ensure the directory exists
-        Path(config.cache_dir).mkdir(parents=True, exist_ok=True)
+        config.update_from_args({'cache_dir': parsed_args.cache_dir})
+        config.ensure_directories()
 
-    # Handle global commands
-    if parsed_args.show_cache_path:
-        print(f"TaxonoPy cache directory: {config.cache_dir}")
-        return 0
-    if parsed_args.show_config:
-        print(config.get_config_summary())
-        return 0
-    if parsed_args.cache_stats:
-        stats = get_cache_stats()
-        print("\nTaxonoPy Cache Statistics:")
-        for key, value in stats.items():
-            print(f"  {key}: {value}")
-        return 0
+    # Handle global commands only when no subcommand is specified
+    if parsed_args.command is None:
+        if parsed_args.show_cache_path:
+            print(f"TaxonoPy cache directory: {config.cache_dir}")
+            return 0
+        if parsed_args.show_config:
+            print(config.get_config_summary())
+            return 0
+        if parsed_args.cache_stats:
+            if parsed_args.cache_input:
+                try:
+                    input_files = find_input_files(parsed_args.cache_input)
+                except ValueError as exc:
+                    logging.error(f"Unable to compute cache stats for input: {exc}")
+                    return 1
+                configure_cache_namespace("resolve", __version__, input_files)
+            stats = get_cache_stats()
+            print("\nTaxonoPy Cache Statistics:")
+            for key, value in stats.items():
+                print(f"  {key}: {value}")
+            return 0
+        if parsed_args.clear_cache:
+            count = clear_cache()
+            print(f"\nCleared {count} cache entries")
+            return 0
 
-    cache_cleared = False
-    if parsed_args.clear_cache:
-        count = clear_cache()
-        print(f"\nCleared {count} cache files")
-        cache_cleared = True
+        parser.print_help()
+        return 1
 
     # Dispatch based on the chosen top-level command
     if parsed_args.command == "resolve":
-        # batch_size is still relevant for the executor via config
         return run_resolve(parsed_args)
     elif parsed_args.command == "trace":
         return run_trace(parsed_args)
     elif parsed_args.command == "common-names":
         from taxonopy.resolve_common_names import main as cn_main
-        # Update config before calling the function
         config.update_from_args(vars(parsed_args))
         config.ensure_directories()
-        return cn_main(parsed_args.annotation_dir, parsed_args.output_dir)
-    elif parsed_args.command is None:
-        if cache_cleared:
+        if parsed_args.show_cache_path:
+            print(f"TaxonoPy cache directory: {config.cache_dir}")
             return 0
-        else:
-            parser.print_help()
-            return 1
+        if parsed_args.show_config:
+            print(config.get_config_summary())
+            return 0
+        if parsed_args.cache_stats:
+            stats = get_cache_stats()
+            print("\nTaxonoPy Cache Statistics:")
+            for key, value in stats.items():
+                print(f"  {key}: {value}")
+            return 0
+        if parsed_args.clear_cache:
+            count = clear_cache()
+            print(f"\nCleared {count} cache entries")
+            return 0
+        return cn_main(parsed_args.annotation_dir, parsed_args.output_dir)
     else:
         parser.error(f"Unknown command: {parsed_args.command}")
         return 1
