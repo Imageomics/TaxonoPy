@@ -57,7 +57,8 @@ docs = [
     "mkdocs",
     "mkdocs-material",
     "mkdocs-material-extensions",
-    "mkdocstrings-python"
+    "mkdocstrings-python",
+    "mkdocs-gen-files"
 ]
 
 [project.urls]
