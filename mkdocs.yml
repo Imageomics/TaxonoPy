@@ -1,23 +1,53 @@
-site_name: TaxonoPy
+site_name: TaxonoPy User Guide
 site_description: Documentation for the TaxonoPy package
 
 repo_url: https://github.com/Imageomics/taxonopy
 repo_name: Imageomics/taxonopy
 
 nav:
-  - Home: index.md
-  - Command Line Usage:
-      - Tutorial: command_line_usage/tutorial.md
-      - Help: command_line_usage/help.md
-  - Acknowledgements: acknowledgements.md
+  - TaxonoPy:
+      - User guide: index.md
+      - Quick reference: user-guide/quick-reference.md
+      - CLI help reference: command_line_usage/help.md
+      - Installation: user-guide/installation.md
+      - IO:
+          - user-guide/io/index.md
+          - Input: user-guide/io/input.md
+          - Output: user-guide/io/output.md
+          - Cache: user-guide/cache.md
+      - Development:
+          - Contributing:
+              - development/contributing/index.md
+      - Acknowledgements: acknowledgements.md
 
-theme: 
+theme:
   name: material
+  logo: _assets/taxonopy_logo.svg
+  favicon: _assets/taxonopy_logo.svg
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    primary: green
+    accent: blue
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: green
+    accent: blue
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
   features:
   - navigation.tabs
   - navigation.tabs.sticky
+  - navigation.indexes
   - content.code.copy
   - content.code.annotate
+
+extra_css:
+- stylesheets/extra.css
 
 plugins:
 - search
@@ -28,10 +58,23 @@ plugins:
         options:
           docstring_style: google
           merge_init_into_class: true
+- gen-files:
+    scripts:
+      # Generates command_line_usage/help.md from argparse during build.
+      - docs/_scripts/gen_cli_help_docs.py
 markdown_extensions:
   - admonition
   - attr_list
   - md_in_html
-  - pymdownx.blocks.caption
+  - pymdownx.blocks.caption:
+      types:
+        - name: figure-caption
+          prefix: ""
+        - name: table-caption
+          prefix: ""
+          classes: "table-caption"
+      auto: false
+      prepend: true
   - pymdownx.details
+  - pymdownx.highlight
   - pymdownx.superfences

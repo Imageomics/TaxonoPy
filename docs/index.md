@@ -1,12 +1,35 @@
-# TaxonoPy
+---
+title: Home
+hide:
+  - title
+---
+
+# TaxonoPy {: .taxonopy-home-title }
+
+![TaxonoPy banner](_assets/taxonopy_banner.svg)
+
+<h2 style="text-align:center; margin-top:0;">Cleanly Aligned Biodiversity Taxonomy</h2>
+<div align="center">
+  <a href="https://doi.org/10.5281/zenodo.15499454">
+    <img src="https://zenodo.org/badge/789041700.svg" alt="DOI">
+  </a>
+  <a href="https://pypi.org/project/taxonopy">
+    <img src="https://img.shields.io/pypi/v/taxonopy.svg" alt="PyPI - Version">
+  </a>
+  <a href="https://pypi.org/project/taxonopy">
+    <img src="https://img.shields.io/pypi/pyversions/taxonopy.svg" alt="PyPI - Python Version">
+  </a>
+</div>
 
 Welcome! This is the initial MkDocs site for the TaxonoPy project. 
 
-TaxonoPy (taxon-o-py) is a command-line tool for creating an internally consistent taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier)
-. See below for the structure of inputs and outputs.
+TaxonoPy (taxon-o-py) is a command-line tool for creating an internally consistent 7-rank Linnaean taxonomic hierarchy using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier).
+It does not define its own authority; instead it leans on trusted sources indexed by GNVerifier, such as the Catalogue of Life and the GBIF Backbone Taxonomy. See the full list of [GNVerifier data sources](https://verifier.globalnames.org/data_sources).
 
-## Purpose
-The motivation for this package is to create an internally consistent and standardized classification set for organisms in a large biodiversity dataset composed from different data providers that may use very similar and overlapping but not identical taxonomic hierarchies.
+Support for flexible source selection is still evolving. Today, TaxonoPy ships with a pinned default GNVerifier source configuration (currently GBIF Backbone Taxonomy, source 11), while additional sources remain available through GNVerifier.
+
+## Package Purpose
+TaxonoPy helps build a single, internally consistent classification across large biodiversity datasets assembled from multiple providers, each of which may use overlapping but non‑identical taxonomic hierarchies. The goal is AI-ready biodiversity data with clean, aligned taxonomy.
 
 Its development has been driven by its application in the TreeOfLife-200M (TOL) dataset. This dataset contains over 200 million samples of organisms from four core data providers:
 
@@ -15,26 +38,11 @@ Its development has been driven by its application in the TreeOfLife-200M (TOL) 
 - [FathomNet](https://www.fathomnet.org/)
 - [The Encyclopedia of Life (EOL)](https://eol.org/)
 
-The names (and classification) of taxa may be (and often are) inconsistent across these resources. This package addresses this problem by creating an internally consistent classification set for such taxa.
+Across these resources, taxon names and classifications often conflict. TaxonoPy resolves those differences into a coherent, standardized taxonomy for the combined dataset.
 
-## Input
-A directory containing Parquet partitions of the seven-rank Linnaean taxonomic metadata for organisms in the dataset. Labels should include:
-
-- **uuid**: a unique identifier for each sample (required).
-- **kingdom, phylum, class, order, family, genus, species**: the taxonomic ranks of the organism (required, may have sparsity).
-- **scientific_name**: the scientific name to the most specific rank available (optional).
-- **common_name**: the common (i.e. vernacular) name of the organism (optional).
-
-
-
-See the example data in:
-```
-
-- `examples/input/sample.parquet`
-- `examples/resolved/sample.resolved.parquet` (generated with `taxonopy resolve`)
-- `examples/resolved_with_common_names/sample.resolved.parquet` (generated with `taxonopy common-names`)
-
-```
+!!! warning
+    TaxonoPy does not guarantee perfect alignment or edge case coverage; it is a progressive effort to improve taxonomic coverage in an evolving landscape.
+    If you have suggestions or encounter bugs, please see the [Contributing](development/contributing/index.md) page.
 
 
 ## Challenges
@@ -65,4 +73,3 @@ To install the latest version of TaxonoPy, run:
 pip install taxonopy
 
 ```
-
