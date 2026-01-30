@@ -45,6 +45,7 @@ theme:
   - navigation.indexes
   - content.code.copy
   - content.code.annotate
+  - content.tooltips
 
 extra_css:
 - stylesheets/extra.css

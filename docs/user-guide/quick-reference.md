@@ -15,8 +15,7 @@ Download the same sample dataset in either format and place it in `examples/inpu
 - [sample.parquet](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
 - [sample.csv](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
 
-Sample contents:
-
+_**Sample input**: Note the divergence in kingdoms (Metazoa vs Animalia), missing interior ranks, and fully null entry._
 <div class="table-cell-scroll" markdown>
 
 | uuid | kingdom | phylum | class | order | family | genus | species | scientific_name |
@@ -31,7 +30,7 @@ Sample contents:
 
 </div>
 
-In the final example entry, there is no available taxonomic data, which can happen in large datasets where there maybe a corresponding image but incomplete annotation. 
+In the final example entry, there is no available taxonomic data, which can happen in large datasets where there may be a corresponding image but incomplete annotation. 
 
 ## Execute a Basic Resolution
 
@@ -62,13 +61,13 @@ The output files consist of:
 
 The `sample.resolved.parquet` file contains all the entries where some resolution strategy was applied. In this example, it contains:
 
-<div class="table-cell-scroll" markdown>
 
-Green highlights show values added during resolution. Yellow highlights indicate values that changed from the input.
+_**Sample resolved output (selected columns)**: Green highlights show values added during resolution. Yellow highlights indicate values that changed from the input._
+<div class="table-cell-scroll" markdown>
 
 | uuid | kingdom | phylum | class | order | family | genus | species | scientific_name | common_name |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-changed">Animalia</span> | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens | Homo sapiens | `null` |
+| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-changed">Animalia</span><sup>[?](https://verifier.globalnames.org/?all_matches=on&capitalize=on&ds=11&format=html&names=Homo+sapiens "The input lineage here mirrors what the Encyclopedia of Life provides (Metazoa as the clade that maps to the kingdom rank); when queried against GNVerifier, this rank maps to Animalia. Click to see the GNVerifier result.")</sup> | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens | Homo sapiens | `null` |
 | 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | Plantae | Tracheophyta | <span class="cell-added">Magnoliopsida</span> | Fagales | Fagaceae | Quercus | Quercus alba | Quercus alba | `null` |
 | 4d166a61-b6e5-4709-91ba-b623111014e9 | Animalia | <span class="cell-added">Arthropoda</span> | <span class="cell-added">Insecta</span> | Hymenoptera | Apidae | Apis | Apis mellifera | Apis mellifera | `null` |
 | 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fungi</span> | <span class="cell-added">Basidiomycota</span> | <span class="cell-added">Agaricomycetes</span> | <span class="cell-added">Agaricales</span> | <span class="cell-added">Amanitaceae</span> | <span class="cell-added">Amanita</span> | Amanita muscaria | `null` | `null` |
@@ -77,12 +76,10 @@ Green highlights show values added during resolution. Yellow highlights indicate
 
 </div>
 
-/// table-caption
-Sample resolved output (selected columns)
-///
-
 The `sample.unsolved.parquet` file contains entries that could not be resolved (for example, rows with no usable taxonomy information). In this example, it contains:
 
+
+_**Sample unsolved output: Sequestered entries with no usable taxonomy information.**_
 <div class="table-cell-scroll" markdown>
 
 | uuid | kingdom | phylum | class | order | family | genus | species | scientific_name | common_name |
@@ -90,10 +87,6 @@ The `sample.unsolved.parquet` file contains entries that could not be resolved (
 | a95f3e29-ed48-41f4-9577-64d4243a0396 | `null` | `null` | `null` | `null` | `null` | `null` | `null` | `null` | `null` |
 
 </div>
-
-/// table-caption
-Sample unsolved output (selected columns)
-///
 
 The `resolution_stats.json` file summarizes counts of how many entries from the input fell into each final status across the `resolved` and `unsolved` files.
 
