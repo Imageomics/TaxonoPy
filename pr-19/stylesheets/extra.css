@@ -1,0 +1,123 @@
+/* Brand palette aligned to the TaxonoPy banner/logo. */
+
+/* Light mode */
+:root,
+[data-md-color-scheme="default"] {
+  /* Deep forest green from the wordmark */
+  --md-primary-fg-color: #16381f;
+  --md-primary-fg-color--light: #2a5a3b;
+  --md-primary-fg-color--dark: #0f2a17;
+
+  /* Teal-blue from the branches/"Py" */
+  --md-accent-fg-color: #2d94b8;
+  --md-accent-fg-color--transparent: rgba(45, 148, 184, 0.16);
+
+  /* Link styling: green by default, blue on hover for clarity. */
+  --taxonopy-link-color: #2e7a45;
+  --taxonopy-link-hover-color: #2d94b8;
+  --md-typeset-a-color: var(--taxonopy-link-color);
+
+  /* Subtle brand tint for UI surfaces */
+  --taxonopy-surface-tint: #dcebd2;
+
+  /* Resolution table highlights */
+  --taxonopy-cell-added-bg: rgba(46, 122, 69, 0.22);
+  --taxonopy-cell-changed-bg: rgba(255, 193, 7, 0.24);
+}
+
+/* Dark mode tweaks to keep contrast crisp on slate */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #1f5a32;
+  --md-primary-fg-color--light: #2e7a45;
+  --md-primary-fg-color--dark: #163d23;
+
+  --md-accent-fg-color: #2d94b8;
+  --md-accent-fg-color--transparent: rgba(45, 148, 184, 0.20);
+
+  /* Link styling: green by default, blue on hover for clarity. */
+  --taxonopy-link-color: #43a463;
+  --taxonopy-link-hover-color: #2d94b8;
+  --md-typeset-a-color: var(--taxonopy-link-color);
+
+  --taxonopy-surface-tint: #1b2a20;
+
+  /* Resolution table highlights */
+  --taxonopy-cell-added-bg: rgba(88, 214, 141, 0.28);
+  --taxonopy-cell-changed-bg: rgba(255, 214, 102, 0.28);
+}
+
+/* Apply the tint very lightly to header/nav surfaces. */
+.md-header,
+.md-tabs {
+  background-color: var(--md-primary-fg-color);
+}
+
+.md-tabs {
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Make the header logo slightly larger. */
+.md-header__button.md-logo img {
+  height: 1.9rem;
+}
+
+/* Hide the home page title so the banner is the first visible element. */
+.taxonopy-home-title {
+  display: none;
+}
+
+/* Ensure link hover color matches the accent in both themes. */
+.md-typeset a:hover,
+.md-typeset a:focus {
+  color: var(--taxonopy-link-hover-color);
+}
+
+/* Tighten row height in the quick-reference table. */
+.table-cell-scroll table th,
+.table-cell-scroll table td {
+  padding: 0.25rem 0.5rem;
+  line-height: 1.15;
+  vertical-align: top;
+}
+
+/* Attempt per-cell horizontal scrolling without extra markup. */
+.table-cell-scroll table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table-cell-scroll th,
+.table-cell-scroll td {
+  max-width: 16ch;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.table-cell-scroll th::-webkit-scrollbar,
+.table-cell-scroll td::-webkit-scrollbar {
+  height: 6px;
+}
+
+figure.table-caption > figcaption {
+  margin: 0 0 0.45rem;
+  text-align: left;
+  font-style: normal;
+  font-size: 0.95em;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Highlight resolved output differences vs input. */
+.cell-added,
+.cell-changed {
+  display: inline-block;
+  padding: 0 0.2rem;
+  border-radius: 0.2rem;
+}
+
+.cell-added {
+  background: var(--taxonopy-cell-added-bg, rgba(46, 122, 69, 0.18));
+}
+
+.cell-changed {
+  background: var(--taxonopy-cell-changed-bg, rgba(255, 193, 7, 0.22));
+}
