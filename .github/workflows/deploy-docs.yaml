@@ -1,0 +1,103 @@
+name: Build & Deploy MkDocs (gh-pages with PR previews)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+    # Run for push, workflow dispatch, PRs from SAME repo that are not closed
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.fork == false &&
+       github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install '.[docs]'
+      - name: Build with MkDocs
+        run: mkdocs build
+      - name: Upload built site as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: ./site
+
+  deploy:
+    needs: build
+    # Deploy on push to main (root) or PRs from SAME repo (not closed) -> pr-<N>/
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.fork == false &&
+       github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Download built site
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: ./site
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./site
+          keep_files: true
+          destination_dir: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || '' }}
+
+  cleanup:
+    # Only when a same-repo PR closes
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.fork == false &&
+      github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Remove preview folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR_DIR="pr-${{ github.event.number }}"
+          echo "Attempting to remove $PR_DIR"
+          if [ -d "$PR_DIR" ]; then
+            git rm -r "$PR_DIR"
+            git commit -m "Remove preview for PR #${{ github.event.number }}"
+            git push origin gh-pages
+          else
+            echo "No preview folder $PR_DIR found; nothing to do."
+          fi
