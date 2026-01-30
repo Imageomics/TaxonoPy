@@ -974,7 +974,7 @@
 <li><a href="https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet">sample.parquet</a></li>
 <li><a href="https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv">sample.csv</a></li>
 </ul>
-<p>Sample contents:</p>
+<p><em><strong>Sample input</strong>: Note the divergence in kingdoms (Metazoa vs Animalia), missing interior ranks, and fully null entry.</em></p>
 <div class="table-cell-scroll">
 <table>
 <thead>
@@ -1071,7 +1071,7 @@
 </tbody>
 </table>
 </div>
-<p>In the final example entry, there is no available taxonomic data, which can happen in large datasets where there maybe a corresponding image but incomplete annotation. </p>
+<p>In the final example entry, there is no available taxonomic data, which can happen in large datasets where there may be a corresponding image but incomplete annotation. </p>
 <h2 id="execute-a-basic-resolution">Execute a Basic Resolution</h2>
 <div class="highlight"><pre><span></span><code><span class="go">taxonopy resolve --input examples/input --output-dir examples/output</span>
 </code></pre></div>
@@ -1095,12 +1095,8 @@
 <li><code>resolution_stats.json</code></li>
 </ul>
 <p>The <code>sample.resolved.parquet</code> file contains all the entries where some resolution strategy was applied. In this example, it contains:</p>
-<figure class="table-caption">
-<figcaption>
-<p>Sample resolved output (selected columns)</p>
-</figcaption>
+<p><em><strong>Sample resolved output (selected columns)</strong>: Green highlights show values added during resolution. Yellow highlights indicate values that changed from the input.</em></p>
 <div class="table-cell-scroll">
-<p>Green highlights show values added during resolution. Yellow highlights indicate values that changed from the input.</p>
 <table>
 <thead>
 <tr>
@@ -1119,7 +1115,7 @@
 <tbody>
 <tr>
 <td>bc2a3f9f-c1f9-48df-9b01-d045475b9d5f</td>
-<td><span class="cell-changed">Animalia</span></td>
+<td><span class="cell-changed">Animalia</span><sup><a href="https://verifier.globalnames.org/?all_matches=on&amp;capitalize=on&amp;ds=11&amp;format=html&amp;names=Homo+sapiens" title="The input lineage here mirrors what the Encyclopedia of Life provides (Metazoa as the clade that maps to the kingdom rank); when queried against GNVerifier, this rank maps to Animalia. Click to see the GNVerifier result.">?</a></sup></td>
 <td>Chordata</td>
 <td>Mammalia</td>
 <td>Primates</td>
@@ -1192,12 +1188,8 @@
 </tbody>
 </table>
 </div>
-</figure>
 <p>The <code>sample.unsolved.parquet</code> file contains entries that could not be resolved (for example, rows with no usable taxonomy information). In this example, it contains:</p>
-<figure class="table-caption">
-<figcaption>
-<p>Sample unsolved output (selected columns)</p>
-</figcaption>
+<p><em><strong>Sample unsolved output: Sequestered entries with no usable taxonomy information.</strong></em></p>
 <div class="table-cell-scroll">
 <table>
 <thead>
@@ -1230,7 +1222,6 @@
 </tbody>
 </table>
 </div>
-</figure>
 <p>The <code>resolution_stats.json</code> file summarizes counts of how many entries from the input fell into each final status across the <code>resolved</code> and <code>unsolved</code> files.</p>
 <p>TaxonoPy also writes cache data to disk (default: <code>~/.cache/taxonopy</code>) so it can trace provenance and avoid reprocessing. Use <code>--show-cache-path</code>, <code>--cache-stats</code>, or <code>--clear-cache</code> if you want to inspect or manage it, or see the <a href="../cache/">Cache</a> guide for details.</p>
 <h2 id="trace-an-entry">Trace an Entry</h2>
@@ -1311,7 +1302,7 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "content.code.copy", "content.code.annotate", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
