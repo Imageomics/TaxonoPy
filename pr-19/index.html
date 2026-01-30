@@ -844,30 +844,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        Getting Started
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Installation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#user-installation-with-pip" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        User Installation with pip
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -895,7 +878,7 @@
 
 <h1 class="taxonopy-home-title" id="taxonopy">TaxonoPy</h1>
 <p><img alt="TaxonoPy banner" src="_assets/taxonopy_banner.svg" /></p>
-<h2 style="text-align:center; margin-top:0;">Cleanly Aligned Biodiversity Taxonomy</h2>
+<h2 style="text-align:center; margin-top:0;">Reproducibly Aligned Biological Taxonomies</h2>
 <div align="center">
   <a href="https://doi.org/10.5281/zenodo.15499454">
     <img src="https://zenodo.org/badge/789041700.svg" alt="DOI">
@@ -908,13 +891,10 @@
   </a>
 </div>
 
-<p>Welcome! This is the initial MkDocs site for the TaxonoPy project. </p>
-<p>TaxonoPy (taxon-o-py) is a command-line tool for creating an internally consistent 7-rank Linnaean taxonomic hierarchy using the <a href="https://github.com/gnames/gnverifier">Global Names Verifier (gnverifier)</a>.
-It does not define its own authority; instead it leans on trusted sources indexed by GNVerifier, such as the Catalogue of Life and the GBIF Backbone Taxonomy. See the full list of <a href="https://verifier.globalnames.org/data_sources">GNVerifier data sources</a>.</p>
-<p>Support for flexible source selection is still evolving. Today, TaxonoPy ships with a pinned default GNVerifier source configuration (currently GBIF Backbone Taxonomy, source 11), while additional sources remain available through GNVerifier.</p>
+<p>TaxonoPy (taxon-o-py) is a command-line tool for creating reproducibly aligned biological taxonomies using the <a href="https://github.com/gnames/gnverifier">Global Names Verifier (gnverifier)</a>.</p>
 <h2 id="package-purpose">Package Purpose</h2>
-<p>TaxonoPy helps build a single, internally consistent classification across large biodiversity datasets assembled from multiple providers, each of which may use overlapping but non‑identical taxonomic hierarchies. The goal is AI-ready biodiversity data with clean, aligned taxonomy.</p>
-<p>Its development has been driven by its application in the TreeOfLife-200M (TOL) dataset. This dataset contains over 200 million samples of organisms from four core data providers:</p>
+<p>TaxonoPy aligns data to a single, internally consistent 7-rank Linnaean taxonomic hierarchy across large biodiversity datasets assembled from multiple providers, each of which may use overlapping but nonuniform taxonomies. The goal is AI-ready biodiversity data with clean, aligned taxonomy.</p>
+<p>Its development has been driven by its application in the <a href="https://huggingface.co/datasets/imageomics/TreeOfLife-200M">TreeOfLife-200M dataset</a>. This dataset contains over 200 million labeled images of organisms from four core data providers:</p>
 <ul>
 <li><a href="https://www.gbif.org/">The Global Biodiversity Information Facility (GBIF)</a></li>
 <li><a href="https://biodiversitygenomics.net/projects/5m-insects/">BIOSCAN-5M</a></li>
@@ -922,13 +902,8 @@ It does not define its own authority; instead it leans on trusted sources indexe
 <li><a href="https://eol.org/">The Encyclopedia of Life (EOL)</a></li>
 </ul>
 <p>Across these resources, taxon names and classifications often conflict. TaxonoPy resolves those differences into a coherent, standardized taxonomy for the combined dataset.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>TaxonoPy does not guarantee perfect alignment or edge case coverage; it is a progressive effort to improve taxonomic coverage in an evolving landscape.
-If you have suggestions or encounter bugs, please see the <a href="development/contributing/">Contributing</a> page.</p>
-</div>
 <h2 id="challenges">Challenges</h2>
-<p>This taxonomy information is provided by each data provider and original sources, but the classification can be:</p>
+<p>The taxonomy information is provided by each data provider and original sources, but the classification can be:</p>
 <ul>
 <li><strong>Inconsistent</strong> — between and within sources (e.g., kingdom <em>Metazoa</em> vs. <em>Animalia</em>)</li>
 <li><strong>Incomplete</strong> — missing ranks or containing "holes"</li>
@@ -942,13 +917,19 @@ If you have suggestions or encounter bugs, please see the <a href="development/c
 <li>A given organism may be missing from some  </li>
 </ul>
 <h2 id="solution">Solution</h2>
-<p>TaxonoPy uses the taxonomic hierarchies provided by the TOL core data providers to query GNVerifier and create a standardized classification for each sample in the TOL dataset. It prioritizes the <a href="https://verifier.globalnames.org/data_sources/11">GBIF Backbone Taxonomy</a>, since this represents the largest part of the TOL dataset. Where GBIF misses, backup sources such as the <a href="https://verifier.globalnames.org/data_sources/1">Catalogue of Life</a> and <a href="https://verifier.globalnames.org/data_sources/179">Open Tree of Life (OTOL) Reference Taxonomy</a> are used.</p>
-<h2 id="installation">Installation</h2>
-<p>TaxonoPy can be installed with pip after setting up a virtual environment.</p>
-<h3 id="user-installation-with-pip">User Installation with pip</h3>
-<p>To install the latest version of TaxonoPy, run:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>taxonopy
-</code></pre></div>
+<p>TaxonoPy uses the the taxonomic lineages provided by diverse sources to submit batched queries to GNVerifier and resolve to a standardized classification path for each sample in the dataset. It is currently configured to prioritize alignment to the <a href="https://verifier.globalnames.org/data_sources/11">GBIF Backbone Taxonomy</a>. Where GBIF misses, backup sources of the <a href="https://verifier.globalnames.org/data_sources/1">Catalogue of Life</a> and <a href="https://verifier.globalnames.org/data_sources/179">Open Tree of Life (OTOL) Reference Taxonomy</a> are used.</p>
+<h2 id="getting-started">Getting Started</h2>
+<p>To get started with TaxonoPy, see the <a href="user-guide/quick-reference/">Quick Reference</a> guide.</p>
+<hr />
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Taxonomic classifications are human-constructed models of biological diversity, not direct representations of biological reality.
+Names and ranks reflect taxonomic concepts that may vary between authorities, evolve over time, and differ in scope or interpretation.</p>
+<p>TaxonoPy aims to produce a <strong>consistent, transparent, and fit-for-purpose classification</strong> suitable for large-scale data integration and AI workflows.
+It prioritizes internal coherence and interoperability across datasets and providers by aligning source data to a selected reference taxonomy.</p>
+<p>It is a progressive effort to improve taxonomic alignment in an evolving landscape.
+If you have suggestions or encounter bugs, please see the <a href="development/contributing/">Contributing</a> page.</p>
+</div>
 
 
 
