@@ -1,5 +1,6 @@
 import os
 import argparse
+import csv
 import pandas as pd
 import glob
 import zipfile
@@ -164,7 +165,7 @@ def merge_common_name(anno_df, common_name_df):
     new_anno_df.rename(columns={'vernacularName': 'vernacularName_species'}, inplace=True)
     for key in ['species', 'genus']:
         new_anno_df['common_name'] = new_anno_df.apply(
-            lambda x: x['common_name'] if x['common_name'] is not None else x[f'vernacularName_{key}'],
+            lambda x: x['common_name'] if pd.notna(x['common_name']) else x[f'vernacularName_{key}'],
             axis=1
         )
         new_anno_df = new_anno_df.drop(columns=[f'vernacularName_{key}'])
@@ -211,9 +212,9 @@ def main(annotation_dir=None, output_dir=None):
     taxon_file, common_name_file = download_and_extract_backbone(cache_dir)
     
     # Load the two TSVs
-    print(f"Loading taxonomy data from {taxon_file}")
+    print(f"Loading common name data from {common_name_file}")
     common_name_df = (
-        pd.read_csv(common_name_file, sep="\t", low_memory=False)
+        pd.read_csv(common_name_file, sep="\t", quoting=csv.QUOTE_NONE, engine="python")
           .query("language == 'en'")
     )
     common_name_df["vernacularName"] = (
@@ -230,7 +231,7 @@ def main(annotation_dir=None, output_dir=None):
 
     print(f"Loading taxon data from {taxon_file}")
     taxon_df = (
-        pd.read_csv(taxon_file, sep="\t", quoting=3, low_memory=False)
+        pd.read_csv(taxon_file, sep="\t", quoting=csv.QUOTE_NONE, engine="python")
           .query("taxonomicStatus == 'accepted' and canonicalName.notnull()")
     )
     
