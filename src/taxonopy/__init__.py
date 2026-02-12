@@ -5,7 +5,7 @@ consistent taxonomic hierarchy from a variety of inputs, primarily designed for
 the TreeOfLife (TOL) dataset.
 """
 
-__version__ = "0.1.1b0"
+__version__ = "0.1.0"
 
 from taxonopy.types.data_classes import (
     ResolutionStatus,
@@ -24,8 +24,8 @@ from taxonopy.resolution import (
 
 __all__ = [
     # Data classes
-    "ResolutionStatus",
     "TaxonomicEntry",
+    "ResolutionStatus",
     "EntryGroupRef",
     "QueryParameters",
     "ResolutionAttempt",
