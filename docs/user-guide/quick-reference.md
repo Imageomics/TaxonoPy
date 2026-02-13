@@ -65,14 +65,39 @@ The `sample.resolved.parquet` file contains all the entries where some resolutio
 _**Sample resolved output (selected columns)**: Green highlights show values added during resolution. Yellow highlights indicate values that changed from the input._
 <div class="table-cell-scroll" markdown>
 
-| uuid | kingdom | phylum | class | order | family | genus | species | scientific_name | common_name |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-changed">Animalia</span><sup>[?](https://verifier.globalnames.org/?all_matches=on&capitalize=on&ds=11&format=html&names=Homo+sapiens "The input lineage here mirrors what the Encyclopedia of Life provides (Metazoa as the clade that maps to the kingdom rank); when queried against GNVerifier, this rank maps to Animalia. Click to see the GNVerifier result.")</sup> | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens | Homo sapiens | `null` |
-| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | Plantae | Tracheophyta | <span class="cell-added">Magnoliopsida</span> | Fagales | Fagaceae | Quercus | Quercus alba | Quercus alba | `null` |
-| 4d166a61-b6e5-4709-91ba-b623111014e9 | Animalia | <span class="cell-added">Arthropoda</span> | <span class="cell-added">Insecta</span> | Hymenoptera | Apidae | Apis | Apis mellifera | Apis mellifera | `null` |
-| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fungi</span> | <span class="cell-added">Basidiomycota</span> | <span class="cell-added">Agaricomycetes</span> | <span class="cell-added">Agaricales</span> | <span class="cell-added">Amanitaceae</span> | <span class="cell-added">Amanita</span> | Amanita muscaria | `null` | `null` |
-| 38327554-ffbf-4180-b4cf-63c311a26f4e | Animalia | <span class="cell-added">Arthropoda</span> | <span class="cell-added">Insecta</span> | <span class="cell-added">Lepidoptera</span> | <span class="cell-added">Erebidae</span> | <span class="cell-added">Laelia</span> | Laelia rosea | `null` | `null` |
-| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | Plantae | <span class="cell-added">Tracheophyta</span> | <span class="cell-added">Liliopsida</span> | <span class="cell-added">Asparagales</span> | <span class="cell-added">Orchidaceae</span> | <span class="cell-added">Laelia</span> | Laelia rosea | `null` | `null` |
+| uuid | kingdom | phylum | class | order | family | genus | species | scientific_name |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-changed">Animalia</span><sup>[?](https://verifier.globalnames.org/?all_matches=on&capitalize=on&ds=11&format=html&names=Homo+sapiens "The input lineage here mirrors what the Encyclopedia of Life provides (Metazoa as the clade that maps to the kingdom rank); when queried against GNVerifier, this rank maps to Animalia. Click to see the GNVerifier result.")</sup> | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens | Homo sapiens |
+| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | Plantae | Tracheophyta | <span class="cell-added">Magnoliopsida</span> | Fagales | Fagaceae | Quercus | Quercus alba | Quercus alba |
+| 4d166a61-b6e5-4709-91ba-b623111014e9 | Animalia | <span class="cell-added">Arthropoda</span> | <span class="cell-added">Insecta</span> | Hymenoptera | Apidae | Apis | Apis mellifera | Apis mellifera |
+| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fungi</span> | <span class="cell-added">Basidiomycota</span> | <span class="cell-added">Agaricomycetes</span> | <span class="cell-added">Agaricales</span> | <span class="cell-added">Amanitaceae</span> | <span class="cell-added">Amanita</span> | Amanita muscaria | `""` |
+| 38327554-ffbf-4180-b4cf-63c311a26f4e | Animalia | <span class="cell-added">Arthropoda</span> | <span class="cell-added">Insecta</span> | <span class="cell-added">Lepidoptera</span> | <span class="cell-added">Erebidae</span> | <span class="cell-added">Laelia</span> | Laelia rosea | `""` |
+| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | Plantae | <span class="cell-added">Tracheophyta</span> | <span class="cell-added">Liliopsida</span> | <span class="cell-added">Asparagales</span> | <span class="cell-added">Orchidaceae</span> | <span class="cell-added">Laelia</span> | Laelia rosea | `""` |
+
+</div>
+
+
+## Add Common Names
+
+You can add vernacular names to resolved outputs as a post-processing step:
+
+```console
+taxonopy common-names --resolved-dir examples/output --output-dir examples/output/common
+```
+
+This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
+
+_**Sample common-name output (`examples/output/common/sample.resolved.parquet`)**_
+<div class="table-cell-scroll" markdown>
+
+| uuid | common_name | kingdom | phylum | class | order | family | genus | species |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | Human | Animalia | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens |
+| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | Eastern White Oak | Plantae | Tracheophyta | Magnoliopsida | Fagales | Fagaceae | Quercus | Quercus alba |
+| 4d166a61-b6e5-4709-91ba-b623111014e9 | Drone-Bee | Animalia | Arthropoda | Insecta | Hymenoptera | Apidae | Apis | Apis mellifera |
+| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | Fly Agaric | Fungi | Basidiomycota | Agaricomycetes | Agaricales | Amanitaceae | Amanita | Amanita muscaria |
+| 38327554-ffbf-4180-b4cf-63c311a26f4e | Underwing, Tiger, Tussock, And Allied Moths | Animalia | Arthropoda | Insecta | Lepidoptera | Erebidae | Laelia | Laelia rosea |
+| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | Orchid | Plantae | Tracheophyta | Liliopsida | Asparagales | Orchidaceae | Laelia | Laelia rosea |
 
 </div>
 
