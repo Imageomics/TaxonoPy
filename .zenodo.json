@@ -1,0 +1,40 @@
+{
+  "creators": [
+    {
+      "name": "Thompson, Matthew J.",
+      "orcid": "0000-0003-0583-8585"
+    },
+    {
+      "name": "Campolongo, Elizabeth G.",
+      "orcid": "0000-0003-0846-2413"
+    },
+    {
+      "name": "Lapp, Hilmar",
+      "orcid": "0000-0001-9107-0714"
+    },
+    {
+      "name": "Gu, Jianyang",
+      "orcid": "0000-0002-4060-7427"
+    }
+  ],
+  "description": "A Python package for efficiently aligning organismal taxonomic hierarchies using the Global Names Verifier.",
+  "keywords": [
+    "imageomics",
+    "taxonomy",
+    "taxonomic resolution",
+    "tree of life",
+    "alignment",
+    "hierarchy"
+  ],
+  "license": {
+    "id": "MIT"
+  },
+  "publication_date": "2026-02-12",
+  "title": "TaxonoPy",
+  "version": "0.2.0",
+  "grants": [
+    {
+      "id": "021nxhr62::2118240"
+    }
+  ]
+}
