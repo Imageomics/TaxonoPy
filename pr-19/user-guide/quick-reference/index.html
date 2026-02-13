@@ -470,6 +470,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#add-common-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add Common Names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#trace-an-entry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -933,6 +944,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#add-common-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add Common Names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#trace-an-entry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1109,7 +1131,6 @@
 <th>genus</th>
 <th>species</th>
 <th>scientific_name</th>
-<th>common_name</th>
 </tr>
 </thead>
 <tbody>
@@ -1123,7 +1144,6 @@
 <td>Homo</td>
 <td>Homo sapiens</td>
 <td>Homo sapiens</td>
-<td><code>null</code></td>
 </tr>
 <tr>
 <td>21ed76d8-9a3b-406e-a1a3-ef244422bf8e</td>
@@ -1135,7 +1155,6 @@
 <td>Quercus</td>
 <td>Quercus alba</td>
 <td>Quercus alba</td>
-<td><code>null</code></td>
 </tr>
 <tr>
 <td>4d166a61-b6e5-4709-91ba-b623111014e9</td>
@@ -1147,7 +1166,6 @@
 <td>Apis</td>
 <td>Apis mellifera</td>
 <td>Apis mellifera</td>
-<td><code>null</code></td>
 </tr>
 <tr>
 <td>85b96dc2-70ab-446e-afb5-6a4b92b0a450</td>
@@ -1158,8 +1176,7 @@
 <td><span class="cell-added">Amanitaceae</span></td>
 <td><span class="cell-added">Amanita</span></td>
 <td>Amanita muscaria</td>
-<td><code>null</code></td>
-<td><code>null</code></td>
+<td><code>""</code></td>
 </tr>
 <tr>
 <td>38327554-ffbf-4180-b4cf-63c311a26f4e</td>
@@ -1170,8 +1187,7 @@
 <td><span class="cell-added">Erebidae</span></td>
 <td><span class="cell-added">Laelia</span></td>
 <td>Laelia rosea</td>
-<td><code>null</code></td>
-<td><code>null</code></td>
+<td><code>""</code></td>
 </tr>
 <tr>
 <td>8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3</td>
@@ -1182,8 +1198,98 @@
 <td><span class="cell-added">Orchidaceae</span></td>
 <td><span class="cell-added">Laelia</span></td>
 <td>Laelia rosea</td>
-<td><code>null</code></td>
-<td><code>null</code></td>
+<td><code>""</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="add-common-names">Add Common Names</h2>
+<p>You can add vernacular names to resolved outputs as a post-processing step:</p>
+<div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names --resolved-dir examples/output --output-dir examples/output/common</span>
+</code></pre></div>
+<p>This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.</p>
+<p><em><strong>Sample common-name output (<code>examples/output/common/sample.resolved.parquet</code>)</strong></em></p>
+<div class="table-cell-scroll">
+<table>
+<thead>
+<tr>
+<th>uuid</th>
+<th>common_name</th>
+<th>kingdom</th>
+<th>phylum</th>
+<th>class</th>
+<th>order</th>
+<th>family</th>
+<th>genus</th>
+<th>species</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bc2a3f9f-c1f9-48df-9b01-d045475b9d5f</td>
+<td>Human</td>
+<td>Animalia</td>
+<td>Chordata</td>
+<td>Mammalia</td>
+<td>Primates</td>
+<td>Hominidae</td>
+<td>Homo</td>
+<td>Homo sapiens</td>
+</tr>
+<tr>
+<td>21ed76d8-9a3b-406e-a1a3-ef244422bf8e</td>
+<td>Eastern White Oak</td>
+<td>Plantae</td>
+<td>Tracheophyta</td>
+<td>Magnoliopsida</td>
+<td>Fagales</td>
+<td>Fagaceae</td>
+<td>Quercus</td>
+<td>Quercus alba</td>
+</tr>
+<tr>
+<td>4d166a61-b6e5-4709-91ba-b623111014e9</td>
+<td>Drone-Bee</td>
+<td>Animalia</td>
+<td>Arthropoda</td>
+<td>Insecta</td>
+<td>Hymenoptera</td>
+<td>Apidae</td>
+<td>Apis</td>
+<td>Apis mellifera</td>
+</tr>
+<tr>
+<td>85b96dc2-70ab-446e-afb5-6a4b92b0a450</td>
+<td>Fly Agaric</td>
+<td>Fungi</td>
+<td>Basidiomycota</td>
+<td>Agaricomycetes</td>
+<td>Agaricales</td>
+<td>Amanitaceae</td>
+<td>Amanita</td>
+<td>Amanita muscaria</td>
+</tr>
+<tr>
+<td>38327554-ffbf-4180-b4cf-63c311a26f4e</td>
+<td>Underwing, Tiger, Tussock, And Allied Moths</td>
+<td>Animalia</td>
+<td>Arthropoda</td>
+<td>Insecta</td>
+<td>Lepidoptera</td>
+<td>Erebidae</td>
+<td>Laelia</td>
+<td>Laelia rosea</td>
+</tr>
+<tr>
+<td>8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3</td>
+<td>Orchid</td>
+<td>Plantae</td>
+<td>Tracheophyta</td>
+<td>Liliopsida</td>
+<td>Asparagales</td>
+<td>Orchidaceae</td>
+<td>Laelia</td>
+<td>Laelia rosea</td>
 </tr>
 </tbody>
 </table>
