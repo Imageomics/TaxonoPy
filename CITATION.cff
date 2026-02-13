@@ -6,15 +6,21 @@ authors:
 - family-names: "Campolongo"
   given-names: "Elizabeth G."
   orcid: "https://orcid.org/0000-0003-0846-2413"
+- family-names: "Lapp"
+  given-names: "Hilmar"
+  orcid: "https://orcid.org/0000-0001-9107-0714"
+- family-names: "Gu"
+  given-names: "Jianyang"
+  orcid: "https://orcid.org/0000-0002-4060-7427"
 cff-version: 1.2.0
-date-released: "2025-05-23"
+date-released: "2026-02-13"
 identifiers:
-  - description: "The GitHub release URL of tag v0.1.0-beta."
+  - description: "The GitHub release URL of tag v0.2.0."
     type: url
-    value: "https://github.com/Imageomics/TaxonoPy/releases/tag/v0.1.0-beta"
-  - description: "The GitHub URL of the commit tagged with v0.1.0-beta"
+    value: "https://github.com/Imageomics/TaxonoPy/releases/tag/v0.2.0"
+  - description: "The GitHub URL of the commit tagged with v0.2.0"
     type: url
-    value: "https://github.com/Imageomics/TaxonoPy/tree/b3ddeb8eb05d09c15c417ce2d2a4354a2a6fa49d"
+    value: "https://github.com/Imageomics/TaxonoPy/tree/<update-after-release>"
 keywords:
   - imageomics
   - taxonomy
@@ -25,19 +31,19 @@ keywords:
 references:
   - type: software
     title: "GNverifier -- a reconciler and resolver of scientific names against more than 100 data sources."
-    version: "v1.2.2"
+    version: "v1.2.5"
     authors:
       - family-names: "Mozzherin"
         given-names: "Dmitry"
         orcid: "https://orcid.org/0000-0003-1593-1417"
     repository-code: "https://github.com/gnames/gnverifier"
-    date-released: "2024-11-04"
-    doi: 10.5281/zenodo.10070488
+    date-released: "2025-04-02"
+    doi: 10.5281/zenodo.5111542
     license: MIT
 license: MIT
 message: "If you use this software, please cite it using the metadata from this file."
 repository-code: "https://github.com/Imageomics/TaxonoPy"
 title: "TaxonoPy"
-version: "0.1.0-beta"
+version: "0.2.0"
 doi: "10.5281/zenodo.15499454"
 type: software
