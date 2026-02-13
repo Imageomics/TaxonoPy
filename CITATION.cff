@@ -13,7 +13,7 @@ authors:
   given-names: "Jianyang"
   orcid: "https://orcid.org/0000-0002-4060-7427"
 cff-version: 1.2.0
-date-released: "2026-02-12"
+date-released: "2026-02-13"
 identifiers:
   - description: "The GitHub release URL of tag v0.2.0."
     type: url
