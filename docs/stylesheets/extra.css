@@ -104,6 +104,12 @@ figure.table-caption > figcaption {
   font-style: normal;
   font-size: 0.95em;
   color: var(--md-default-fg-color--light);
+  text-wrap: pretty;
+}
+
+figure.table-caption > figcaption .table-caption-detail {
+  display: block;
+  margin-top: 0.1rem;
 }
 
 /* Highlight resolved output differences vs input. */
