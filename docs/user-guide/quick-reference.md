@@ -35,7 +35,7 @@ In the final example entry, there is no available taxonomic data, which can happ
 ## Execute a Basic Resolution
 
 ```console
-taxonopy resolve --input examples/input --output-dir examples/output
+taxonopy resolve --input examples/input --output-dir examples/resolved
 ```
 
 !!! note "Input values"
@@ -49,7 +49,7 @@ taxonopy resolve --input examples/input --output-dir examples/output
 
     If you download both `sample.csv` and `sample.parquet` into `examples/input/`, resolve will fail due to mixed input formats; keep only one format per input directory.
 
-The command above will read in the sample data from `examples/input/`, execute resolution, and write the results to `examples/output/`.
+The command above will read in the sample data from `examples/input/`, execute resolution, and write the results to `examples/resolved/`.
 
 By default, outputs are written to Parquet format, whether the input is CSV or Parquet. To set the output format to CSV, use the `--output-format csv` flag.
 
@@ -82,12 +82,12 @@ _**Sample resolved output (selected columns)**: Green highlights show values add
 You can add vernacular names to resolved outputs as a post-processing step:
 
 ```console
-taxonopy common-names --resolved-dir examples/output --output-dir examples/output/common
+taxonopy common-names --resolved-dir examples/resolved --output-dir examples/resolved/common
 ```
 
 This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
 
-_**Sample common-name output (`examples/output/common/sample.resolved.parquet`)**_
+_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**_
 <div class="table-cell-scroll" markdown>
 
 | uuid | common_name | kingdom | phylum | class | order | family | genus | species |
