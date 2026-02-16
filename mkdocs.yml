@@ -8,7 +8,10 @@ nav:
   - TaxonoPy:
       - User guide: index.md
       - Quick reference: user-guide/quick-reference.md
-      - CLI help reference: command_line_usage/help.md
+      - CLI help reference: 
+          - command_line_usage/help.md
+          - command_line_usage/tutorial.md
+
       - Installation: user-guide/installation.md
       - IO:
           - user-guide/io/index.md
@@ -18,7 +21,13 @@ nav:
       - Development:
           - Contributing:
               - development/contributing/index.md
+<<<<<<< HEAD
       - Acknowledgments: acknowledgments.md
+=======
+          - Failure Analysis Workflow: 
+              - development/failure_analysis_workflow/index.md
+      - Acknowledgements: acknowledgements.md
+>>>>>>> 01fb7a8 (WIP contributing guide docs)
 
 theme:
   name: material
@@ -46,7 +55,7 @@ theme:
   - content.code.copy
   - content.code.annotate
   - content.tooltips
-
+  - content.tabs.link
 extra_css:
 - stylesheets/extra.css
 
@@ -79,3 +88,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
