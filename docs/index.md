@@ -21,7 +21,7 @@ hide:
   </a>
 </div>
 
-TaxonoPy (taxon-o-py) is a command-line tool for creating reproducibly aligned biological taxonomies using the [Global Names Verifier (gnverifier)](https://github.com/gnames/gnverifier).
+TaxonoPy (taxon-o-pie) is a command-line tool for creating reproducibly aligned biological taxonomies using the [Global Names Verifier (GNVerifier)](https://github.com/gnames/gnverifier).
 
 ## Package Purpose
 TaxonoPy aligns data to a single, internally consistent 7-rank Linnaean taxonomic hierarchy across large biodiversity datasets assembled from multiple providers, each of which may use overlapping but nonuniform taxonomies. The goal is AI-ready biodiversity data with clean, aligned taxonomy.
