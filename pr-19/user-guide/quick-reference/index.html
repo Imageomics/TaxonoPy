@@ -1095,7 +1095,7 @@
 </div>
 <p>In the final example entry, there is no available taxonomic data, which can happen in large datasets where there may be a corresponding image but incomplete annotation. </p>
 <h2 id="execute-a-basic-resolution">Execute a Basic Resolution</h2>
-<div class="highlight"><pre><span></span><code><span class="go">taxonopy resolve --input examples/input --output-dir examples/output</span>
+<div class="highlight"><pre><span></span><code><span class="go">taxonopy resolve --input examples/input --output-dir examples/resolved</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Input values</p>
@@ -1108,7 +1108,7 @@
 <p>In all three cases, the base filename is preserved in the output. That is, the output keeps the original filename(s) and adds <code>.resolved</code> / <code>.unsolved</code> before the extension.</p>
 <p>If you download both <code>sample.csv</code> and <code>sample.parquet</code> into <code>examples/input/</code>, resolve will fail due to mixed input formats; keep only one format per input directory.</p>
 </div>
-<p>The command above will read in the sample data from <code>examples/input/</code>, execute resolution, and write the results to <code>examples/output/</code>.</p>
+<p>The command above will read in the sample data from <code>examples/input/</code>, execute resolution, and write the results to <code>examples/resolved/</code>.</p>
 <p>By default, outputs are written to Parquet format, whether the input is CSV or Parquet. To set the output format to CSV, use the <code>--output-format csv</code> flag.</p>
 <p>The output files consist of:</p>
 <ul>
@@ -1205,10 +1205,10 @@
 </div>
 <h2 id="add-common-names">Add Common Names</h2>
 <p>You can add vernacular names to resolved outputs as a post-processing step:</p>
-<div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names --resolved-dir examples/output --output-dir examples/output/common</span>
+<div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names --resolved-dir examples/resolved --output-dir examples/resolved/common</span>
 </code></pre></div>
 <p>This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.</p>
-<p><em><strong>Sample common-name output (<code>examples/output/common/sample.resolved.parquet</code>)</strong></em></p>
+<p><em><strong>Sample common-name output (<code>examples/resolved/common/sample.resolved.parquet</code>)</strong></em></p>
 <div class="table-cell-scroll">
 <table>
 <thead>
