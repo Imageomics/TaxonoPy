@@ -10,7 +10,7 @@ For detailed setup instructions including GNVerifier and troubleshooting, see [I
 
 ## Sample Input
 
-Download the same sample dataset in either format and place it in `examples/input/`:
+Click one of the links below to download the sample dataset (in either parquet or CSV format), then place it in `examples/input/`:
 
 - [sample.parquet](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
 - [sample.csv](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
