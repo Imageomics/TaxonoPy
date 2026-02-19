@@ -83,7 +83,9 @@ _**Sample resolved output (selected columns)**: Green highlights show values add
 You can add vernacular names to resolved outputs as a post-processing step:
 
 ```console
-taxonopy common-names --resolved-dir examples/resolved --output-dir examples/resolved/common
+taxonopy common-names \
+    --resolved-dir examples/resolved \
+    --output-dir examples/resolved/common
 ```
 
 This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
