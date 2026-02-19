@@ -34,6 +34,8 @@ In the final example entry, there is no available taxonomic data, which can happ
 
 ## Execute a Basic Resolution
 
+The command below will read in the sample data from `examples/input/`, execute resolution, and write the results to `examples/resolved/`.
+
 ```console
 taxonopy resolve --input examples/input --output-dir examples/resolved
 ```
@@ -49,7 +51,6 @@ taxonopy resolve --input examples/input --output-dir examples/resolved
 
     If you download both `sample.csv` and `sample.parquet` into `examples/input/`, resolve will fail due to mixed input formats; keep only one format per input directory.
 
-The command above will read in the sample data from `examples/input/`, execute resolution, and write the results to `examples/resolved/`.
 
 By default, outputs are written to Parquet format, whether the input is CSV or Parquet. To set the output format to CSV, use the `--output-format csv` flag.
 
