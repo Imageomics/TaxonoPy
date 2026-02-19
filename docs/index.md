@@ -26,7 +26,7 @@ TaxonoPy (taxon-o-pie) is a command-line tool for creating reproducibly aligned 
 ## Package Purpose
 TaxonoPy aligns data to a single, internally consistent 7-rank Linnaean taxonomic hierarchy across large biodiversity datasets assembled from multiple providers, each of which may use overlapping but nonuniform taxonomies. The goal is AI-ready biodiversity data with clean, aligned taxonomy.
 
-Its development has been driven by its application in the [TreeOfLife-200M dataset](https://huggingface.co/datasets/imageomics/TreeOfLife-200M). This dataset contains over 200 million labeled images of organisms from four core data providers:
+The initial development of this package was driven by its application in the [TreeOfLife-200M dataset](https://huggingface.co/datasets/imageomics/TreeOfLife-200M). This dataset contains over 200 million labeled images of organisms from four core data providers:
 
 - [The Global Biodiversity Information Facility (GBIF)](https://www.gbif.org/)
 - [BIOSCAN-5M](https://biodiversitygenomics.net/projects/5m-insects/)
