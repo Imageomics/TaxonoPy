@@ -10,5 +10,5 @@ Inputs may be CSV or Parquet. Expected columns include:
 
 ## Example Files
 
-- [sample.parquet](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
-- [sample.csv](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
+- [sample.parquet (download)](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
+- [sample.csv (download)](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
