@@ -6,4 +6,4 @@ the cache supports provenance and transparency throughout the resolution process
 
 - [Input](input.md)
 - [Output](output.md)
-- [Cache](../cache.md)
+- [Cache](cache.md)

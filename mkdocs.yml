@@ -14,7 +14,7 @@ nav:
           - user-guide/io/index.md
           - Input: user-guide/io/input.md
           - Output: user-guide/io/output.md
-          - Cache: user-guide/cache.md
+          - Cache: user-guide/io/cache.md
       - Development:
           - Contributing:
               - development/contributing/index.md

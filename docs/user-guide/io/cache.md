@@ -20,7 +20,17 @@ Each `resolve` run uses a cache namespace derived from:
 
 - the command name,
 - the TaxonoPy version, and
-- a fingerprint of the input files (paths + size + modified time).
+- a fingerprint of the input files.
+
+The namespace determines the subdirectory under the base cache dir:
+
+`{base}/{command}_v{version}_{fingerprint}/`
+
+where `{fingerprint}` is a 16-hex-character hash of each input file's path, size, and modification time.
+
+For example, running `taxonopy resolve -i examples/input -o examples/resolved` with TaxonoPy v0.2.0 would create a cache at:
+
+`~/.cache/taxonopy/resolve_v0.2.0_a3f9b2c1d4e5f678/`
 
 This keeps caches isolated across datasets and releases.
 

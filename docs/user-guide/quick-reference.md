@@ -115,7 +115,7 @@ _**Sample unsolved output: Sequestered entries with no usable taxonomy informati
 
 The `resolution_stats.json` file summarizes counts of how many entries from the input fell into each final status across the `resolved` and `unsolved` files.
 
-TaxonoPy also writes cache data to disk (default: `~/.cache/taxonopy`) so it can trace provenance and avoid reprocessing. Use `--show-cache-path`, `--cache-stats`, or `--clear-cache` if you want to inspect or manage it, or see the [Cache](cache.md) guide for details.
+TaxonoPy also writes cache data to disk (default: `~/.cache/taxonopy`) so it can trace provenance and avoid reprocessing. Use `--show-cache-path`, `--cache-stats`, or `--clear-cache` if you want to inspect or manage it, or see the [Cache](io/cache.md) guide for details.
 
 ## Trace an Entry
 
