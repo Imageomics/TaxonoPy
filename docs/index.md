@@ -51,7 +51,7 @@ Taxonomic authorities exist to standardize classification, but:
 - Taxonomy is not fixed—it will change over time with new discoveries and evolving concepts
 
 ## Solution
-TaxonoPy uses the the taxonomic lineages provided by diverse sources to submit batched queries to GNVerifier and resolve to a standardized classification path for each sample in the dataset. It is currently configured to prioritize alignment to the [GBIF Backbone Taxonomy](https://verifier.globalnames.org/data_sources/11). Where GBIF misses, backup sources of the [Catalogue of Life](https://verifier.globalnames.org/data_sources/1) and [Open Tree of Life (OTOL) Reference Taxonomy](https://verifier.globalnames.org/data_sources/179) are used.
+TaxonoPy uses the taxonomic lineages provided by diverse sources to submit batched queries to GNVerifier and resolve to a standardized classification path for each sample in the dataset. It is currently configured to prioritize alignment to the [GBIF Backbone Taxonomy](https://verifier.globalnames.org/data_sources/11). Where GBIF misses, backup sources of the [Catalogue of Life](https://verifier.globalnames.org/data_sources/1) and [Open Tree of Life (OTOL) Reference Taxonomy](https://verifier.globalnames.org/data_sources/179) are used.
 
 ## Getting Started
 To get started with TaxonoPy, see the [Quick Reference](user-guide/quick-reference.md) guide.
