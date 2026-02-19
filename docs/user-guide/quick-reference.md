@@ -87,7 +87,7 @@ taxonopy common-names --resolved-dir examples/resolved --output-dir examples/res
 
 This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
 
-_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**_
+_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**; the last two rows (both Laelia rosea) fall back to family-level common names — none available at species or genus rank._
 <div class="table-cell-scroll" markdown>
 
 | uuid | common_name | kingdom | phylum | class | order | family | genus | species |
