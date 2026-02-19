@@ -36,7 +36,7 @@ The initial development of this package was driven by its application in the [Tr
 Across these resources, taxon names and classifications often conflict. TaxonoPy resolves those differences into a coherent, standardized taxonomy for the combined dataset.
 
 ## Challenges
-The taxonomy information is provided by each data provider and original sources, but the classification can be:
+Taxonomic information provided by different data providers or original sources (e.g., to an aggregator) can result in classifications that are:
 
 - **Inconsistent** — between and within sources (e.g., kingdom *Metazoa* vs. *Animalia*)
 - **Incomplete** — missing ranks or containing "holes"
