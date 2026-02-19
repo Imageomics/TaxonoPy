@@ -1208,7 +1208,7 @@
 <div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names --resolved-dir examples/resolved --output-dir examples/resolved/common</span>
 </code></pre></div>
 <p>This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.</p>
-<p><em><strong>Sample common-name output (<code>examples/resolved/common/sample.resolved.parquet</code>)</strong>; the last two rows (both Laelia rosea) fall back to family-level common names — none available at species or genus rank.</em></p>
+<p><em><strong>Sample common-name output (<code>examples/resolved/common/sample.resolved.parquet</code>)</strong>; the last two rows (both Laelia rosea) fall back to family-level common names—none available at species or genus rank.</em></p>
 <div class="table-cell-scroll">
 <table>
 <thead>
@@ -1227,7 +1227,7 @@
 <tbody>
 <tr>
 <td>bc2a3f9f-c1f9-48df-9b01-d045475b9d5f</td>
-<td>Human</td>
+<td><span class="cell-added">Human</span></td>
 <td>Animalia</td>
 <td>Chordata</td>
 <td>Mammalia</td>
@@ -1238,7 +1238,7 @@
 </tr>
 <tr>
 <td>21ed76d8-9a3b-406e-a1a3-ef244422bf8e</td>
-<td>Eastern White Oak</td>
+<td><span class="cell-added">Eastern White Oak</span></td>
 <td>Plantae</td>
 <td>Tracheophyta</td>
 <td>Magnoliopsida</td>
@@ -1249,7 +1249,7 @@
 </tr>
 <tr>
 <td>4d166a61-b6e5-4709-91ba-b623111014e9</td>
-<td>Drone-Bee</td>
+<td><span class="cell-added">Drone-Bee</span></td>
 <td>Animalia</td>
 <td>Arthropoda</td>
 <td>Insecta</td>
@@ -1260,7 +1260,7 @@
 </tr>
 <tr>
 <td>85b96dc2-70ab-446e-afb5-6a4b92b0a450</td>
-<td>Fly Agaric</td>
+<td><span class="cell-added">Fly Agaric</span></td>
 <td>Fungi</td>
 <td>Basidiomycota</td>
 <td>Agaricomycetes</td>
@@ -1271,7 +1271,7 @@
 </tr>
 <tr>
 <td>38327554-ffbf-4180-b4cf-63c311a26f4e</td>
-<td>Underwing, Tiger, Tussock, And Allied Moths</td>
+<td><span class="cell-added">Underwing, Tiger, Tussock, And Allied Moths</span></td>
 <td>Animalia</td>
 <td>Arthropoda</td>
 <td>Insecta</td>
@@ -1282,7 +1282,7 @@
 </tr>
 <tr>
 <td>8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3</td>
-<td>Orchid</td>
+<td><span class="cell-added">Orchid</span></td>
 <td>Plantae</td>
 <td>Tracheophyta</td>
 <td>Liliopsida</td>
@@ -1335,7 +1335,7 @@
 <div class="highlight"><pre><span></span><code><span class="go">taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input examples/input/sample.csv</span>
 </code></pre></div>
 <p>TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. <em>Laelia rosea</em> resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks were missing, TaxonoPy would not have been able to disambiguate.</p>
-<p>Excerpt (incomplete) from the trace output:</p>
+<p>Excerpt from the trace output:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;query_plan&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;term&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Laelia rosea&quot;</span><span class="p">,</span>
