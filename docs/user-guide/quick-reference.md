@@ -88,17 +88,17 @@ taxonopy common-names --resolved-dir examples/resolved --output-dir examples/res
 
 This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
 
-_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**; the last two rows (both Laelia rosea) fall back to family-level common names — none available at species or genus rank._
+_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**; the last two rows (both Laelia rosea) fall back to family-level common names—none available at species or genus rank._
 <div class="table-cell-scroll" markdown>
 
 | uuid | common_name | kingdom | phylum | class | order | family | genus | species |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | Human | Animalia | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens |
-| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | Eastern White Oak | Plantae | Tracheophyta | Magnoliopsida | Fagales | Fagaceae | Quercus | Quercus alba |
-| 4d166a61-b6e5-4709-91ba-b623111014e9 | Drone-Bee | Animalia | Arthropoda | Insecta | Hymenoptera | Apidae | Apis | Apis mellifera |
-| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | Fly Agaric | Fungi | Basidiomycota | Agaricomycetes | Agaricales | Amanitaceae | Amanita | Amanita muscaria |
-| 38327554-ffbf-4180-b4cf-63c311a26f4e | Underwing, Tiger, Tussock, And Allied Moths | Animalia | Arthropoda | Insecta | Lepidoptera | Erebidae | Laelia | Laelia rosea |
-| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | Orchid | Plantae | Tracheophyta | Liliopsida | Asparagales | Orchidaceae | Laelia | Laelia rosea |
+| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-added">Human</span> | Animalia | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens |
+| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | <span class="cell-added">Eastern White Oak</span> | Plantae | Tracheophyta | Magnoliopsida | Fagales | Fagaceae | Quercus | Quercus alba |
+| 4d166a61-b6e5-4709-91ba-b623111014e9 | <span class="cell-added">Drone-Bee</span> | Animalia | Arthropoda | Insecta | Hymenoptera | Apidae | Apis | Apis mellifera |
+| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fly Agaric</span> | Fungi | Basidiomycota | Agaricomycetes | Agaricales | Amanitaceae | Amanita | Amanita muscaria |
+| 38327554-ffbf-4180-b4cf-63c311a26f4e | <span class="cell-added">Underwing, Tiger, Tussock, And Allied Moths</span> | Animalia | Arthropoda | Insecta | Lepidoptera | Erebidae | Laelia | Laelia rosea |
+| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | <span class="cell-added">Orchid</span> | Plantae | Tracheophyta | Liliopsida | Asparagales | Orchidaceae | Laelia | Laelia rosea |
 
 </div>
 
@@ -128,7 +128,7 @@ taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input ex
 
 TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. _Laelia rosea_ resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks were missing, TaxonoPy would not have been able to disambiguate.
 
-Excerpt (incomplete) from the trace output:
+Excerpt from the trace output:
 
 ```json
 {
