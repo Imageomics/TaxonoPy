@@ -15,7 +15,7 @@ standardized taxonomy where available, while unsolved entries preserve the
 original input ranks. Both outputs include resolution metadata such as status
 and strategy information.
 
-## Example Files
+Running through the sample resolution results in the following core files:
 
 - `examples/resolved/sample.resolved.parquet` (generated with `taxonopy resolve`)
 - `examples/resolved_with_common_names/sample.resolved.parquet` (generated with `taxonopy common-names`)
