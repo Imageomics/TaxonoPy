@@ -1334,7 +1334,7 @@
 <p>You can trace how a single UUID was resolved. For example, let's trace one of the <em>Laelia rosea</em> entries:</p>
 <div class="highlight"><pre><span></span><code><span class="go">taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input examples/input/sample.csv</span>
 </code></pre></div>
-<p>TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. <em>Laelia rosea</em> resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks are missing, TaxonoPy would not have been able to disambiguate.</p>
+<p>TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. <em>Laelia rosea</em> resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks were missing, TaxonoPy would not have been able to disambiguate.</p>
 <p>Excerpt (incomplete) from the trace output:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;query_plan&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
