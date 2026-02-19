@@ -12,8 +12,8 @@ For detailed setup instructions including GNVerifier and troubleshooting, see [I
 
 Click one of the links below to download the sample dataset (in either parquet or CSV format), then place it in `examples/input/`:
 
-- [sample.parquet](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
-- [sample.csv](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
+- [sample.parquet (download)](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.parquet)
+- [sample.csv (download)](https://raw.githubusercontent.com/Imageomics/TaxonoPy/main/examples/input/sample.csv)
 
 _**Sample input**: Note the divergence in kingdoms (Metazoa vs Animalia), missing interior ranks, and fully null entry._
 <div class="table-cell-scroll" markdown>
