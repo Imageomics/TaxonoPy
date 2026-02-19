@@ -690,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../io/cache/" class="md-nav__link">
         
   
   
@@ -1329,7 +1329,7 @@
 </table>
 </div>
 <p>The <code>resolution_stats.json</code> file summarizes counts of how many entries from the input fell into each final status across the <code>resolved</code> and <code>unsolved</code> files.</p>
-<p>TaxonoPy also writes cache data to disk (default: <code>~/.cache/taxonopy</code>) so it can trace provenance and avoid reprocessing. Use <code>--show-cache-path</code>, <code>--cache-stats</code>, or <code>--clear-cache</code> if you want to inspect or manage it, or see the <a href="../cache/">Cache</a> guide for details.</p>
+<p>TaxonoPy also writes cache data to disk (default: <code>~/.cache/taxonopy</code>) so it can trace provenance and avoid reprocessing. Use <code>--show-cache-path</code>, <code>--cache-stats</code>, or <code>--clear-cache</code> if you want to inspect or manage it, or see the <a href="../io/cache/">Cache</a> guide for details.</p>
 <h2 id="trace-an-entry">Trace an Entry</h2>
 <p>You can trace how a single UUID was resolved. For example, let's trace one of the <em>Laelia rosea</em> entries:</p>
 <div class="highlight"><pre><span></span><code><span class="go">taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input examples/input/sample.csv</span>
