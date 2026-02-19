@@ -125,7 +125,7 @@ You can trace how a single UUID was resolved. For example, let's trace one of th
 taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input examples/input/sample.csv
 ```
 
-TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. _Laelia rosea_ resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks are missing, TaxonoPy would not have been able to disambiguate.
+TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. _Laelia rosea_ resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks were missing, TaxonoPy would not have been able to disambiguate.
 
 Excerpt (incomplete) from the trace output:
 
