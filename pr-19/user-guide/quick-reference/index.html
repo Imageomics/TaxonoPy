@@ -1205,7 +1205,9 @@
 </div>
 <h2 id="add-common-names">Add Common Names</h2>
 <p>You can add vernacular names to resolved outputs as a post-processing step:</p>
-<div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names --resolved-dir examples/resolved --output-dir examples/resolved/common</span>
+<div class="highlight"><pre><span></span><code><span class="go">taxonopy common-names \</span>
+<span class="go">    --resolved-dir examples/resolved \</span>
+<span class="go">    --output-dir examples/resolved/common</span>
 </code></pre></div>
 <p>This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.</p>
 <p><em><strong>Sample common-name output (<code>examples/resolved/common/sample.resolved.parquet</code>)</strong>; the last two rows (both Laelia rosea) fall back to family-level common names—none available at species or genus rank.</em></p>
