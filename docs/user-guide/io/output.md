@@ -17,5 +17,8 @@ and strategy information.
 
 Running through the sample resolution results in the following core files:
 
-- `examples/resolved/sample.resolved.parquet` (generated with `taxonopy resolve`)
-- `examples/resolved_with_common_names/sample.resolved.parquet` (generated with `taxonopy common-names`)
+- `taxonopy resolve`:
+    - `examples/resolved/sample.resolved.parquet`
+    - `examples/resolved/sample.unsolved.parquet`
+- `taxonopy common-names`:
+    - `examples/resolved/common/sample.resolved.parquet`
