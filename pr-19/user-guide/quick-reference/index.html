@@ -1334,7 +1334,9 @@
 <p>TaxonoPy also writes cache data to disk (default: <code>~/.cache/taxonopy</code>) so it can trace provenance and avoid reprocessing. Use <code>--show-cache-path</code>, <code>--cache-stats</code>, or <code>--clear-cache</code> if you want to inspect or manage it, or see the <a href="../io/cache/">Cache</a> guide for details.</p>
 <h2 id="trace-an-entry">Trace an Entry</h2>
 <p>You can trace how a single UUID was resolved. For example, let's trace one of the <em>Laelia rosea</em> entries:</p>
-<div class="highlight"><pre><span></span><code><span class="go">taxonopy trace entry --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 --from-input examples/input/sample.csv</span>
+<div class="highlight"><pre><span></span><code><span class="go">taxonopy trace entry \</span>
+<span class="go">    --uuid 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 \</span>
+<span class="go">    --from-input examples/input/sample.csv</span>
 </code></pre></div>
 <p>TaxonoPy uses whatever rank context you provide (even if sparse) to disambiguate identical names. <em>Laelia rosea</em> resolves differently under Animalia vs. Plantae as a hemihomonym. If higher ranks were missing, TaxonoPy would not have been able to disambiguate.</p>
 <p>Excerpt from the trace output:</p>
