@@ -12,7 +12,7 @@ Use this file primarily when operating as a coding agent. Its intent is to captu
 - CLI-first tool for normalizing taxonomy: ingest (Parquet/CSV) → parse/group (`TaxonomicEntry`/`EntryGroupRef`) → plan + run GNVerifier queries → classify via strategy profiles → write
 resolved & unsolved outputs → optional common-name enrichment.
 - Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`),
-resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), tracing (`trace/entry.py`).
+resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), manifest tracking (`manifest.py`), tracing (`trace/entry.py`).
 - Dependencies (see `pyproject.toml`): Python ≥ 3.10, Polars, Pandas/PyArrow, Pydantic v2, tqdm, requests; dev extras provide Ruff, pytest scaffolding, datamodel-code-generator, pre-commit.
 
 ## Environment Setup
@@ -73,6 +73,7 @@ taxonopy common-names \
 - `--clear-cache`
 - `--refresh-cache` (per run) to ignore stale grouping/parsing caches.
 - Don’t delete cache files manually unless instructed; prefer the flags above.
+- `--full-rerun` clears the input-scoped cache namespace and deletes only the files listed in `taxonopy_resolve_manifest.json` (written before any output on every run). Non-TaxonoPy files in the output directory are never touched. If no manifest is found (pre-v0.3.0 output), a warning is logged and no files are removed.
 
 ## Validation & QA
 - Run `ruff check .` after modifying Python files (requires the `dev` extra).
