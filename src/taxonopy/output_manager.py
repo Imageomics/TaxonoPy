@@ -177,6 +177,75 @@ def map_resolution_results_to_entries(
     logger.info(f"Mapped final resolution results for {processed_groups} entry groups to {mapped_uuids} individual entries.")
     return uuid_to_final_attempt
 
+
+def _resolve_output_paths_for_input(
+    input_file: str,
+    ref_dir: str,
+    output_dir: str,
+    output_format: str,
+    force_input: bool = False,
+) -> Tuple[str, ...]:
+    """Return absolute output file path(s) for a single input file.
+
+    This is the single source of truth for TaxonoPy output file naming.
+    Both the generate functions and compute_output_paths use it so that
+    naming convention changes need only be made here.
+
+    Args:
+        input_file: Absolute path to the input file.
+        ref_dir: Root directory for preserving subdirectory structure.
+        output_dir: Output directory.
+        output_format: 'csv' or 'parquet'.
+        force_input: True when --force-input is set (produces .forced.* files).
+
+    Returns:
+        Tuple of absolute output paths: (resolved, unsolved) or (forced,).
+    """
+    rel_path = os.path.relpath(input_file, ref_dir)
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
+    rel_dir = os.path.dirname(rel_path)
+    file_dir = os.path.join(output_dir, rel_dir) if rel_dir else output_dir
+    if force_input:
+        return (os.path.join(file_dir, f"{base_name}.forced.{output_format}"),)
+    return (
+        os.path.join(file_dir, f"{base_name}.resolved.{output_format}"),
+        os.path.join(file_dir, f"{base_name}.unsolved.{output_format}"),
+    )
+
+
+def compute_output_paths(
+    input_path: str,
+    input_files: List[str],
+    output_dir: str,
+    output_format: str,
+    force_input: bool = False,
+) -> List[str]:
+    """Return intended output file paths (relative to output_dir) for a resolve run.
+
+    Used by the manifest system to record files before they are written.
+    Does not include fixed outputs such as resolution_stats.json or the
+    manifest file itself — callers are responsible for appending those.
+
+    Args:
+        input_path: The --input argument (file or directory).
+        input_files: Expanded list of input file paths from find_input_files.
+        output_dir: The --output-dir argument.
+        output_format: 'csv' or 'parquet'.
+        force_input: True when --force-input is set.
+
+    Returns:
+        List of relative file paths (relative to output_dir).
+    """
+    ref_dir = input_path if os.path.isdir(input_path) else os.path.dirname(input_path)
+    files = []
+    for input_file in input_files:
+        for abs_path in _resolve_output_paths_for_input(
+            input_file, ref_dir, output_dir, output_format, force_input
+        ):
+            files.append(os.path.relpath(abs_path, output_dir))
+    return files
+
+
 def generate_resolution_output(
     input_path: str,
     output_dir: str,
@@ -209,25 +278,16 @@ def generate_resolution_output(
     resolved_files = []
     unsolved_files = []
 
+    ref_dir = input_path if os.path.isdir(input_path) else os.path.dirname(input_path)
     for input_file in input_files:
         logger.info(f"Generating resolution output for: {input_file}")
 
         input_file_name = os.path.basename(input_file)
 
-        # Preserve directory structure
-        rel_path = os.path.relpath(input_file, input_path if os.path.isdir(input_path) else os.path.dirname(input_path))
-        base_name = os.path.splitext(os.path.basename(input_file))[0]
-        rel_dir = os.path.dirname(rel_path)
-        
-        resolved_dir = os.path.join(output_dir, rel_dir)
-        unsolved_dir = os.path.join(output_dir, rel_dir)
-        os.makedirs(resolved_dir, exist_ok=True)
-        os.makedirs(unsolved_dir, exist_ok=True)
-        
-        resolved_file_name = f"{base_name}.resolved.{output_format}"
-        unsolved_file_name = f"{base_name}.unsolved.{output_format}"
-        resolved_file_path = os.path.join(resolved_dir, resolved_file_name)
-        unsolved_file_path = os.path.join(unsolved_dir, unsolved_file_name)
+        resolved_file_path, unsolved_file_path = _resolve_output_paths_for_input(
+            input_file, ref_dir, output_dir, output_format, force_input=False
+        )
+        os.makedirs(os.path.dirname(resolved_file_path), exist_ok=True)
 
         try:
             if input_file.endswith(".parquet"):
@@ -330,6 +390,7 @@ def generate_forced_output(
     output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
     generated_files = []
+    ref_dir = input_path if os.path.isdir(input_path) else os.path.dirname(input_path)
 
     for input_file in input_files:
          try:
@@ -381,19 +442,12 @@ def generate_forced_output(
             output_rows.append(output_row)
 
          if output_rows:
+            (output_file_path,) = _resolve_output_paths_for_input(
+                input_file, ref_dir, output_dir, output_format, force_input=True
+            )
             try:
                 output_df = pl.DataFrame(output_rows)
-
-                # Preserve directory structure
-                rel_path = os.path.relpath(input_file, input_path if os.path.isdir(input_path) else os.path.dirname(input_path))
-                base_name = os.path.splitext(os.path.basename(input_file))[0]
-                rel_dir = os.path.dirname(rel_path)
-                
-                output_dir_for_file = os.path.join(output_dir, rel_dir)
-                os.makedirs(output_dir_for_file, exist_ok=True)
-                
-                output_file_name = f"{base_name}.forced.{output_format}"
-                output_file_path = os.path.join(output_dir_for_file, output_file_name)
+                os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
                 if output_format == "parquet":
                     output_df.write_parquet(output_file_path)
