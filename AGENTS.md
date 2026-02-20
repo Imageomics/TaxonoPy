@@ -101,7 +101,12 @@ taxonopy common-names \
 - Follow best version control practices including, but not limited to, the following:
   - At the start of a session, ensure that work is done on a relevant branch (not `main`), and pull the latest changes from `main` before starting.
   - Make commit messages imperative, one line, and descriptive of the change's "what" and "why" (not "how"). Any needed description beyond this can go in the extended body.
-- For every commit you produce, append "[AI-assisted session]" as a final line in the extended commit message body.
+- For every commit you produce, add a `Co-Authored-By` trailer in the extended commit message body identifying the model and provider, e.g.:
+  ```
+  Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+  Co-Authored-By: GPT-4o <noreply@openai.com>
+  Co-Authored-By: Gemini 2.0 Flash <noreply@google.com>
+  ```
 - Do not use Git or the GitHub CLI for any destructive actions like `git reset --hard`, `git rebase`, `git push --force`, `git branch -D`, `gh repo delete`, `gh issue delete`, and so on, nor commands like `rm -rf` that delete files or directories. If you consider a destructive command to be necessary, stop and discuss the situation with a maintainer.
 - When modifying CLI behavior, resolution strategies, or caching semantics, update this AGENTS file so future agents follow the latest contract.
 - Run `ruff check .`, `pytest`, and the sample `taxonopy resolve` workflow before handing off changes or opening discussions with maintainers.
