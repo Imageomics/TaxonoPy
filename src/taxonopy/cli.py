@@ -11,7 +11,6 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 import json
-import shutil
 
 from taxonopy import __version__
 from taxonopy.config import config
@@ -28,7 +27,7 @@ from taxonopy.input_parser import find_input_files
 from taxonopy.query.gnverifier_client import GNVerifierClient
 from taxonopy.resolution.attempt_manager import ResolutionAttemptManager
 
-from taxonopy.output_manager import generate_forced_output, generate_resolution_output
+from taxonopy.output_manager import generate_forced_output, generate_resolution_output, write_output_manifest, read_output_manifest, MANIFEST_FILENAME
 
 from taxonopy.trace import entry as trace_entry
 
@@ -182,7 +181,7 @@ def run_resolve(args: argparse.Namespace) -> int:
 
     namespace_stats = get_cache_stats()
     existing_namespace = namespace_stats["entry_count"] > 0 and not cache_cleared_via_flag
-    existing_output = any(output_dir.glob("*.resolved.*"))
+    existing_output = (output_dir / MANIFEST_FILENAME).exists() or any(output_dir.glob("*.resolved.*"))
     if (existing_namespace or existing_output) and not args.full_rerun:
         logging.warning(
             "Existing cache (%s) and/or output (%s) detected for this input. Rerun with --full-rerun to replace them.",
@@ -191,11 +190,21 @@ def run_resolve(args: argparse.Namespace) -> int:
         )
         return 0
     if args.full_rerun:
-        logging.info("--full-rerun set: clearing cache and output directory before proceeding.")
+        logging.info("--full-rerun set: clearing cache and removing previous TaxonoPy outputs before proceeding.")
         clear_cache()
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
+        manifest_files = read_output_manifest(str(output_dir))
+        manifest_path = output_dir / MANIFEST_FILENAME
+        for f in manifest_files:
+            try:
+                Path(f).unlink(missing_ok=True)
+            except OSError as e:
+                logging.warning("Could not remove output file %s: %s", f, e)
+        manifest_path.unlink(missing_ok=True)
+        if manifest_files:
+            logging.info("Removed %d previously generated TaxonoPy output files.", len(manifest_files))
+        else:
+            logging.info("No manifest found; no previous TaxonoPy outputs removed.")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         start_time = time.time()
@@ -205,6 +214,7 @@ def run_resolve(args: argparse.Namespace) -> int:
         if args.force_input:
             logging.info("Skipping resolution due to --force-input flag")
             generated_files = generate_forced_output(args.input, args.output_dir, args.output_format)
+            write_output_manifest(args.output_dir, generated_files)
             elapsed_time = time.time() - start_time
             logging.info(f"Forced output completed in {elapsed_time:.2f} seconds. Files: {generated_files}")
             return 0
@@ -280,6 +290,9 @@ def run_resolve(args: argparse.Namespace) -> int:
         stats_file_path = output_dir / "resolution_stats.json"
         stats_file_path.write_text(json.dumps(final_stats, indent=4))
         logging.info(f"Statistics saved to {stats_file_path}")
+        # Write manifest of all generated output files
+        all_output_files = resolved_files + unsolved_files + [str(stats_file_path)]
+        write_output_manifest(str(output_dir), all_output_files)
         elapsed_time = time.time() - start_time
         logging.info(f"Processing completed in {elapsed_time:.2f} seconds.")
         return 0
