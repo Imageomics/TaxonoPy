@@ -71,7 +71,23 @@ The trace output provides:
 To determine whether a failure is due to missing data or genuine ambiguity,
 independently verify the same taxonomic name using **Global Names Verifier**.
 
-=== "CLI / Alias Usage"
+=== "Docker Runtime"
+
+    ```bash
+    docker run --rm -i gnames/gnverifier:v1.2.5 \
+      -j 1 \
+      --format compact \
+      --capitalize \
+      --all_matches \
+      --sources 11 \
+      "<scientific_name>" | jq
+    ```
+
+    Runs GNVerifier inside an official container image.
+    This method requires Docker but does not require local installation
+    of GNVerifier.
+
+=== "Local CLI Installation"
 
     ```bash
     gnverifier -j 1 \
@@ -82,28 +98,9 @@ independently verify the same taxonomic name using **Global Names Verifier**.
       "<scientific_name>" | jq
     ```
 
-    This approach uses the GNVerifier command-line tool directly and is
-    suitable for shell-based workflows and batch inspection.
-
-=== "API Usage (Programmatic)"
-
-    ```bash
-    curl -X POST "https://verifier.globalnames.org/api/v1/verifications" \
-      -H "Content-Type: application/json" \
-      -d '{
-            "names": ["<scientific_name>"],
-            "capitalize": true,
-            "sources": [11]
-          }' | jq
-    ```
-
-    This method uses the GNVerifier HTTP API and is appropriate for
-    integration into automated pipelines or custom applications.
-
+    Runs GNVerifier installed directly on the local system.
+    
 ---
-
-This step confirms whether multiple accepted records exist in authoritative
-sources such as GBIF.
 
 ## 5. Common Failure Pattern: Multi-Accepted Match Tie
 
