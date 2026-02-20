@@ -21,13 +21,10 @@ nav:
       - Development:
           - Contributing:
               - development/contributing/index.md
-<<<<<<< HEAD
-      - Acknowledgments: acknowledgments.md
-=======
+              
           - Failure Analysis Workflow: 
               - development/failure_analysis_workflow/index.md
-      - Acknowledgements: acknowledgements.md
->>>>>>> 01fb7a8 (WIP contributing guide docs)
+      - Acknowledgments: acknowledgments.md
 
 theme:
   name: material
