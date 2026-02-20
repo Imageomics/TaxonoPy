@@ -7,7 +7,12 @@ import requests
 from pathlib import Path
 import shutil
 
+from taxonopy import __version__
 from taxonopy.constants import TAXONOMIC_RANKS_BY_SPECIFICITY, INVALID_VALUES, TAXONOMIC_RANKS
+from taxonopy.manifest import (
+    get_intended_files_for_common_names,
+    write_manifest,
+)
 
 # Module-level constant for join columns to avoid duplication
 PARENT_RANKS = TAXONOMIC_RANKS[:-1]
@@ -462,6 +467,13 @@ def main(annotation_dir=None, output_dir=None):
     annotation_paths = glob.glob(
         os.path.join(annotation_dir, "**", "*.resolved.parquet"),
         recursive=True
+    )
+
+    # Write manifest before producing any output
+    os.makedirs(output_dir, exist_ok=True)
+    write_manifest(
+        output_dir, "common-names", __version__, annotation_dir, None,
+        get_intended_files_for_common_names(annotation_dir, annotation_paths),
     )
 
     # Process one-by-one, preserving subdirs
