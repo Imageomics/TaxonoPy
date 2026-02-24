@@ -143,6 +143,12 @@ class TestReadManifest:
         assert data["command"] == "resolve"
         assert "a.csv" in data["files"]
 
+    def test_raises_on_corrupt_json(self, tmp_path):
+        (tmp_path / MANIFEST_FILENAMES["resolve"]).write_text("not valid json {{{")
+
+        with pytest.raises(json.JSONDecodeError):
+            read_manifest(str(tmp_path), "resolve")
+
 
 class TestDeleteFromManifest:
     def test_deletes_listed_files_and_manifest(self, tmp_path):
