@@ -97,7 +97,6 @@ class TestGetIntendedFilesForCommonNames:
 
         files = get_intended_files_for_common_names(str(annotation_dir), [str(p)])
 
-        import os
         assert os.path.join("sub", "sample.resolved.parquet") in files
 
 
