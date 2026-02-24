@@ -147,12 +147,39 @@ def delete_from_manifest(output_dir: str, command: str) -> bool:
     if manifest is None:
         return False
     output_dir_path = Path(output_dir)
+    resolved_output_dir = output_dir_path.resolve()
     removed = 0
     for rel_path in manifest.get("files", []):
+        if not isinstance(rel_path, (str, os.PathLike)):
+            logger.warning(
+                "Skipping non-string entry in manifest for command '%s': %r",
+                command,
+                rel_path,
+            )
+            continue
         f = output_dir_path / rel_path
-        if f.exists():
-            f.unlink()
-            removed += 1
+        if not f.exists():
+            continue
+        try:
+            resolved_f = f.resolve(strict=True)
+        except OSError:
+            logger.warning(
+                "Skipping file with invalid path in manifest for command '%s': %r",
+                command,
+                rel_path,
+            )
+            continue
+        try:
+            resolved_f.relative_to(resolved_output_dir)
+        except ValueError:
+            logger.warning(
+                "Skipping file outside output directory in manifest for command '%s': %r",
+                command,
+                rel_path,
+            )
+            continue
+        resolved_f.unlink(missing_ok=True)
+        removed += 1
     manifest_path = output_dir_path / MANIFEST_FILENAMES[command]
     if manifest_path.exists():
         manifest_path.unlink()
