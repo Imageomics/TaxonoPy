@@ -127,7 +127,17 @@ def read_manifest(output_dir: str, command: str) -> Optional[dict]:
     manifest_path = Path(output_dir) / MANIFEST_FILENAMES[command]
     if not manifest_path.exists():
         return None
-    return json.loads(manifest_path.read_text())
+    try:
+        return json.loads(manifest_path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        logger.error(
+            "Cannot read manifest at '%s': %s -- automated rerun cleanup is not possible. "
+            "To proceed: fix or delete this file and remove previous TaxonoPy output files "
+            "from this output directory manually, or specify a new output directory with --output-dir.",
+            manifest_path,
+            exc,
+        )
+        raise
 
 
 def delete_from_manifest(output_dir: str, command: str) -> bool:
