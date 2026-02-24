@@ -1,12 +1,8 @@
 """Manifest tracking for TaxonoPy output files.
 
-Each TaxonoPy command writes a manifest file to its output directory listing
-every file it intends to produce. The manifest is written before any output
-files are created, so interrupted runs leave a complete record of what should
-be cleaned up on the next --full-rerun.
+Each TaxonoPy command writes a manifest file to its output directory listing every file it intends to produce. The manifest is written before any output files are created, so interrupted runs leave a complete record of what should be cleaned up on the next --full-rerun.
 
-Manifest files are command-scoped to avoid collisions when multiple commands
-share an output directory.
+Manifest files are command-scoped to avoid collisions when multiple commands share an output directory.
 """
 
 import json
@@ -37,8 +33,7 @@ def get_intended_files_for_resolve(
 ) -> List[str]:
     """Return the full list of files a resolve run intends to write.
 
-    Delegates output path naming to compute_output_paths (single source of
-    truth in output_manager), then appends the fixed outputs.
+    Delegates output path naming to compute_output_paths (single source of truth in output_manager), then appends the fixed outputs.
 
     Args:
         input_path: The --input argument (file or directory).
@@ -63,9 +58,7 @@ def get_intended_files_for_common_names(
 ) -> List[str]:
     """Return the full list of files a common-names run intends to write.
 
-    Output files preserve the input directory structure, so paths are simply
-    the relative paths of the annotation files. No naming convention is
-    encoded here.
+    Output files preserve the input directory structure, so paths are simply the relative paths of the annotation files. No naming convention is encoded here.
 
     Args:
         annotation_dir: The --resolved-dir argument.
@@ -130,13 +123,7 @@ def read_manifest(output_dir: str, command: str) -> Optional[dict]:
     try:
         return json.loads(manifest_path.read_text())
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        logger.error(
-            "Cannot read manifest at '%s': %s -- automated rerun cleanup is not possible. "
-            "To proceed: fix or delete this file and remove previous TaxonoPy output files "
-            "from this output directory manually, or specify a new output directory with --output-dir.",
-            manifest_path,
-            exc,
-        )
+        logger.error("Cannot read manifest at '%s': %s -- automated rerun cleanup is not possible. To proceed: fix or delete this file and remove previous TaxonoPy output files from this output directory manually, or specify a new output directory with --output-dir.", manifest_path, exc)
         raise
 
 

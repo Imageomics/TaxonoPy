@@ -187,9 +187,7 @@ def _resolve_output_paths_for_input(
 ) -> Tuple[str, ...]:
     """Return absolute output file path(s) for a single input file.
 
-    This is the single source of truth for TaxonoPy output file naming.
-    Both the generate functions and compute_output_paths use it so that
-    naming convention changes need only be made here.
+    This is the single source of truth for TaxonoPy output file naming. Both the generate functions and compute_output_paths use it so that naming convention changes need only be made here.
 
     Args:
         input_file: Absolute path to the input file.
@@ -222,9 +220,7 @@ def compute_output_paths(
 ) -> List[str]:
     """Return intended output file paths (relative to output_dir) for a resolve run.
 
-    Used by the manifest system to record files before they are written.
-    Does not include fixed outputs such as resolution_stats.json or the
-    manifest file itself — callers are responsible for appending those.
+    Used by the manifest system to record files before they are written. Does not include fixed outputs such as resolution_stats.json or the manifest file itself — callers are responsible for appending those.
 
     Args:
         input_path: The --input argument (file or directory).
