@@ -9,10 +9,8 @@ Use this file primarily when operating as a coding agent. Its intent is to captu
 - When instructions here conflict with new information, trust the current codebase and update AGENTS.md alongside your change. If critical context is still missing, pause and ask the maintainer rather than guessing.
 
 ## Project Snapshot
-- CLI-first tool for normalizing taxonomy: ingest (Parquet/CSV) → parse/group (`TaxonomicEntry`/`EntryGroupRef`) → plan + run GNVerifier queries → classify via strategy profiles → write
-resolved & unsolved outputs → optional common-name enrichment.
-- Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`),
-resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), tracing (`trace/entry.py`).
+- CLI-first tool for normalizing taxonomy: ingest (Parquet/CSV) → parse/group (`TaxonomicEntry`/`EntryGroupRef`) → plan + run GNVerifier queries → classify via strategy profiles → write resolved & unsolved outputs → optional common-name enrichment.
+- Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`), resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), manifest tracking (`manifest.py`), tracing (`trace/entry.py`).
 - Dependencies (see `pyproject.toml`): Python ≥ 3.10, Polars, Pandas/PyArrow, Pydantic v2, tqdm, requests; dev extras provide Ruff, pytest scaffolding, datamodel-code-generator, pre-commit.
 
 ## Environment Setup
@@ -73,6 +71,7 @@ taxonopy common-names \
 - `--clear-cache`
 - `--refresh-cache` (per run) to ignore stale grouping/parsing caches.
 - Don’t delete cache files manually unless instructed; prefer the flags above.
+- `--full-rerun` clears the input-scoped cache namespace and deletes only the files listed in `taxonopy_resolve_manifest.json` (written before any output on every run). Non-TaxonoPy files in the output directory are never touched. If no manifest is found (pre-v0.3.0 output), a warning is logged and no files are removed.
 
 ## Validation & QA
 - Run `ruff check .` after modifying Python files (requires the `dev` extra).
@@ -80,6 +79,9 @@ taxonopy common-names \
 - Validate functional changes by running `taxonopy resolve` against `examples/input` (or issue-specific datasets) and reviewing outputs/logs, plus `taxonopy trace entry ...` when touching parsing/grouping logic.
 
 ## Coding Conventions
+- Don't hard-wrap comments. Only use line breaks for new paragraphs. Let the editor soft-wrap content.
+- Don't hard-wrap string literals. Keep each log or user-facing message in a single source line and rely on soft wrapping when reading it.
+- Don't hard-wrap markdown prose in documentation. Let the renderer wrap lines as needed.
 - Prefer frozen dataclasses (`types/data_classes.py`) for shared structures; mutate via new objects rather than in-place edits.
 - Rely on strong typing + Pydantic models for external data (`types/gnverifier.py`); regenerate via the helper script instead of editing generated files.
 - Log through the standard logging config (`logging_config.setup_logging`) and keep tqdm progress bars for long-running loops.
@@ -100,7 +102,12 @@ taxonopy common-names \
 - Follow best version control practices including, but not limited to, the following:
   - At the start of a session, ensure that work is done on a relevant branch (not `main`), and pull the latest changes from `main` before starting.
   - Make commit messages imperative, one line, and descriptive of the change's "what" and "why" (not "how"). Any needed description beyond this can go in the extended body.
-- For every commit you produce, append "[AI-assisted session]" as a final line in the extended commit message body.
+- For every commit you produce, add a `Co-Authored-By` trailer in the extended commit message body identifying the model and provider, e.g.:
+  ```
+  Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+  Co-Authored-By: GPT-4o <noreply@openai.com>
+  Co-Authored-By: Gemini 2.0 Flash <noreply@google.com>
+  ```
 - Do not use Git or the GitHub CLI for any destructive actions like `git reset --hard`, `git rebase`, `git push --force`, `git branch -D`, `gh repo delete`, `gh issue delete`, and so on, nor commands like `rm -rf` that delete files or directories. If you consider a destructive command to be necessary, stop and discuss the situation with a maintainer.
 - When modifying CLI behavior, resolution strategies, or caching semantics, update this AGENTS file so future agents follow the latest contract.
 - Run `ruff check .`, `pytest`, and the sample `taxonopy resolve` workflow before handing off changes or opening discussions with maintainers.

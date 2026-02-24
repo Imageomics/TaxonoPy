@@ -11,7 +11,12 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 import json
-import shutil
+from taxonopy.manifest import (
+    MANIFEST_FILENAMES,
+    delete_from_manifest,
+    get_intended_files_for_resolve,
+    write_manifest,
+)
 
 from taxonopy import __version__
 from taxonopy.config import config
@@ -182,7 +187,10 @@ def run_resolve(args: argparse.Namespace) -> int:
 
     namespace_stats = get_cache_stats()
     existing_namespace = namespace_stats["entry_count"] > 0 and not cache_cleared_via_flag
-    existing_output = any(output_dir.glob("*.resolved.*"))
+    existing_output = (
+        (output_dir / MANIFEST_FILENAMES["resolve"]).exists()
+        or any(output_dir.glob("*.resolved.*"))
+    )
     if (existing_namespace or existing_output) and not args.full_rerun:
         logging.warning(
             "Existing cache (%s) and/or output (%s) detected for this input. Rerun with --full-rerun to replace them.",
@@ -191,11 +199,13 @@ def run_resolve(args: argparse.Namespace) -> int:
         )
         return 0
     if args.full_rerun:
-        logging.info("--full-rerun set: clearing cache and output directory before proceeding.")
+        logging.info("--full-rerun set: clearing cache and TaxonoPy-specific output files before proceeding.")
         clear_cache()
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
+        if not delete_from_manifest(str(output_dir), "resolve"):
+            logging.warning(
+                "--full-rerun: no manifest found in %s; no output files were removed.",
+                output_dir,
+            )
 
     try:
         start_time = time.time()
@@ -204,6 +214,12 @@ def run_resolve(args: argparse.Namespace) -> int:
 
         if args.force_input:
             logging.info("Skipping resolution due to --force-input flag")
+            write_manifest(
+                str(output_dir), "resolve", __version__, args.input, str(cache_path),
+                get_intended_files_for_resolve(
+                    args.input, input_files, str(output_dir), args.output_format, force_input=True
+                ),
+            )
             generated_files = generate_forced_output(args.input, args.output_dir, args.output_format)
             elapsed_time = time.time() - start_time
             logging.info(f"Forced output completed in {elapsed_time:.2f} seconds. Files: {generated_files}")
@@ -259,6 +275,12 @@ def run_resolve(args: argparse.Namespace) -> int:
 
 
         # 4. Generate output
+        write_manifest(
+            str(output_dir), "resolve", __version__, args.input, str(cache_path),
+            get_intended_files_for_resolve(
+                args.input, input_files, str(output_dir), args.output_format, force_input=False
+            ),
+        )
         logging.info("Generating output files...")
         # Pass only the manager and entry group map
         resolved_files, unsolved_files = generate_resolution_output(
