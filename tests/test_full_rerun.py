@@ -1,5 +1,7 @@
 import json
+import os
 
+import pytest
 
 from taxonopy.manifest import (
     MANIFEST_FILENAMES,
@@ -217,3 +219,49 @@ class TestDeleteFromManifest:
         output_file.write_text("data")
         assert manifest_path.exists()
         assert output_file.exists()
+
+    def test_skips_non_string_entries_in_manifest(self, tmp_path):
+        (tmp_path / "valid.csv").write_text("data")
+        files = [42, None, "valid.csv", MANIFEST_FILENAMES["resolve"]]
+        write_manifest(str(tmp_path), "resolve", "0.2.0", "input/", None, files)
+
+        result = delete_from_manifest(str(tmp_path), "resolve")
+
+        assert result is True
+        assert not (tmp_path / "valid.csv").exists()
+        assert not (tmp_path / MANIFEST_FILENAMES["resolve"]).exists()
+
+    def test_rejects_path_traversal_in_manifest(self, tmp_path):
+        outside = tmp_path.parent / "outside.txt"
+        outside.write_text("keep me")
+        files = ["../outside.txt", MANIFEST_FILENAMES["resolve"]]
+        write_manifest(str(tmp_path), "resolve", "0.2.0", "input/", None, files)
+
+        delete_from_manifest(str(tmp_path), "resolve")
+
+        assert outside.exists()
+
+    def test_rejects_absolute_path_in_manifest(self, tmp_path):
+        outside = tmp_path.parent / "outside_abs.txt"
+        outside.write_text("keep me")
+        files = [str(outside.resolve()), MANIFEST_FILENAMES["resolve"]]
+        write_manifest(str(tmp_path), "resolve", "0.2.0", "input/", None, files)
+
+        delete_from_manifest(str(tmp_path), "resolve")
+
+        assert outside.exists()
+
+    def test_rejects_symlink_escape_in_manifest(self, tmp_path):
+        outside = tmp_path.parent / "outside_sym.txt"
+        outside.write_text("keep me")
+        link = tmp_path / "link.txt"
+        try:
+            link.symlink_to(outside)
+        except OSError:
+            pytest.skip("symlink creation not permitted on this platform")
+        files = ["link.txt", MANIFEST_FILENAMES["resolve"]]
+        write_manifest(str(tmp_path), "resolve", "0.2.0", "input/", None, files)
+
+        delete_from_manifest(str(tmp_path), "resolve")
+
+        assert outside.exists()
