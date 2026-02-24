@@ -9,10 +9,8 @@ Use this file primarily when operating as a coding agent. Its intent is to captu
 - When instructions here conflict with new information, trust the current codebase and update AGENTS.md alongside your change. If critical context is still missing, pause and ask the maintainer rather than guessing.
 
 ## Project Snapshot
-- CLI-first tool for normalizing taxonomy: ingest (Parquet/CSV) → parse/group (`TaxonomicEntry`/`EntryGroupRef`) → plan + run GNVerifier queries → classify via strategy profiles → write
-resolved & unsolved outputs → optional common-name enrichment.
-- Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`),
-resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), manifest tracking (`manifest.py`), tracing (`trace/entry.py`).
+- CLI-first tool for normalizing taxonomy: ingest (Parquet/CSV) → parse/group (`TaxonomicEntry`/`EntryGroupRef`) → plan + run GNVerifier queries → classify via strategy profiles → write resolved & unsolved outputs → optional common-name enrichment.
+- Source layout: CLI entry (`src/taxonopy/cli.py`), parsing/grouping/cache (`input_parser`, `entry_grouper`, `cache_manager`), query stack (`query/planner|executor|gnverifier_client`), resolution logic (`resolution/attempt_manager` + profiles), outputs (`output_manager`), manifest tracking (`manifest.py`), tracing (`trace/entry.py`).
 - Dependencies (see `pyproject.toml`): Python ≥ 3.10, Polars, Pandas/PyArrow, Pydantic v2, tqdm, requests; dev extras provide Ruff, pytest scaffolding, datamodel-code-generator, pre-commit.
 
 ## Environment Setup
@@ -81,6 +79,9 @@ taxonopy common-names \
 - Validate functional changes by running `taxonopy resolve` against `examples/input` (or issue-specific datasets) and reviewing outputs/logs, plus `taxonopy trace entry ...` when touching parsing/grouping logic.
 
 ## Coding Conventions
+- Don't hard-wrap comments. Only use line breaks for new paragraphs. Let the editor soft-wrap content.
+- Don't hard-wrap string literals. Keep each log or user-facing message in a single source line and rely on soft wrapping when reading it.
+- Don't hard-wrap markdown prose in documentation. Let the renderer wrap lines as needed.
 - Prefer frozen dataclasses (`types/data_classes.py`) for shared structures; mutate via new objects rather than in-place edits.
 - Rely on strong typing + Pydantic models for external data (`types/gnverifier.py`); regenerate via the helper script instead of editing generated files.
 - Log through the standard logging config (`logging_config.setup_logging`) and keep tqdm progress bars for long-running loops.
