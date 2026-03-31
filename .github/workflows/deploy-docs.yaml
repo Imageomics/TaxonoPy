@@ -2,11 +2,11 @@ name: Build & Deploy MkDocs (gh-pages with PR previews)
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened, closed]
-  push:
-    branches: [ main ]
 
 permissions:
   contents: write
@@ -14,9 +14,9 @@ permissions:
 
 jobs:
   build:
-    # Run for push, workflow dispatch, PRs from SAME repo that are not closed
+    # Run for release, workflow dispatch for manual validation (build only), PRs from SAME repo that are not closed
     if: |
-      github.event_name == 'push' ||
+      github.event_name == 'release' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.head.repo.fork == false &&
@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -46,9 +47,9 @@ jobs:
 
   deploy:
     needs: build
-    # Deploy on push to main (root) or PRs from SAME repo (not closed) -> pr-<N>/
+    # Deploy on release or PRs from SAME repo (not closed) -> pr-<N>/
     if: |
-      github.event_name == 'push' ||
+      github.event_name == 'release' ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.head.repo.fork == false &&
        github.event.action != 'closed')
