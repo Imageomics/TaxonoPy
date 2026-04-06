@@ -54,7 +54,7 @@ nb = [
     "marimo[recommended]"
 ]
 docs = [
-    "mkdocs",
+    "mkdocs<2",
     "mkdocs-material",
     "mkdocs-material-extensions",
     "mkdocstrings-python",
