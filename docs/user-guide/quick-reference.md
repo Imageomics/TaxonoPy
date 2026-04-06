@@ -88,7 +88,7 @@ taxonopy common-names \
     --output-dir examples/resolved/common
 ```
 
-This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank.
+This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank. It also writes a `taxonopy_common_names_manifest.json` to the output directory.
 
 _**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**; the last two rows (both Laelia rosea) fall back to family-level common names—none available at species or genus rank._
 <div class="table-cell-scroll" markdown>
@@ -119,6 +119,8 @@ _**Sample unsolved output: Sequestered entries with no usable taxonomy informati
 The `resolution_stats.json` file summarizes counts of how many entries from the input fell into each final status across the `resolved` and `unsolved` files.
 
 TaxonoPy also writes cache data to disk (default: `~/.cache/taxonopy`) so it can trace provenance and avoid reprocessing. Use `--show-cache-path`, `--cache-stats`, or `--clear-cache` if you want to inspect or manage it, or see the [Cache](io/cache.md) guide for details.
+
+If TaxonoPy detects existing output for your input it will exit with a warning. Use `--full-rerun` to clear the cache and remove previous outputs before rerunning. TaxonoPy tracks exactly which files it produced via a manifest, so only TaxonoPy-specific files are removed — nothing else in your output directory is touched. See [Reruns](io/reruns.md) for details.
 
 ## Trace an Entry
 
