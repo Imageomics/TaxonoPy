@@ -1,7 +1,6 @@
 # Cache
 
-TaxonoPy caches intermediate results (like parsed inputs and grouped entries) to
-speed up repeated runs on the same dataset.
+TaxonoPy caches intermediate results (like parsed inputs and grouped entries) to speed up repeated runs on the same dataset.
 
 ## Location
 
@@ -40,7 +39,6 @@ This keeps caches isolated across datasets and releases.
 - `--cache-stats` — show cache statistics and exit.
 - `--clear-cache` — remove cached objects.
 - `--refresh-cache` (resolve only) — ignore cached parse/group results.
-- `--full-rerun` (resolve only) — clear cache for the input and overwrite outputs.
+- `--full-rerun` (resolve only) — clear the input-scoped cache and remove TaxonoPy-specific output files before rerunning. See [Reruns](reruns.md) for full details.
 
-If you change input files or want to force a clean run, use `--refresh-cache` or
-`--full-rerun`.
+If you change input files or want to force a clean run, use `--refresh-cache` or `--full-rerun`.
