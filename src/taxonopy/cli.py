@@ -139,7 +139,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--higher-rank-fallback",
         dest="higher_rank_fallback",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=config.higher_rank_fallback,
         help=(
             "When set (default), climb species->genus->family->...->kingdom until "
             "a vernacular is found. With --no-higher-rank-fallback, query the GBIF "
