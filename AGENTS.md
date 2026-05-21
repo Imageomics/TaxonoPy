@@ -62,6 +62,8 @@ taxonopy common-names \
     --output-dir out_test_cn
 ```
 - Runs `resolve_common_names.py`; expect long runtimes and large temporary files under the configured cache directory.
+- Output adds two columns: `common_name` and `common_name_rank` (the taxonomic rank at which the vernacular was found, or null when none was available).
+- The default `--higher-rank-fallback` preserves the prior species → kingdom climb. Pass `--no-higher-rank-fallback` to query only the finest non-null rank in the row's lineage and skip climbing on a miss.
 
 ### Cache Management
 - Cache default root: `~/.cache/taxonopy`, with command/version/input fingerprints stored as subdirectories (e.g., `resolve_v0.1.0b0_ab12cd34ef56`). `diskcache` manages the store; point `TAXONOPY_CACHE_DIR` (or `--cache-dir`) at the root and let the CLI derive namespaces via `set_cache_namespace`.
