@@ -1241,7 +1241,7 @@
 </code></pre></div>
 <ul>
 <li><strong>Common Name Data Source</strong>: GBIF Backbone data only.</li>
-<li><strong>Behavior</strong>: The <code>common-names</code> command can be set to only retrieve data available for the most specific available taxonomic rank available or to find a relevant common name at a higher rank.<ul>
+<li><strong>Behavior</strong>: The <code>common-names</code> command can be set to retrieve data only for the most specific available taxonomic rank or to find a relevant common name at a higher rank.<ul>
 <li><strong>Default</strong>: fallback from species to kingdom, with English names preferred at each rank (<code>--higher-rank-fallback</code> optionally specified).</li>
 <li><strong>Strict mode</strong>: no fallback, only the finest non-null rank in the row's lineage is queried, and the column is left empty if no name is found (<code>--no-higher-rank-fallback</code>). Useful when you would rather emit no common name than a less-specific one.</li>
 </ul>
