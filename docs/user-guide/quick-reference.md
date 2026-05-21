@@ -89,7 +89,7 @@ taxonopy common-names \
 ```
 
 - **Common Name Data Source**: GBIF Backbone data only.
-- **Behavior**: The `common-names` command can be set to only retrieve data available for the most specific available taxonomic rank available or to find a relevant common name at a higher rank.
+- **Behavior**: The `common-names` command can be set to retrieve data only for the most specific available taxonomic rank or to find a relevant common name at a higher rank.
     - **Default**: fallback from species to kingdom, with English names preferred at each rank (`--higher-rank-fallback` optionally specified).
     - **Strict mode**: no fallback, only the finest non-null rank in the row's lineage is queried, and the column is left empty if no name is found (`--no-higher-rank-fallback`). Useful when you would rather emit no common name than a less-specific one.
 - **Output columns**: the `common-names` command adds two columns to the resolved output:
