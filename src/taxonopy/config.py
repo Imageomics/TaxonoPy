@@ -43,6 +43,9 @@ class Config:
         
         # Output settings
         self.output_format = "parquet"
+
+        # Common-names settings
+        self.higher_rank_fallback = True
     
     def update_from_args(self, args: Dict[str, Any]) -> None:
         """Update configuration from command-line arguments.
@@ -85,6 +88,9 @@ class Config:
             
         if 'species_group' in args:
             self.species_group = args['species_group']
+
+        if 'higher_rank_fallback' in args:
+            self.higher_rank_fallback = args['higher_rank_fallback']
     
     def ensure_directories(self) -> None:
         """Create any required directories."""
