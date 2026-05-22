@@ -135,6 +135,18 @@ def create_parser() -> argparse.ArgumentParser:
     parser_common = subparsers.add_parser("common-names", help="Merge vernacular names (post-process) into resolved outputs")
     parser_common.add_argument("--resolved-dir", dest="annotation_dir", required=True,help="Directory containing your *.resolved.parquet files")
     parser_common.add_argument("--output-dir", required=True, help="Directory to write annotated .parquet files")
+    parser_common.add_argument(
+        "--higher-rank-fallback",
+        dest="higher_rank_fallback",
+        action=argparse.BooleanOptionalAction,
+        default=config.higher_rank_fallback,
+        help=(
+            "When set (default), climb species->genus->family->...->kingdom until "
+            "a vernacular is found. With --no-higher-rank-fallback, query the GBIF "
+            "VernacularName table only at the finest non-null rank in the row's "
+            "lineage; no climbing."
+        ),
+    )
 
     return parser
 
@@ -431,7 +443,11 @@ def main(args: Optional[List[str]] = None) -> int:
             count = clear_cache()
             print(f"\nCleared {count} cache entries")
             return 0
-        return cn_main(parsed_args.annotation_dir, parsed_args.output_dir)
+        return cn_main(
+            parsed_args.annotation_dir,
+            parsed_args.output_dir,
+            higher_rank_fallback=parsed_args.higher_rank_fallback,
+        )
     else:
         parser.error(f"Unknown command: {parsed_args.command}")
         return 1

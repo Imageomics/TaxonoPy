@@ -88,19 +88,26 @@ taxonopy common-names \
     --output-dir examples/resolved/common
 ```
 
-This command uses GBIF Backbone data only and applies deterministic fallback: species to kingdom, with English names preferred at each rank. It also writes a `taxonopy_common_names_manifest.json` to the output directory.
+- **Common Name Data Source**: GBIF Backbone data only.
+- **Behavior**: The `common-names` command can be set to retrieve data only for the most specific available taxonomic rank or to find a relevant common name at a higher rank.
+    - **Default**: fallback from species to kingdom, with English names preferred at each rank (`--higher-rank-fallback` optionally specified).
+    - **Strict mode**: no fallback, only the finest non-null rank in the row's lineage is queried, and the column is left empty if no name is found (`--no-higher-rank-fallback`). Useful when you would rather emit no common name than a less-specific one.
+- **Output columns**: the `common-names` command adds two columns to the resolved output:
+    - **`common_name` column**: the vernacular name found, or `null` when no name was available.
+    - **`common_name_rank` column**: records the rank at which the vernacular was found, or `null` when no name was available.
+- **Manifest**: writes `taxonopy_common_names_manifest.json` to the output directory.
 
-_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**; the last two rows (both Laelia rosea) fall back to family-level common names—none available at species or genus rank._
+_**Sample common-name output (`examples/resolved/common/sample.resolved.parquet`)**. Note `common_name_rank = family` on the last two rows (both Laelia rosea). No species- or genus-level vernacular was available, so the climb fell back to family._
 <div class="table-cell-scroll" markdown>
 
-| uuid | common_name | kingdom | phylum | class | order | family | genus | species |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-added">Human</span> | Animalia | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens |
-| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | <span class="cell-added">Eastern White Oak</span> | Plantae | Tracheophyta | Magnoliopsida | Fagales | Fagaceae | Quercus | Quercus alba |
-| 4d166a61-b6e5-4709-91ba-b623111014e9 | <span class="cell-added">Drone-Bee</span> | Animalia | Arthropoda | Insecta | Hymenoptera | Apidae | Apis | Apis mellifera |
-| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fly Agaric</span> | Fungi | Basidiomycota | Agaricomycetes | Agaricales | Amanitaceae | Amanita | Amanita muscaria |
-| 38327554-ffbf-4180-b4cf-63c311a26f4e | <span class="cell-added">Underwing, Tiger, Tussock, And Allied Moths</span> | Animalia | Arthropoda | Insecta | Lepidoptera | Erebidae | Laelia | Laelia rosea |
-| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | <span class="cell-added">Orchid</span> | Plantae | Tracheophyta | Liliopsida | Asparagales | Orchidaceae | Laelia | Laelia rosea |
+| uuid | common_name | common_name_rank | kingdom | phylum | class | order | family | genus | species |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| bc2a3f9f-c1f9-48df-9b01-d045475b9d5f | <span class="cell-added">Human</span> | <span class="cell-added">species</span> | Animalia | Chordata | Mammalia | Primates | Hominidae | Homo | Homo sapiens |
+| 21ed76d8-9a3b-406e-a1a3-ef244422bf8e | <span class="cell-added">Eastern White Oak</span> | <span class="cell-added">species</span> | Plantae | Tracheophyta | Magnoliopsida | Fagales | Fagaceae | Quercus | Quercus alba |
+| 4d166a61-b6e5-4709-91ba-b623111014e9 | <span class="cell-added">Drone-Bee</span> | <span class="cell-added">species</span> | Animalia | Arthropoda | Insecta | Hymenoptera | Apidae | Apis | Apis mellifera |
+| 85b96dc2-70ab-446e-afb5-6a4b92b0a450 | <span class="cell-added">Fly Agaric</span> | <span class="cell-added">species</span> | Fungi | Basidiomycota | Agaricomycetes | Agaricales | Amanitaceae | Amanita | Amanita muscaria |
+| 38327554-ffbf-4180-b4cf-63c311a26f4e | <span class="cell-added">Underwing, Tiger, Tussock, And Allied Moths</span> | <span class="cell-added">family</span> | Animalia | Arthropoda | Insecta | Lepidoptera | Erebidae | Laelia | Laelia rosea |
+| 8f688a17-1f7a-42b2-b3dc-bd4c8fc0eee3 | <span class="cell-added">Orchid</span> | <span class="cell-added">family</span> | Plantae | Tracheophyta | Liliopsida | Asparagales | Orchidaceae | Laelia | Laelia rosea |
 
 </div>
 

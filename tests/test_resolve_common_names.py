@@ -127,10 +127,11 @@ class TestMergeCommonName:
         })
         
         result = merge_common_name(anno_df, common_name_df, taxon_df)
-        
+
         assert len(result) == 1
         assert result["common_name"].to_list()[0] == "Gray Wolf", "Should prefer species over genus name"
-    
+        assert result["common_name_rank"].to_list()[0] == "species", "Rank should record the species-level hit"
+
     def test_merge_common_name_cleans_up_intermediate_columns(self):
         """Test that all intermediate columns are removed after processing"""
         anno_df = pl.DataFrame({
@@ -172,7 +173,8 @@ class TestMergeCommonName:
         
         # Lock in the exact final column set
         expected_columns = {
-            "uuid", "species", "genus", "family", "order", "class", "phylum", "kingdom", "common_name"
+            "uuid", "species", "genus", "family", "order", "class", "phylum", "kingdom",
+            "common_name", "common_name_rank"
         }
         assert set(result.columns) == expected_columns, f"Final columns should be exactly {expected_columns}"
     
@@ -234,7 +236,8 @@ class TestMergeCommonName:
         
         # Verify exact final column set (original input had common_name, should be overridden)
         expected_columns = {
-            "uuid", "species", "genus", "family", "order", "class", "phylum", "kingdom", "common_name"
+            "uuid", "species", "genus", "family", "order", "class", "phylum", "kingdom",
+            "common_name", "common_name_rank"
         }
         assert set(result.columns) == expected_columns, f"Final columns should be exactly {expected_columns}"
     
@@ -325,8 +328,11 @@ class TestMergeCommonName:
         })
         
         result = merge_common_name(anno_df, common_name_df, taxon_df)
-        
+
         assert result["common_name"].to_list()[0] == expected_name, f"Should fallback to {available_rank} level name"
+        assert result["common_name_rank"].to_list()[0] == available_rank, (
+            f"common_name_rank should record the {available_rank} fallback level"
+        )
 
 
 class TestNormalizeTaxonomicColumns:
@@ -421,9 +427,10 @@ class TestHierarchicalCommonNameLookup:
         })
         
         result = apply_hierarchical_common_name_lookup(anno_df, common_lookup)
-        
+
         assert result["common_name"].to_list()[0] == expected_name
-    
+        assert result["common_name_rank"].to_list()[0] == available_rank
+
     def test_species_takes_priority_over_genus(self):
         """Test that species-level names take priority over genus"""
         anno_df = pl.DataFrame({
@@ -438,8 +445,236 @@ class TestHierarchicalCommonNameLookup:
         })
         
         result = apply_hierarchical_common_name_lookup(anno_df, common_lookup)
-        
+
         assert result["common_name"].to_list()[0] == "Gray Wolf"
+        assert result["common_name_rank"].to_list()[0] == "species"
+
+
+class TestHierarchicalCommonNameLookupNoFallback:
+    """Unit tests for apply_hierarchical_common_name_lookup with fallback disabled"""
+
+    @pytest.mark.parametrize("finest_rank,expected_name", [
+        ("species", "Species Name"),
+        ("genus", "Genus Name"),
+        ("family", "Family Name"),
+        ("order", "Order Name"),
+        ("class", "Class Name"),
+        ("phylum", "Phylum Name"),
+        ("kingdom", "Kingdom Name"),
+    ])
+    def test_no_fallback_returns_name_at_finest_rank(self, finest_rank, expected_name):
+        """With fallback off, only the finest non-null rank's vernacular is returned."""
+        # Build a lineage that is non-null only at finest_rank and any higher (less-specific) ranks.
+        rank_order = ["species", "genus", "family", "order", "class", "phylum", "kingdom"]
+        finest_idx = rank_order.index(finest_rank)
+        lineage = {r: [None] for r in rank_order}
+        for r in rank_order[finest_idx:]:
+            lineage[r] = [f"Test {r}"]
+
+        taxonid_cols = {f"taxonID_{r}": [None] for r in rank_order}
+        taxonid_cols[f"taxonID_{finest_rank}"] = [100]
+
+        anno_df = pl.DataFrame({"uuid": ["test1"], **lineage, **taxonid_cols})
+
+        common_lookup = pl.DataFrame({
+            "taxonID": [100],
+            "common_name": [expected_name],
+        })
+
+        result = apply_hierarchical_common_name_lookup(
+            anno_df, common_lookup, higher_rank_fallback=False
+        )
+
+        assert result["common_name"].to_list()[0] == expected_name
+        assert result["common_name_rank"].to_list()[0] == finest_rank
+
+    def test_no_fallback_no_climb_when_species_has_no_vernacular(self):
+        """Species present in lineage but lacking a vernacular -> null, no climb to genus."""
+        anno_df = pl.DataFrame({
+            "uuid": ["test1"],
+            "species": ["Canis lupus"],
+            "genus": ["Canis"],
+            "family": ["Canidae"],
+            "order": ["Carnivora"],
+            "class": ["Mammalia"],
+            "phylum": ["Chordata"],
+            "kingdom": ["Animalia"],
+            "taxonID_species": [100],   # no vernacular for 100
+            "taxonID_genus": [200],     # genus has a vernacular but should NOT be used
+            "taxonID_family": [None],
+            "taxonID_order": [None],
+            "taxonID_class": [None],
+            "taxonID_phylum": [None],
+            "taxonID_kingdom": [None],
+        })
+
+        common_lookup = pl.DataFrame({
+            "taxonID": [200],
+            "common_name": ["Dog Genus"],
+        })
+
+        result = apply_hierarchical_common_name_lookup(
+            anno_df, common_lookup, higher_rank_fallback=False
+        )
+
+        assert result["common_name"].to_list()[0] is None
+        assert result["common_name_rank"].to_list()[0] is None
+
+    def test_no_fallback_finest_is_genus_when_species_is_null(self):
+        """Species null but genus populated -> genus is queried only."""
+        anno_df = pl.DataFrame({
+            "uuid": ["test1"],
+            "species": [None],
+            "genus": ["Canis"],
+            "family": ["Canidae"],
+            "order": ["Carnivora"],
+            "class": ["Mammalia"],
+            "phylum": ["Chordata"],
+            "kingdom": ["Animalia"],
+            "taxonID_species": [None],
+            "taxonID_genus": [200],
+            "taxonID_family": [500],
+            "taxonID_order": [None],
+            "taxonID_class": [None],
+            "taxonID_phylum": [None],
+            "taxonID_kingdom": [None],
+        })
+
+        common_lookup = pl.DataFrame({
+            "taxonID": [200, 500],
+            "common_name": ["Dog Genus", "Dog Family"],
+        })
+
+        result = apply_hierarchical_common_name_lookup(
+            anno_df, common_lookup, higher_rank_fallback=False
+        )
+
+        assert result["common_name"].to_list()[0] == "Dog Genus"
+        assert result["common_name_rank"].to_list()[0] == "genus"
+
+    def test_no_fallback_all_null_lineage(self):
+        """All-null lineage row -> both output columns null."""
+        anno_df = pl.DataFrame({
+            "uuid": ["test1"],
+            "species": [None],
+            "genus": [None],
+            "family": [None],
+            "order": [None],
+            "class": [None],
+            "phylum": [None],
+            "kingdom": [None],
+            "taxonID_species": [None],
+            "taxonID_genus": [None],
+            "taxonID_family": [None],
+            "taxonID_order": [None],
+            "taxonID_class": [None],
+            "taxonID_phylum": [None],
+            "taxonID_kingdom": [None],
+        })
+
+        common_lookup = pl.DataFrame({
+            "taxonID": [100],
+            "common_name": ["Anything"],
+        })
+
+        result = apply_hierarchical_common_name_lookup(
+            anno_df, common_lookup, higher_rank_fallback=False
+        )
+
+        assert result["common_name"].to_list()[0] is None
+        assert result["common_name_rank"].to_list()[0] is None
+
+
+class TestMergeCommonNameNoFallback:
+    """Integration tests for merge_common_name with fallback disabled."""
+
+    def test_no_fallback_schema_includes_rank_column(self):
+        """common_name_rank is emitted regardless of mode."""
+        anno_df = pl.DataFrame({
+            "uuid": ["test1"],
+            "species": ["Canis lupus"],
+            "genus": ["Canis"],
+            "family": ["Canidae"],
+            "order": ["Carnivora"],
+            "class": ["Mammalia"],
+            "phylum": ["Chordata"],
+            "kingdom": ["Animalia"],
+            "taxonID_species": [100],
+            "taxonID_genus": [300],
+        })
+
+        common_name_df = pl.DataFrame({
+            "taxonID": [100],
+            "vernacularName": ["Gray Wolf"],
+        })
+
+        taxon_df = pl.DataFrame({
+            "taxonID": [100, 300],
+            "canonicalName": ["Canis lupus", "Canis"],
+            "taxonRank": ["species", "genus"],
+            "kingdom": ["Animalia"] * 2,
+            "phylum": ["Chordata"] * 2,
+            "class": ["Mammalia"] * 2,
+            "order": ["Carnivora"] * 2,
+            "family": ["Canidae"] * 2,
+            "genus": ["Canis"] * 2,
+        })
+
+        result = merge_common_name(
+            anno_df, common_name_df, taxon_df, higher_rank_fallback=False
+        )
+
+        assert "common_name_rank" in result.columns
+        assert result["common_name"].to_list()[0] == "Gray Wolf"
+        assert result["common_name_rank"].to_list()[0] == "species"
+
+    def test_no_fallback_differs_from_fallback_on_genus_only_hit(self):
+        """When only the genus has a vernacular, ON gets it; OFF returns null."""
+        anno_df = pl.DataFrame({
+            "uuid": ["test1"],
+            "species": ["Canis lupus"],
+            "genus": ["Canis"],
+            "family": ["Canidae"],
+            "order": ["Carnivora"],
+            "class": ["Mammalia"],
+            "phylum": ["Chordata"],
+            "kingdom": ["Animalia"],
+            "taxonID_species": [100],
+            "taxonID_genus": [300],
+        })
+
+        # Only genus has a vernacular; species (taxonID 100) does not.
+        common_name_df = pl.DataFrame({
+            "taxonID": [300],
+            "vernacularName": ["Dog Genus"],
+        })
+
+        taxon_df = pl.DataFrame({
+            "taxonID": [100, 300],
+            "canonicalName": ["Canis lupus", "Canis"],
+            "taxonRank": ["species", "genus"],
+            "kingdom": ["Animalia"] * 2,
+            "phylum": ["Chordata"] * 2,
+            "class": ["Mammalia"] * 2,
+            "order": ["Carnivora"] * 2,
+            "family": ["Canidae"] * 2,
+            "genus": ["Canis"] * 2,
+        })
+
+        on_result = merge_common_name(
+            anno_df, common_name_df, taxon_df, higher_rank_fallback=True
+        )
+        off_result = merge_common_name(
+            anno_df, common_name_df, taxon_df, higher_rank_fallback=False
+        )
+
+        # ON: climbs to genus
+        assert on_result["common_name"].to_list()[0] == "Dog Genus"
+        assert on_result["common_name_rank"].to_list()[0] == "genus"
+
+        # OFF: species is the finest non-null rank; no climb -> null
+        assert off_result["common_name"].to_list()[0] is None
+        assert off_result["common_name_rank"].to_list()[0] is None
 
 
 class TestOverrideInputCommonName:

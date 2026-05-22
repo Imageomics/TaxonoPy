@@ -268,71 +268,148 @@ def prioritize_vernacular(vernacular_df: pl.DataFrame) -> pl.DataFrame:
     return result.select(["taxonID", "vernacularName"])
 
 
-def apply_hierarchical_common_name_lookup(anno_df: pl.DataFrame, common_lookup: pl.DataFrame) -> pl.DataFrame:
+def apply_hierarchical_common_name_lookup(
+    anno_df: pl.DataFrame,
+    common_lookup: pl.DataFrame,
+    higher_rank_fallback: bool = True,
+) -> pl.DataFrame:
     """
-    Apply hierarchical common name lookup from most specific to least specific rank.
-    
+    Apply common name lookup, with optional higher-rank fallback.
+
+    When ``higher_rank_fallback`` is True (default), iterate ranks from most to
+    least specific (species -> kingdom) and take the first non-null vernacular.
+    When False, query only the finest non-null rank present in the row's lineage
+    ("most-granular-resolved"): no climbing.
+
+    Always emits a ``common_name_rank`` column recording the rank at which the
+    name was found, or null when no name was available.
+
     :param anno_df: Annotation dataframe with taxonID_* columns
     :param common_lookup: Common name lookup table with (taxonID, common_name) columns
-    :return: DataFrame with common_name column populated using hierarchical fallback
+    :param higher_rank_fallback: Whether to climb to higher ranks on miss
+    :return: DataFrame with ``common_name`` and ``common_name_rank`` columns populated
     """
     # Define hierarchical order of taxonomic ranks (map class_ to class)
     rank_columns = [r.rstrip('_') for r in TAXONOMIC_RANKS_BY_SPECIFICITY]
-        
-    # Initialize common_name column
-    result_df = anno_df.with_columns(pl.lit(None).cast(pl.Utf8).alias("common_name"))
-    
-    # Apply hierarchical lookup - check each rank in priority order
+
+    # Initialize common_name and common_name_rank columns
+    result_df = anno_df.with_columns([
+        pl.lit(None).cast(pl.Utf8).alias("common_name"),
+        pl.lit(None).cast(pl.Utf8).alias("common_name_rank"),
+    ])
+
+    if higher_rank_fallback:
+        # Apply hierarchical lookup - check each rank in priority order
+        for rank in rank_columns:
+            taxonid_col = f"taxonID_{rank}"
+            if taxonid_col not in result_df.columns:
+                continue
+
+            # Join common names for this rank
+            temp_df = result_df.join(
+                common_lookup.select([
+                    "taxonID",
+                    pl.col("common_name").alias(f"temp_common_{rank}")
+                ]),
+                left_on=taxonid_col,
+                right_on="taxonID",
+                how="left"
+            )
+
+            # Record the rank ONLY where this is the first hit (existing
+            # common_name still null and this rank produced a value). Update the
+            # rank field BEFORE coalescing the name so the predicate observes
+            # the pre-update common_name.
+            result_df = (
+                temp_df
+                .with_columns([
+                    pl.when(
+                        pl.col("common_name").is_null()
+                        & pl.col(f"temp_common_{rank}").is_not_null()
+                    )
+                    .then(pl.lit(rank))
+                    .otherwise(pl.col("common_name_rank"))
+                    .alias("common_name_rank"),
+                    pl.coalesce([
+                        pl.col("common_name"),
+                        pl.col(f"temp_common_{rank}")
+                    ]).alias("common_name"),
+                ])
+                .drop(f"temp_common_{rank}")
+            )
+
+            # Drop taxonID column if it exists (may not exist if no matches)
+            if "taxonID" in result_df.columns:
+                result_df = result_df.drop("taxonID")
+
+        return result_df
+
+    # Fallback OFF: most-granular-resolved.
+    # 1) Per row, identify the finest non-null rank in the lineage.
+    finest_rank_expr = pl.lit(None).cast(pl.Utf8)
+    for rank in rank_columns:  # species -> kingdom
+        if rank in result_df.columns:
+            finest_rank_expr = (
+                pl.when(finest_rank_expr.is_null() & pl.col(rank).is_not_null())
+                  .then(pl.lit(rank))
+                  .otherwise(finest_rank_expr)
+            )
+    result_df = result_df.with_columns(finest_rank_expr.alias("_finest_rank"))
+
+    # 2) Project that rank's taxonID into a unified column.
+    finest_tid_expr = pl.lit(None).cast(pl.Utf8)
     for rank in rank_columns:
-        taxonid_col = f"taxonID_{rank}"
-        if taxonid_col not in result_df.columns:
-            continue
-            
-        # Join common names for this rank
-        temp_df = result_df.join(
-            common_lookup.select([
-                "taxonID", 
-                pl.col("common_name").alias(f"temp_common_{rank}")
-            ]),
-            left_on=taxonid_col,
-            right_on="taxonID",
-            how="left"
-        )
-        
-        # Update common_name where it's null and this rank has a name
-        result_df = (
-            temp_df
-            # pick up the new common_name, drop the temp join field
-            .with_columns([
-                pl.coalesce([
-                    pl.col("common_name"), 
-                    pl.col(f"temp_common_{rank}")
-                ]).alias("common_name")
-            ])
-            .drop(f"temp_common_{rank}")
-        )
-        
-        # Drop taxonID column if it exists (may not exist if no matches)
-        if "taxonID" in result_df.columns:
-            result_df = result_df.drop("taxonID")
-    
+        tcol = f"taxonID_{rank}"
+        if tcol in result_df.columns:
+            finest_tid_expr = (
+                pl.when(pl.col("_finest_rank") == rank)
+                  .then(pl.col(tcol).cast(pl.Utf8))
+                  .otherwise(finest_tid_expr)
+            )
+    result_df = result_df.with_columns(finest_tid_expr.alias("_finest_taxonid"))
+
+    # 3) Single join at the finest rank's taxonID; assign common_name and
+    #    common_name_rank in one pass.
+    result_df = result_df.join(
+        common_lookup.select([
+            pl.col("taxonID").cast(pl.Utf8).alias("_finest_taxonid"),
+            pl.col("common_name").alias("_cn_finest"),
+        ]),
+        on="_finest_taxonid",
+        how="left",
+    )
+    result_df = result_df.with_columns([
+        pl.col("_cn_finest").alias("common_name"),
+        pl.when(pl.col("_cn_finest").is_not_null())
+          .then(pl.col("_finest_rank"))
+          .otherwise(pl.lit(None).cast(pl.Utf8))
+          .alias("common_name_rank"),
+    ]).drop(["_cn_finest", "_finest_rank", "_finest_taxonid"])
+
     return result_df
 
 
-def override_input_common_name(df: pl.DataFrame, common_lookup: pl.DataFrame) -> pl.DataFrame:
+def override_input_common_name(
+    df: pl.DataFrame,
+    common_lookup: pl.DataFrame,
+    higher_rank_fallback: bool = True,
+) -> pl.DataFrame:
     """
     Override any existing common_name column with backbone-derived common names.
-    
+
     :param df: DataFrame that may have a pre-existing common_name column
     :param common_lookup: Common name lookup table with hierarchical fallback applied
+    :param higher_rank_fallback: Whether to climb to higher ranks on miss
     :return: DataFrame with backbone-derived common_name (input common_name completely replaced)
     """
     # Drop any existing common_name column and apply the backbone lookup
     df_clean = df.drop("common_name") if "common_name" in df.columns else df
-    return apply_hierarchical_common_name_lookup(df_clean, common_lookup)
+    return apply_hierarchical_common_name_lookup(
+        df_clean, common_lookup, higher_rank_fallback=higher_rank_fallback
+    )
 
 
-def merge_common_name(anno_df, common_name_df, taxon_df):
+def merge_common_name(anno_df, common_name_df, taxon_df, higher_rank_fallback: bool = True):
     """
     This function merges common names with annotation dataframe using hierarchical lookup.
     Common names are always derived from backbone lookup data for consistent mapping.
@@ -393,7 +470,9 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
             new_anno_df = new_anno_df.rename({temp_taxonid_col: taxonid_col})
     
     # Override any input common_name with backbone data
-    new_anno_df = override_input_common_name(new_anno_df, common_lookup)
+    new_anno_df = override_input_common_name(
+        new_anno_df, common_lookup, higher_rank_fallback=higher_rank_fallback
+    )
     
     # Clean up temporary taxonID columns (keep original taxonomic classification columns)
     cleanup_cols = [f"taxonID_{rank}" for rank in rank_columns]
@@ -408,7 +487,7 @@ def merge_common_name(anno_df, common_name_df, taxon_df):
 
     return new_anno_df
 
-def main(annotation_dir=None, output_dir=None):
+def main(annotation_dir=None, output_dir=None, higher_rank_fallback: bool = True):
     """
     Merge common names into resolved output files.
     """
@@ -428,6 +507,18 @@ def main(annotation_dir=None, output_dir=None):
             required=True,
             help="Where to write the new, annotated .parquet files"
         )
+        parser.add_argument(
+            "--higher-rank-fallback",
+            dest="higher_rank_fallback",
+            action=argparse.BooleanOptionalAction,
+            default=True,
+            help=(
+                "When set (default), climb species->genus->family->...->kingdom until "
+                "a vernacular is found. With --no-higher-rank-fallback, query the GBIF "
+                "VernacularName table only at the finest non-null rank in the row's "
+                "lineage; no climbing."
+            ),
+        )
         args = parser.parse_args()
 
         # Update config if cache-dir was provided
@@ -438,6 +529,7 @@ def main(annotation_dir=None, output_dir=None):
 
         annotation_dir = args.annotation_dir
         output_dir = args.output_dir
+        higher_rank_fallback = args.higher_rank_fallback
     
     # Use global config's cache_dir
     from taxonopy.config import config
@@ -482,7 +574,10 @@ def main(annotation_dir=None, output_dir=None):
         anno_df = pl.read_parquet(annotation_path)
 
         new_df = merge_taxon_id(anno_df, taxon_df)
-        new_df = merge_common_name(new_df, common_name_df, taxon_df)
+        new_df = merge_common_name(
+            new_df, common_name_df, taxon_df,
+            higher_rank_fallback=higher_rank_fallback,
+        )
         new_df = new_df.with_columns([
             pl.col("scientific_name").cast(pl.Utf8)
         ])
