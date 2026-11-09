@@ -1,6 +1,10 @@
 from pathlib import Path
 
+from diskcache_community import Cache, Disk
+
+from taxonopy import input_parser
 from taxonopy.cache_manager import (
+    _close_cache,
     clear_cache,
     compute_file_metadata_hash,
     configure_cache_namespace,
@@ -46,3 +50,34 @@ def test_diskcache_round_trip(tmp_path):
         config.ensure_directories()
         assert Path(config.cache_base_dir).exists()
         assert Path(config.cache_dir).exists()
+
+
+planted_calls = []
+
+
+def planted():
+    planted_calls.append(True)
+    return []
+
+
+class Planted:
+    def __reduce__(self):
+        return (planted, ())
+
+
+def test_planted_cache_entry_is_a_miss(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "cache_dir", str(tmp_path))
+    input_file = tmp_path / "sample.csv"
+    input_file.write_text(
+        "uuid,kingdom,phylum,class,order,family,genus,species,scientific_name\n"
+        "1,Animalia,,,Hymenoptera,Apidae,Apis,Apis mellifera,Apis mellifera\n"
+    )
+    expected = input_parser.parse_input_list(str(input_file))
+
+    with Cache(str(tmp_path), disk=Disk) as other_writer:
+        (key,) = [key for key in other_writer if not key.endswith("::meta")]
+        other_writer.set(key, Planted())
+
+    assert input_parser.parse_input_list(str(input_file)) == expected
+    assert planted_calls == []
+    _close_cache()

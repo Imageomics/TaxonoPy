@@ -36,7 +36,7 @@ dependencies = [
     "pandas",
     "pyarrow",
     "pydantic",
-    "diskcache"
+    "diskcache-community>=5.8.4"
 ]
 
 dynamic = ["version"]

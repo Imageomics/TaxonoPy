@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from diskcache import Cache
+from diskcache_community import Cache, SafeDisk
 
 from taxonopy.config import config
 
@@ -51,7 +51,7 @@ def get_cache() -> Cache:
     if _cache_instance is None or _cache_path != cache_dir:
         if _cache_instance is not None:
             _cache_instance.close()
-        _cache_instance = Cache(directory=str(cache_dir))
+        _cache_instance = Cache(directory=str(cache_dir), disk=SafeDisk.with_types(modules=("taxonopy.types",)).with_options(on_error="miss"))
         _cache_path = cache_dir
     return _cache_instance
 
